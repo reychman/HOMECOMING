@@ -65,12 +65,21 @@ Future<void> _loadUserData() async {
       final responseData = jsonDecode(response.body);
       if (responseData['success'] != null) {
         print('Usuario actualizado correctamente');
+        // Actualizando el SharedPreferences con los nuevos datos
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('nombre', _nombreController.text);
+        await prefs.setString('primerApellido', _primerApellidoController.text);
+        await prefs.setString('segundoApellido', _segundoApellidoController.text);
+        await prefs.setString('telefono', _telefonoController.text);
+        await prefs.setString('email', _emailController.text);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Datos Actualizados Correctamente'),
             duration: Duration(seconds: 2),
           ),
         );
+         // Regresar a la página de perfil
         Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => PerfilUsuario(),
         ));

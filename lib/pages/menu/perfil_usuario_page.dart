@@ -35,8 +35,8 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       telefono = prefs.getString('telefono') ?? '';
     });
     print('Nombre: $nombre');
-    print('primerApellido: $email');
-    print('segundoApellido: $email');
+    print('primerApellido: $primerApellido');
+    print('segundoApellido: $segundoApellido');
     print('telefono: $telefono');
     print('Email: $email');
   }

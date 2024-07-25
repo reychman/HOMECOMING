@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/admin_page.dart';
+import 'package:homecoming/pages/admin_usuarios_page.dart';
 import 'package:homecoming/pages/menu/perfil_usuario_page.dart';
 import 'package:homecoming/pages/propietario_page.dart';
 import 'package:homecoming/pages/refugio_page.dart';
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Homecoming',
       home: HomePage(), // Temporary home for debugging
-      initialRoute: '/iniciar_sesion',
+      initialRoute: '/home',
       routes: <String, WidgetBuilder>{
         '/home': (BuildContext context) => HomePage(),
         '/quienes_somos': (BuildContext context) => QuienesSomosPage(),
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
         '/propietario': (BuildContext context) => Propietario(),
         '/refugio': (BuildContext context) => Refugio(),
         '/perfilUsuario': (BuildContext context) => PerfilUsuario(),
+        '/admin_usuarios': (BuildContext context) => AdminUsuariosPage(),
       },
     );
   }
