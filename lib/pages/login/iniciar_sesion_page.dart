@@ -20,71 +20,76 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
   String mensaje = "";
 
   Future<void> login() async {
-  final passwordHash = sha1.convert(utf8.encode(controllerPass.text)).toString();
-  print('Nombre: ${controllerUser.text}');
-  print('Contraseña: $passwordHash');
-  print('Datos enviados: ${jsonEncode({"nombre": controllerUser.text, "contrasena": passwordHash})}');
+    final passwordHash = sha1.convert(utf8.encode(controllerPass.text)).toString();
+    print('Nombre: ${controllerUser.text}');
+    print('Contraseña: $passwordHash');
+    print('Datos enviados: ${jsonEncode({"nombre": controllerUser.text, "contrasena": passwordHash})}');
 
-  final response = await http.post(
-    Uri.parse("http://$serverIP/homecomingbd_v2/login.php"),
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: jsonEncode({
-      "nombre": controllerUser.text,
-      "contrasena": passwordHash,
-    }),
-  );
+    final response = await http.post(
+      Uri.parse("http://$serverIP/homecomingbd_v2/login.php"),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: jsonEncode({
+        "nombre": controllerUser.text,
+        "contrasena": passwordHash,
+      }),
+    );
 
-  print('Response status: ${response.statusCode}');
-  print('Response body: ${response.body}');
-  
-  try {
-    var datauser = json.decode(response.body);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
+    try {
+      var datauser = json.decode(response.body);
 
-    if (datauser.containsKey('error')) {
-      setState(() {
-        mensaje = datauser['error'];
-      });
-    } else {
-      final tipoUsuario = datauser['tipo_usuario'];
-      final nombreUsuario = datauser['nombre'];
-      final email = datauser['email'];
-      final userId = datauser['id'];
-      final primerApellido = datauser['primerApellido'];
-      final segundoApellido = datauser['segundoApellido'];
-      final telefono = datauser['telefono'];  // Asegúrate de que el ID esté en la respuesta
+      if (datauser.containsKey('error')) {
+        setState(() {
+          mensaje = datauser['error'];
+        });
+      } else {
+        final tipoUsuario = datauser['tipo_usuario'];
+        final nombreUsuario = datauser['nombre'];
+        final email = datauser['email'];
+        final userId = datauser['id'];
+        final primerApellido = datauser['primerApellido'] ?? "";
+        final segundoApellido = datauser['segundoApellido'] ?? "";
+        final telefono = datauser['telefono'] ?? "";
+        final foto_portada = datauser['foto_portada'] ?? "";
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('nombre', nombreUsuario);
-      await prefs.setString('primerApellido', primerApellido);
-      await prefs.setString('segundoApellido', segundoApellido);
-      await prefs.setString('telefono', telefono);
-      await prefs.setString('tipo_usuario', tipoUsuario);
-      await prefs.setString('email', email);
-      await prefs.setInt('id', userId); // Guardar el ID del usuario
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('nombre', nombreUsuario);
+        await prefs.setString('primerApellido', primerApellido);
+        await prefs.setString('segundoApellido', segundoApellido);
+        await prefs.setString('telefono', telefono);
+        await prefs.setString('tipo_usuario', tipoUsuario);
+        await prefs.setString('email', email);
+        await prefs.setString('foto_portada', foto_portada);
+        await prefs.setInt('id', userId);
 
-      switch (tipoUsuario) {
-        case 'administrador':
-          Navigator.of(context).pushReplacementNamed('/administrador');
-          break;
-        case 'propietario':
-          Navigator.of(context).pushReplacementNamed('/propietario');
-          break;
-        case 'refugio':
-          Navigator.of(context).pushReplacementNamed('/refugio');
-          break;
-        default:
-          break;
+        switch (tipoUsuario) {
+          case 'administrador':
+            Navigator.of(context).pushReplacementNamed('/administrador');
+            break;
+          case 'propietario':
+            Navigator.of(context).pushReplacementNamed('/propietario');
+            break;
+          case 'refugio':
+            Navigator.of(context).pushReplacementNamed('/refugio');
+            break;
+          default:
+            setState(() {
+              mensaje = 'Tipo de usuario desconocido.';
+            });
+            break;
+        }
       }
+    } catch (e) {
+      print('Error decoding JSON: $e');
+      setState(() {
+        mensaje = 'Error en el servidor. Intente nuevamente más tarde.';
+      });
     }
-  } catch (e) {
-    print('Error decoding JSON: $e');
-    setState(() {
-      mensaje = 'Error en el servidor. Intente nuevamente más tarde.';
-    });
   }
-}
 
 
   @override
@@ -180,17 +185,14 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 100.0, vertical: 15.0),
                 ),
-                child: Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: Text('Ingresar'),
               ),
-              SizedBox(height: 10.0),
+              SizedBox(height: 20.0),
               Text(
                 mensaje,
-                style: TextStyle(fontSize: 20.0, color: Colors.red),
+                style: TextStyle(color: Colors.red, fontSize: 16.0),
               ),
-              SizedBox(height: 10.0),
+              SizedBox(height: 20.0),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pushNamed('/RecuperarContra');
@@ -206,7 +208,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                   Navigator.of(context).pushNamed('/CrearUsuario');
                 },
                 child: Text(
-                  '¿No tienes una cuenta? Crea una',
+                  'Crear una cuenta',
                   style: TextStyle(color: Colors.white),
                 ),
               ),

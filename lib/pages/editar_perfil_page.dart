@@ -39,9 +39,11 @@ Future<void> _loadUserData() async {
     _telefonoController.text = prefs.getString('telefono') ?? '';
     _emailController.text = prefs.getString('email') ?? '';
     print('ID del usuario: $userId'); // Para depuración
+    print('Nombre: ${prefs.getString('nombre')}');
     print('Primer Apellido: ${prefs.getString('primerApellido')}');
     print('Segundo Apellido: ${prefs.getString('segundoApellido')}');
     print('Teléfono: ${prefs.getString('telefono')}');
+    print('Email: ${prefs.getString('email')}');
 
   });
 }

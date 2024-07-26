@@ -19,6 +19,7 @@ dependencies:
   http: any
   http_parser: ^4.0.0
   path: ^1.8.2 # Añade esta dependencia
+  universal_html: ^2.1.0
 
 dev_dependencies:
   flutter_test:
