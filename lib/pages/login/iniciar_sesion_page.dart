@@ -26,7 +26,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
     print('Datos enviados: ${jsonEncode({"nombre": controllerUser.text, "contrasena": passwordHash})}');
 
     final response = await http.post(
-      Uri.parse("http://$serverIP/homecomingbd_v2/login.php"),
+      Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/login.php"),
       headers: {
         "Content-Type": "application/json"
       },

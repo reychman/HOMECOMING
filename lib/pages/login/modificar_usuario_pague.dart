@@ -34,7 +34,7 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
   }
 
   Future<void> _updateUser() async {
-    final url = Uri.parse('http://$serverIP/homecomingbd_v2/actualizar_usuario.php');
+    final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/actualizar_usuario.php');
     final response = await http.post(
       url,
       body: {

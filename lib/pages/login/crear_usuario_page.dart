@@ -56,7 +56,7 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
     final passwordHash = sha1.convert(utf8.encode(contrasenaController.text)).toString();
 
     final response = await http.post(
-      Uri.parse('http://$serverIP/homecomingbd_v2/crear_usuario.php'),
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/crear_usuario.php'),
       body: {
         "nombre": nombreController.text,
         "primerApellido": primerApellidoController.text,

@@ -51,7 +51,7 @@ Future<void> _loadUserData() async {
   Future<void> _updateUser() async {
   if (_formKey.currentState!.validate()) {
     final response = await http.post(
-      Uri.parse('http://$serverIP/homecomingbd_v2/actualizar_usuario.php'),
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/actualizar_usuario.php'),
       body: {
         'id': userId.toString(),
         'nombre': _nombreController.text,

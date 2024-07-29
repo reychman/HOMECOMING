@@ -23,6 +23,7 @@ class MenuWidget extends StatelessWidget {
           }
           final userData = snapshot.data!;
           final bool usuarioLogeado = userData['nombre']!.isNotEmpty && userData['tipo_usuario']!.isNotEmpty;
+          final bool esAdministrador = userData['tipo_usuario'] == 'administrador';
 
           return Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -132,7 +133,7 @@ class MenuWidget extends StatelessWidget {
                         Navigator.of(context).pushReplacementNamed('/iniciar_sesion');
                       },
                     ),
-                  if (usuarioLogeado)
+                  if (usuarioLogeado && esAdministrador)
                     ListTile(
                       leading: Icon(Icons.person_search),
                       title: Text('Administrar Usuarios'),

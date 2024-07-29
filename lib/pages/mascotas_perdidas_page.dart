@@ -21,7 +21,7 @@ class _EstadoPaginaMascotasPerdidas extends State<MascotasPerdidas> {
   Future<void> buscarMascotasPerdidas() async {
     try {
       final response = await http.get(Uri.parse(
-          'http://$serverIP/homecomingbd_v2/mascotas_perdidas.php'));
+          'http://$serverIP/homecoming/homecomingbd_v2/mascotas_perdidas.php'));
 
       print('Response body: ${response.body}'); // Para depuración
 

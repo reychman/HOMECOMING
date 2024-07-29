@@ -20,7 +20,7 @@ class _VerificarRefugioPageState extends State<VerificarRefugioPage> {
 
   Future<void> enviarDatos() async {
     final response = await http.post(
-      Uri.parse('http://$serverIP/homecomingbd_v2/crear_refugio.php'),
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/crear_refugio.php'),
       body: {
         "nombre": nombreController.text,
         "ubicacion": ubicacionController.text,

@@ -13,7 +13,7 @@ class AdminUsuariosPage extends StatefulWidget {
 class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
   Future<List<Map<String, dynamic>>> _fetchUsers() async {
     final response = await http.get(Uri.parse(
-        'http://$serverIP/homecomingbd_v2/lista_usuarios.php'));
+        'http://$serverIP/homecoming/homecomingbd_v2/lista_usuarios.php'));
 
     if (response.statusCode == 200) {
       List<dynamic> users = json.decode(response.body);
@@ -24,7 +24,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
   }
 
   Future<void> _deleteUser(int userId) async {
-  final url = Uri.parse('http://$serverIP/homecomingbd_v2/eliminar_usuario.php');
+  final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/eliminar_usuario.php');
   final response = await http.post(
     url,
     body: {
