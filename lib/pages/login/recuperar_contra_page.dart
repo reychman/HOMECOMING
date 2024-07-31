@@ -3,13 +3,18 @@ import 'package:homecoming/ip.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class RecuperarContraPage extends StatelessWidget {
+class RecuperarContraPage extends StatefulWidget {
+  @override
+  _RecuperarContraPageState createState() => _RecuperarContraPageState();
+}
+
+class _RecuperarContraPageState extends State<RecuperarContraPage> {
   final TextEditingController emailController = TextEditingController();
 
   Future<void> enviarCorreo(String email) async {
     try {
       final response = await http.post(
-        Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor"),
+        Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/recuperar_contra.php"),
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
@@ -18,17 +23,22 @@ class RecuperarContraPage extends StatelessWidget {
         },
       );
 
+      print('Response body: ${response.body}'); // Agrega esta línea para depuración
+
       final responseData = json.decode(response.body);
       if (responseData.containsKey('success')) {
-        // Mostrar un mensaje de éxito
-        print("Correo enviado: ${responseData['success']}");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Correo enviado correctamente'),
+        ));
       } else {
-        // Mostrar un mensaje de error
-        print("Error: ${responseData['error']}");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error: ${responseData['error']}'),
+        ));
       }
     } catch (e) {
-      print("Error decoding JSON: $e");
-      // Mostrar un mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+      ));
     }
   }
 
@@ -62,8 +72,9 @@ class RecuperarContraPage extends StatelessWidget {
                 if (email.isNotEmpty) {
                   enviarCorreo(email);
                 } else {
-                  // Mostrar un mensaje de error si el campo está vacío
-                  print("El campo de correo electrónico está vacío");
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('El campo de correo electrónico está vacío'),
+                  ));
                 }
               },
               child: Text('Enviar correo'),

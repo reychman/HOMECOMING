@@ -19,7 +19,7 @@ function actualizarUsuario($conexion, $id, $nombre, $primerApellido, $segundoApe
     }
 
     // Actualizar el usuario en la base de datos
-    $sql = "UPDATE Usuarios SET nombre=?, primerApellido=?, segundoApellido=?, telefono=?, email=?, tipo_usuario=? WHERE id=?";
+    $sql = "UPDATE Usuarios SET nombre=?, primerApellido=?, segundoApellido=?, telefono=?, email=?, tipo_usuario=?, fecha_modificacion=NOW() WHERE id=?";
     $stmt = $conexion->prepare($sql);
 
     if (!$stmt) {
@@ -47,7 +47,7 @@ function actualizarPerfil($conexion, $id, $nombre, $primerApellido, $segundoApel
         exit;
     }
     // Actualizar el perfil en la base de datos
-    $sql = "UPDATE Usuarios SET nombre=?, primerApellido=?, segundoApellido=?, telefono=?, email=? WHERE id=?";
+    $sql = "UPDATE Usuarios SET nombre=?, primerApellido=?, segundoApellido=?, telefono=?, email=?, fecha_modificacion=NOW() WHERE id=?";
     $stmt = $conexion->prepare($sql);
 
     if (!$stmt) {

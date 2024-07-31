@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false, //quitar el texto debug
       title: 'Homecoming',
       home: HomePage(), // Temporary home for debugging
       initialRoute: '/home',
