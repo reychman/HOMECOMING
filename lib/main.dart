@@ -26,10 +26,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false, //quitar el texto debug
       title: 'Homecoming',
-      home: HomePage(), // Temporary home for debugging
+      home: PaginaPrincipal(), // Temporary home for debugging
       initialRoute: '/home',
       routes: <String, WidgetBuilder>{
-        '/home': (BuildContext context) => HomePage(),
+        '/home': (BuildContext context) => PaginaPrincipal(),
         '/quienes_somos': (BuildContext context) => QuienesSomosPage(),
         '/preguntas_frecuentes': (BuildContext context) => PreguntasFrecuentesPage(),
         '/mapa_busquedas': (BuildContext context) => MapaBusquedasPage(),

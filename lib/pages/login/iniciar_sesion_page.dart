@@ -16,7 +16,7 @@ class IniciarSesionPage extends StatefulWidget {
 class _IniciarSesionPageState extends State<IniciarSesionPage> {
   TextEditingController controllerUser = TextEditingController();
   TextEditingController controllerPass = TextEditingController();
-  bool _passwordVisible = false; 
+  bool _contrasenaVisible = false; 
   String mensaje = "";
 
   Future<void> login() async {
@@ -68,13 +68,13 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
 
         switch (tipoUsuario) {
           case 'administrador':
-            Navigator.of(context).pushReplacementNamed('/administrador');
+            Navigator.of(context).pushReplacementNamed('/home');
             break;
           case 'propietario':
-            Navigator.of(context).pushReplacementNamed('/propietario');
+            Navigator.of(context).pushReplacementNamed('/home');
             break;
           case 'refugio':
-            Navigator.of(context).pushReplacementNamed('/refugio');
+            Navigator.of(context).pushReplacementNamed('/home');
             break;
           default:
             setState(() {
@@ -145,7 +145,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                 child: TextField(
                   key: Key('passwordField'),
                   controller: controllerPass,
-                  obscureText: !_passwordVisible,
+                  obscureText: !_contrasenaVisible,
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.lock),
                     hintText: 'Contraseña',
@@ -156,11 +156,11 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                        _contrasenaVisible ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
-                          _passwordVisible = !_passwordVisible;
+                          _contrasenaVisible = !_contrasenaVisible;
                         });
                       },
                     ),
