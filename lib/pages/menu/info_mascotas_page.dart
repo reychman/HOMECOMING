@@ -10,16 +10,21 @@ class InfoMascotasPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(mascota.nombre),
+        title: Text('Mascota: ${mascota.nombre}',),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (mascota.foto.isNotEmpty)
-              Image.network(mascota.foto, fit: BoxFit.cover),
-            SizedBox(height: 16),
+            mascota.foto.isNotEmpty
+                ? Image.asset(
+                    'assets/imagenes/fotos_mascotas/${mascota.foto}',
+                    width: 500,
+                    height: 400,
+                    fit: BoxFit.cover,
+                  )
+                : Icon(Icons.pets, size: 200),
             Text(
               mascota.nombre,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
