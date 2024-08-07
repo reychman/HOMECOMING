@@ -2,51 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/menu/crear_publicacion_page.dart';
+import 'package:homecoming/pages/menu/mascota.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
+import 'package:homecoming/pages/menu/info_mascotas_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
-class Mascota {
-  final int id;
-  final String nombre;
-  final String especie;
-  final String raza;
-  final String sexo;
-  final String fechaPerdida;
-  final String lugarPerdida;
-  final String estado;
-  final String descripcion;
-  final String foto;
-
-  Mascota({
-    required this.id,
-    required this.nombre,
-    required this.especie,
-    required this.raza,
-    required this.sexo,
-    required this.fechaPerdida,
-    required this.lugarPerdida,
-    required this.estado,
-    required this.descripcion,
-    required this.foto,
-  });
-
-  factory Mascota.fromJson(Map<String, dynamic> json) {
-    return Mascota(
-      id: json['id'],
-      nombre: json['nombre'],
-      especie: json['especie'],
-      raza: json['raza'],
-      sexo: json['sexo'],
-      fechaPerdida: json['fecha_perdida'],
-      lugarPerdida: json['lugar_perdida'],
-      estado: json['estado'],
-      descripcion: json['descripcion'],
-      foto: json['foto'],
-    );
-  }
-}
 
 class PaginaPrincipal extends StatefulWidget {
   @override
@@ -101,15 +62,60 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 final mascota = snapshot.data![index];
-                return Card(
-                  margin: EdgeInsets.all(10),
-                  child: ListTile(
-                    leading: mascota.foto.isNotEmpty
-                        ? Image.network(mascota.foto, width: 50, height: 50, fit: BoxFit.cover)
-                        : Icon(Icons.pets, size: 50),
-                    title: Text(mascota.nombre),
-                    subtitle: Text('${mascota.especie} - ${mascota.raza} - ${mascota.sexo}'),
-                    trailing: Text(mascota.estado),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => InfoMascotasPage(mascota: mascota),
+                    ));
+                  },
+                  child: Card(
+                    margin: EdgeInsets.all(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (mascota.estado == 'encontrado')
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(10),
+                                topRight: Radius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              '¡Mascota reunida con su familia!',
+                              style: TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ListTile(
+                          leading: mascota.foto.isNotEmpty
+                              ? Image.network(mascota.foto, width: 50, height: 50, fit: BoxFit.cover)
+                              : Icon(Icons.pets, size: 50),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(mascota.nombre, style: TextStyle(fontWeight: FontWeight.bold)),
+                              SizedBox(height: 4),
+                              Text(
+                                '${mascota.fechaPerdida} hace semanas',
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                mascota.lugarPerdida,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

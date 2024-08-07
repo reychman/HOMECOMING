@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   crypto: ^3.0.0 # Asegúrate de usar la versión más reciente
   image_picker: ^0.8.4+4
+  intl: ^0.17.0
   shared_preferences: ^2.0.13
   cupertino_icons: ^1.0.6
   sqflite: ^2.3.3+1

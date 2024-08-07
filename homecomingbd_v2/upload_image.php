@@ -3,53 +3,64 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
 
-// Incluir configuración de la base de datos
-require_once('config.php');
+$target_dir = "homecoming/assets/imagenes/fotos_mascotas/"; // Asegúrate de que esta ruta sea correcta
+$response = array();
 
-// Verificar si se ha subido una imagen
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['foto_portada']) && $_FILES['foto_portada']['error'] == 0) {
-    $id = $_POST['id']; // ID del usuario
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_FILES['foto']['name'])) {
+        $target_file = $target_dir . basename($_FILES['foto']['name']);
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $valid_extensions = array("jpg", "jpeg", "png", "gif");
 
-    // Usa una ruta absoluta para evitar problemas con las rutas relativas
-    $target_dir = 'C:/Users/Cristopher/Desktop/Cristopher/proyecto HomeComing/homecoming/assets/imagenes/fotos_portada/';
-    
-    // Crear el directorio si no existe
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
+        // Verificar si el archivo es una imagen válida
+        $check = getimagesize($_FILES['foto']['tmp_name']);
+        if ($check !== false) {
+            // Verificar el tamaño del archivo (límite de 5 MB)
+            if ($_FILES['foto']['size'] <= 5000000) { // 5000000 bytes = 5MB
+                // Permitir solo ciertos formatos de archivo
+                if (in_array($imageFileType, $valid_extensions)) {
+                    if (move_uploaded_file($_FILES['foto']['tmp_name'], $target_file)) {
+                        // El archivo se cargó correctamente
+                        require_once('config.php'); // Asegúrate de que este archivo exista y tenga la configuración correcta
 
-    $target_file = $target_dir . basename($_FILES["foto_portada"]["name"]);
-    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                        $file_name = basename($_FILES['foto']['name']);
 
-    // Verificar el tipo de archivo (opcional)
-    $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-    if (!in_array($imageFileType, $allowed_types)) {
-        echo json_encode(array('error' => 'Tipo de archivo no permitido.'));
-        exit();
-    }
-    // Mover el archivo subido al directorio
-    if (move_uploaded_file($_FILES["foto_portada"]["tmp_name"], $target_file)) {
-        // Crear la URL completa de la imagen
-        $url_imagen = "http://192.168.100.102/assets/imagenes/fotos_portada/" . basename($_FILES["foto_portada"]["name"]); // Cambia "192.168.1.100" por tu IP o dominio
+                        // Inserta el nombre del archivo en la base de datos
+                        $sql = "INSERT INTO mascotas (foto) VALUES ('$file_name')";
 
-        // Actualizar la URL de la imagen en la base de datos
-        $sql = "UPDATE Usuarios SET foto_portada=? WHERE id=?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("si", $url_imagen, $id);
+                        if ($conexion->query($sql) === TRUE) {
+                            $response['success'] = true; // Cambiado para coincidir con el código Flutter
+                            $response['file_name'] = $file_name; // Incluye el nombre del archivo en la respuesta
+                        } else {
+                            $response['success'] = false;
+                            $response['message'] = "Error: " . $sql . "<br>" . $conexion->error;
+                        }
 
-        if ($stmt->execute()) {
-            echo json_encode(array('success' => 'Imagen subida y URL actualizada.', 'foto_portada' => $url_imagen));
+                        $conexion->close();
+                    } else {
+                        $response['success'] = false;
+                        $response['message'] = "Hubo un error al cargar el archivo.";
+                    }
+                } else {
+                    $response['success'] = false;
+                    $response['message'] = "Sólo se permiten archivos JPG, JPEG, PNG y GIF.";
+                }
+            } else {
+                $response['success'] = false;
+                $response['message'] = "El archivo es demasiado grande.";
+            }
         } else {
-            echo json_encode(array('error' => 'Error al actualizar la URL en la base de datos.'));
+            $response['success'] = false;
+            $response['message'] = "El archivo no es una imagen.";
         }
-
-        $stmt->close();
     } else {
-        echo json_encode(array('error' => 'Error al mover la imagen. Verifica permisos y ruta.'));
+        $response['success'] = false;
+        $response['message'] = "Ningún archivo fue subido.";
     }
 } else {
-    echo json_encode(array('error' => 'No se ha subido ninguna imagen.'));
+    $response['success'] = false;
+    $response['message'] = "Solicitud no válida.";
 }
 
-$conexion->close();
+echo json_encode($response);
 ?>
