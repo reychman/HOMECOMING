@@ -13,7 +13,9 @@ if ($conexion->connect_error) {
 }
 
 // Consulta para obtener todas las mascotas
-$sql = "SELECT id, nombre, especie, raza, sexo, fecha_perdida, lugar_perdida, estado, descripcion, foto FROM mascotas";
+$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.foto, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+        FROM mascotas M
+        JOIN usuarios  U ON M.usuario_id = U.id";
 $result = $conexion->query($sql);
 
 $mascotas = array();
@@ -31,7 +33,10 @@ if ($result->num_rows > 0) {
             'lugar_perdida' => $row['lugar_perdida'],
             'estado' => $row['estado'],
             'descripcion' => $row['descripcion'],
-            'foto' => $row['foto']
+            'foto' => $row['foto'],
+            'nombre_dueno' => $row['nombre_dueno'],
+            'email_dueno' => $row['email_dueno'],
+            'telefono_dueno' => $row['telefono_dueno']
         );
     }
 }

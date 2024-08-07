@@ -9,6 +9,9 @@ class Mascota {
   final String estado;
   final String descripcion;
   final String foto;
+  final String nombreDueno;
+  final String emailDueno;
+  final String telefonoDueno;
 
   Mascota({
     required this.id,
@@ -21,6 +24,9 @@ class Mascota {
     required this.estado,
     required this.descripcion,
     required this.foto,
+    required this.nombreDueno,
+    required this.emailDueno,
+    required this.telefonoDueno,
   });
 
   factory Mascota.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,9 @@ class Mascota {
       estado: json['estado'],
       descripcion: json['descripcion'],
       foto: json['foto'],
+      nombreDueno: json['nombre_dueno'],
+      emailDueno: json['email_dueno'],
+      telefonoDueno: json['telefono_dueno'],
     );
   }
 }
