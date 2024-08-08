@@ -65,9 +65,20 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
         markerId: MarkerId('marker_1'),
         position: LatLng(-17.3957147, -66.1581871),
         icon: _customIcon ?? BitmapDescriptor.defaultMarker,
-        infoWindow: InfoWindow(title: 'Ubicación 1', snippet: 'Descripción 1'),
+        infoWindow: InfoWindow(title: 'Aqui hay una mascota desaparecida', snippet: 'Perro amigable y juguetón.'),
       ),
-      // Agrega más marcadores según sea necesario
+      Marker(
+        markerId: MarkerId('marker_2'),
+        position: LatLng(-17.4132611, -66.1564869),
+        icon: _customIcon ?? BitmapDescriptor.defaultMarker,
+        infoWindow: InfoWindow(title: 'Aqui hay una mascota desaparecida', snippet: 'gato amigable y juguetón.'),
+      ),
+      Marker(
+        markerId: MarkerId('marker_3'),
+        position: LatLng(-17.4001353, -66.1507808),
+        icon: _customIcon ?? BitmapDescriptor.defaultMarker,
+        infoWindow: InfoWindow(title: 'Aqui hay una mascota desaparecida', snippet: 'gato amigable y juguetón.'),
+      ),
     };
   }
 }

@@ -19,39 +19,39 @@ class InfoMascotasPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (mascota.estado == 'encontrado')
-                Container(
-                  width: 400,
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      topRight: Radius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    '¡Mascota reunida con su familia!',
-                    style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
+              Container(
+                width: 400,
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    topRight: Radius.circular(10),
                   ),
                 ),
+                child: Text(
+                  '¡Mascota reunida con su familia!',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             if (mascota.estado == 'perdido')
-                Container(
-                  width: 400,
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 206, 71, 71),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      topRight: Radius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    '¡Hay una familia que busca a esta mascota!',
-                    style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
+              Container(
+                width: 400,
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Color.fromARGB(255, 206, 71, 71),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    topRight: Radius.circular(10),
                   ),
                 ),
+                child: Text(
+                  '¡Hay una familia que busca a esta mascota!',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             Center(
               child: mascota.foto.isNotEmpty
                   ? Image.asset(
@@ -85,26 +85,29 @@ class InfoMascotasPage extends StatelessWidget {
   }
 
   Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      margin: EdgeInsets.all(8),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+    return Container(
+      width: 500, // Ajusta el ancho deseado aquí
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent,
+                ),
               ),
-            ),
-            Divider(),
-            ...children,
-          ],
+              Divider(),
+              ...children,
+            ],
+          ),
         ),
       ),
     );
@@ -153,7 +156,7 @@ class InfoMascotasPage extends StatelessWidget {
                 if (await canLaunch(url)) {
                   await launch(url);
                 } else {
-                  throw 'Could not launch $url';
+                  throw 'No se pudo iniciar $url';
                 }
               },
               child: Text(

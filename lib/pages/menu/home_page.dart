@@ -62,6 +62,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:Colors.green[200],
         title: Text('Página Principal'),
       ),
       drawer: MenuWidget(),
@@ -152,15 +153,15 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: Text(
-                                  mensajeFecha,
-                                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                                  '${mascota.fechaPerdida}  -  ${mensajeFecha}',
+                                  style: TextStyle(color: Color.fromARGB(255, 53, 53, 53), fontSize: 14),
                                 ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                                 child: Text(
                                   mascota.lugarPerdida,
-                                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                                  style: TextStyle(color: const Color.fromARGB(255, 53, 53, 53), fontSize: 14),
                                 ),
                               ),
                             ],
@@ -197,7 +198,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
               }
             },
             child: Icon(Icons.add),
-            backgroundColor: Colors.blue,
+            backgroundColor: const Color.fromARGB(255, 33, 243, 121),
           );
         },
       ),
