@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/modificar_usuario_pague.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:homecoming/pages/menu/usuario.dart';
 
 class AdminUsuariosPage extends StatefulWidget {
   @override
@@ -11,67 +9,37 @@ class AdminUsuariosPage extends StatefulWidget {
 }
 
 class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
-  Future<List<Map<String, dynamic>>> _fetchUsers() async {
-    final response = await http.get(Uri.parse(
-        'http://$serverIP/homecoming/homecomingbd_v2/lista_usuarios.php'));
 
-    if (response.statusCode == 200) {
-      List<dynamic> users = json.decode(response.body);
-      return List<Map<String, dynamic>>.from(users);
-    } else {
-      throw Exception('Failed to load users');
-    }
-  }
-
-  Future<void> _deleteUser(int userId) async {
-  final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/eliminar_usuario.php');
-  final response = await http.post(
-    url,
-    body: {
-      'id': userId.toString(),
-    },
-  );
-
-  if (response.statusCode == 200) {
-    // Manejar la respuesta del servidor
-    Map<String, dynamic> data = json.decode(response.body);
-    if (data.containsKey('success')) {
-      // Éxito: Usuario eliminado correctamente
+  Future<void> _deleteUser(Usuario usuario) async {
+    final result = await usuario.deleteUsuario(); // Llama al método deleteUsuario
+    if (result) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(data['success']),
+          content: Text('Usuario eliminado correctamente'),
           duration: Duration(seconds: 2),
         ),
       );
       // Actualizar la lista de usuarios después de la eliminación
-      setState(() {
-        // Aquí puedes recargar la lista de usuarios si es necesario
-      });
-    } else if (data.containsKey('error')) {
-      // Error: No se pudo eliminar el usuario
+      setState(() {});
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(data['error']),
+          content: Text('Error al eliminar usuario'),
           duration: Duration(seconds: 2),
         ),
       );
     }
-  } else {
-    // Handle error
-    print('Error al eliminar usuario: ${response.statusCode}');
   }
-}
-
-
+  Usuario? usuario;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Administrar Usuarios'),
       ),
-      drawer: MenuWidget(),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchUsers(),
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
+      body: FutureBuilder<List<Usuario>>(
+        future: Usuario.fetchUsuarios(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -101,12 +69,12 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                     return DataRow(
                       cells: [
                         DataCell(Text('${index + 1}')),
-                        DataCell(Text(user['nombre'])),
-                        DataCell(Text(user['primerApellido'])),
-                        DataCell(Text(user['segundoApellido'])),
-                        DataCell(Text(user['telefono'])),
-                        DataCell(Text(user['email'])),
-                        DataCell(Text(user['tipo_usuario'])),
+                        DataCell(Text(user.nombre)),
+                        DataCell(Text(user.primerApellido)),
+                        DataCell(Text(user.segundoApellido)),
+                        DataCell(Text(user.telefono)),
+                        DataCell(Text(user.email)),
+                        DataCell(Text(user.tipoUsuario)),
                         DataCell(
                           ElevatedButton(
                             onPressed: () {
@@ -143,8 +111,8 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                                       TextButton(
                                         child: Text('Aceptar'),
                                         onPressed: () {
-                                        Navigator.of(context).pop();
-                                          _deleteUser(int.parse(user['id'].toString()));
+                                          Navigator.of(context).pop();
+                                          _deleteUser(user);
                                         },
                                       ),
                                     ],

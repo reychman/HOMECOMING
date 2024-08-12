@@ -8,6 +8,7 @@ import 'package:homecoming/pages/menu/info_mascotas_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:homecoming/pages/menu/usuario.dart';
 
 class PaginaPrincipal extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     super.initState();
     futureMascotas = obtenerMascotas();
   }
-
+  Usuario? usuario;
   Future<List<Mascota>> obtenerMascotas() async {
     final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
@@ -60,12 +61,14 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
 
   @override
   Widget build(BuildContext context) {
+    final arguments = ModalRoute.of(context)!.settings.arguments;
+    final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
     return Scaffold(
       appBar: AppBar(
         backgroundColor:Colors.green[200],
         title: Text('Página Principal'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: usuario),
       body: FutureBuilder<List<Mascota>>(
         future: futureMascotas,
         builder: (context, snapshot) {

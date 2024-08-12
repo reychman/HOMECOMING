@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:homecoming/pages/admin_page.dart';
 import 'package:homecoming/pages/admin_usuarios_page.dart';
 import 'package:homecoming/pages/menu/perfil_usuario_page.dart';
@@ -14,22 +15,30 @@ import 'package:homecoming/pages/menu/quienes_somos_page.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/login/crear_usuario_page.dart';
 import 'package:homecoming/pages/login/recuperar_contra_page.dart';
+import 'package:homecoming/pages/menu/usuario_provider.dart';
 
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => UsuarioProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ChangeNotifierProvider(
+      create: (context) => UsuarioProvider(),
+      child: MaterialApp(
       debugShowCheckedModeBanner: false, //quitar el texto debug
       title: 'Homecoming',
       home: PaginaPrincipal(), // Temporary home for debugging
-      initialRoute: '/home',
+      initialRoute: '/inicio',
       routes: <String, WidgetBuilder>{
-        '/home': (BuildContext context) => PaginaPrincipal(),
+        '/inicio': (BuildContext context) => PaginaPrincipal(),
         '/quienes_somos': (BuildContext context) => QuienesSomosPage(),
         '/preguntas_frecuentes': (BuildContext context) => PreguntasFrecuentesPage(),
         '/mapa_busquedas': (BuildContext context) => MapaBusquedasPage(),
@@ -45,6 +54,7 @@ class MyApp extends StatelessWidget {
         '/perfilUsuario': (BuildContext context) => PerfilUsuario(),
         '/admin_usuarios': (BuildContext context) => AdminUsuariosPage(),
       },
-    );
+    )
+  );
   }
 }

@@ -1,9 +1,8 @@
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:crypto/crypto.dart';
-import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/menu/usuario.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:homecoming/pages/menu/usuario_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IniciarSesionPage extends StatefulWidget {
@@ -16,93 +15,44 @@ class IniciarSesionPage extends StatefulWidget {
 class _IniciarSesionPageState extends State<IniciarSesionPage> {
   TextEditingController controllerUser = TextEditingController();
   TextEditingController controllerPass = TextEditingController();
-  bool _contrasenaVisible = false; 
+  bool _contrasenaVisible = false;
   String mensaje = "";
+  
+  // Definir la variable usuario como una variable de estado
+  Usuario? usuario;
 
-  Future<void> login() async {
-    final passwordHash = sha1.convert(utf8.encode(controllerPass.text)).toString();
-    print('Nombre: ${controllerUser.text}');
-    print('Contraseña: $passwordHash');
-    print('Datos enviados: ${jsonEncode({"nombre": controllerUser.text, "contrasena": passwordHash})}');
+Future<void> login() async {
+  Usuario? usuarioLogeado = await Usuario.iniciarSesion(controllerUser.text, controllerPass.text);
 
-    final response = await http.post(
-      Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/login.php"),
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: jsonEncode({
-        "nombre": controllerUser.text,
-        "contrasena": passwordHash,
-      }),
-    );
+  if (usuarioLogeado != null && usuarioLogeado.id != null) {
+    // Almacena el userId en SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('userId', usuarioLogeado.id!); // Usa el operador `!` para deshacer el nullable
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    
-    try {
-      var datauser = json.decode(response.body);
+    // Actualizar el estado del usuario
+    Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);
 
-      if (datauser.containsKey('error')) {
-        setState(() {
-          mensaje = datauser['error'];
-        });
-      } else {
-        final tipoUsuario = datauser['tipo_usuario'];
-        final nombreUsuario = datauser['nombre'];
-        final email = datauser['email'];
-        final userId = datauser['id'];
-        final primerApellido = datauser['primerApellido'] ?? "";
-        final segundoApellido = datauser['segundoApellido'] ?? "";
-        final telefono = datauser['telefono'] ?? "";
-        final foto_portada = datauser['foto_portada'] ?? "";
-
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('nombre', nombreUsuario);
-        await prefs.setString('primerApellido', primerApellido);
-        await prefs.setString('segundoApellido', segundoApellido);
-        await prefs.setString('telefono', telefono);
-        await prefs.setString('tipo_usuario', tipoUsuario);
-        await prefs.setString('email', email);
-        await prefs.setString('foto_portada', foto_portada);
-        await prefs.setInt('id', userId);
-
-        switch (tipoUsuario) {
-          case 'administrador':
-            Navigator.of(context).pushReplacementNamed('/home');
-            break;
-          case 'propietario':
-            Navigator.of(context).pushReplacementNamed('/home');
-            break;
-          case 'refugio':
-            Navigator.of(context).pushReplacementNamed('/home');
-            break;
-          default:
-            setState(() {
-              mensaje = 'Tipo de usuario desconocido.';
-            });
-            break;
-        }
-      }
-    } catch (e) {
-      print('Error decoding JSON: $e');
-      setState(() {
-        mensaje = 'Error en el servidor. Intente nuevamente más tarde.';
-      });
-    }
+    // Navegar a la página correspondiente
+    Navigator.of(context).pushReplacementNamed('/inicio');
+  } else {
+    setState(() {
+      mensaje = 'Nombre de usuario o contraseña incorrectos.';
+    });
   }
+}
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Inicio de Sesión'),
+        title: const Text('Inicio de Sesión'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
       body: SingleChildScrollView(
         child: Container(
           height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
               begin: Alignment.topCenter,
@@ -112,24 +62,24 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.white,
                 radius: 50.0,
                 child: Icon(Icons.person, size: 50.0),
               ),
-              SizedBox(height: 20.0),
-              Text(
+              const SizedBox(height: 20.0),
+              const Text(
                 'Inicio de Sesión',
                 style: TextStyle(fontSize: 24.0, color: Colors.white),
               ),
-              SizedBox(height: 20.0),
+              const SizedBox(height: 20.0),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: TextField(
-                  key: Key('usernameField'),
+                  key: const Key('usernameField'),
                   controller: controllerUser,
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.person),
+                    prefixIcon: const Icon(Icons.person),
                     hintText: 'Nombre de usuario',
                     filled: true,
                     fillColor: Colors.white,
@@ -139,15 +89,15 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                   ),
                 ),
               ),
-              SizedBox(height: 20.0),
+              const SizedBox(height: 20.0),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: TextField(
-                  key: Key('passwordField'),
+                  key: const Key('passwordField'),
                   controller: controllerPass,
                   obscureText: !_contrasenaVisible,
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
                     hintText: 'Contraseña',
                     filled: true,
                     fillColor: Colors.white,
@@ -167,7 +117,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                   ),
                 ),
               ),
-              SizedBox(height: 20.0),
+              const SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: () async {
                   if (controllerUser.text.isEmpty || controllerPass.text.isEmpty) {
@@ -183,31 +133,31 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30.0),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 100.0, vertical: 15.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 15.0),
                 ),
-                child: Text('Ingresar'),
+                child: const Text('Ingresar'),
               ),
-              SizedBox(height: 20.0),
+              const SizedBox(height: 20.0),
               Text(
                 mensaje,
-                style: TextStyle(color: Colors.red, fontSize: 16.0),
+                style: const TextStyle(color: Colors.red, fontSize: 16.0),
               ),
-              SizedBox(height: 20.0),
+              const SizedBox(height: 20.0),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pushNamed('/RecuperarContra');
                 },
-                child: Text(
+                child: const Text(
                   '¿Olvidaste tu contraseña?',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-              SizedBox(height: 10.0),
+              const SizedBox(height: 10.0),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pushNamed('/CrearUsuario');
                 },
-                child: Text(
+                child: const Text(
                   'Crear una cuenta',
                   style: TextStyle(color: Colors.white),
                 ),

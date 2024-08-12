@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/editar_perfil_page.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
+import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/menu/usuario_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,52 +20,46 @@ class PerfilUsuario extends StatefulWidget {
 
 class _PerfilUsuarioState extends State<PerfilUsuario> {
   Uint8List? _imageBytes;
-  String? nombre;
-  String? email;
-  String? primerApellido;
-  String? segundoApellido;
-  String? telefono;
-  String? fotoPortada;
+  Usuario? _usuario;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadUserData(); 
   }
 
-  Future<void> _loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+Future<void> _loadUserData() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int? userId = prefs.getInt('userId');
+
+  if (userId != null) {
+    Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(userId);
     setState(() {
-      nombre = prefs.getString('nombre') ?? '';
-      email = prefs.getString('email') ?? '';
-      primerApellido = prefs.getString('primerApellido') ?? '';
-      segundoApellido = prefs.getString('segundoApellido') ?? '';
-      telefono = prefs.getString('telefono') ?? '';
-      fotoPortada = prefs.getString('foto_portada') ?? '';
+      _usuario = usuarioLogeado;
     });
+  } else {
+    print('No se encontró un userId en SharedPreferences');
   }
+}
 
   Future<void> _uploadImage(Uint8List imageBytes) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('id') ?? 0;
+    if (_usuario == null || _usuario!.id == null) return;
 
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://$serverIP/homecomingbd_v2/upload_image.php'),
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
     );
 
-    request.fields['id'] = userId.toString();
+    request.fields['id'] = _usuario!.id.toString();
     request.files.add(http.MultipartFile.fromBytes(
       'foto_portada',
       imageBytes,
-      contentType: MediaType('image', 'jpeg'), // Asegúrate de que el tipo es correcto
+      contentType: MediaType('image', 'jpeg'),
     ));
 
     try {
       final response = await request.send();
       final responseData = await response.stream.bytesToString();
-      print('Respuesta del servidor: $responseData');
-
       final jsonResponse = jsonDecode(responseData);
 
       if (jsonResponse['success'] != null) {
@@ -75,10 +71,18 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
           ),
         );
 
-        await prefs.setString('foto_portada', jsonResponse['foto_portada']);
         setState(() {
-          fotoPortada = jsonResponse['foto_portada'];
+          _usuario!.fotoPortada = jsonResponse['foto_portada'];
         });
+
+        if (_usuario!.id != null) {
+          await UsuarioProvider.actualizarFotoPortada(_usuario!.id!, jsonResponse['foto_portada']);
+        }
+
+        Navigator.of(context).pop(); 
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => PerfilUsuario(),
+        ));
       } else {
         print('Error al subir imagen: ${jsonResponse['error']}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +96,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       print('Error en _uploadImage: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al subir imagen catch'),
+          content: Text('Error al subir imagen'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -128,60 +132,56 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       appBar: AppBar(
         title: Text('Perfil'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()), 
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            GestureDetector(
-              onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey,
-                backgroundImage: fotoPortada != null && fotoPortada!.isNotEmpty
-                    ? NetworkImage(fotoPortada!)
-                    : _imageBytes != null
-                        ? MemoryImage(_imageBytes!) // Usa MemoryImage para mostrar la imagen cargada
-                        : AssetImage('assets/imagenes/avatar7.png'),
-                child: fotoPortada == null && _imageBytes == null
-                    ? Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                      )
-                    : null,
+        child: _usuario == null
+            ? CircularProgressIndicator()
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.grey,
+                      backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
+                          ? NetworkImage(_usuario!.fotoPortada!)
+                          : _imageBytes != null
+                              ? MemoryImage(_imageBytes!)
+                              : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
+                      child: _usuario!.fotoPortada == null && _imageBytes == null
+                          ? Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    _usuario!.nombre,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _usuario!.email,
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => EditarPerfilPage(user: _usuario!),
+                      ));
+                    },
+                    child: Text('Editar Perfil'),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _logout,
+                    child: Text('Cerrar Sesión'),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              nombre ?? '',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              email ?? '',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => EditarPerfilPage(user: {
-                    'nombre': nombre,
-                    'primerApellido': primerApellido,
-                    'segundoApellido': segundoApellido,
-                    'telefono': telefono,
-                    'email': email,
-                  }),
-                ));
-              },
-              child: Text('Editar Perfil'),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _logout,
-              child: Text('Cerrar Sesión'),
-            ),
-          ],
-        ),
       ),
     );
   }

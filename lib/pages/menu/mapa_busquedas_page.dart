@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
+import 'package:homecoming/pages/menu/usuario.dart';
 
 class MapaBusquedasPage extends StatefulWidget {
   @override
@@ -21,7 +22,7 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
     super.initState();
     _loadCustomMarker();
   }
-
+  Usuario? usuario;
   Future<void> _loadCustomMarker() async {
     _customIcon = await BitmapDescriptor.fromAssetImage(
       ImageConfiguration(size: Size(30, 30)), // Tamaño opcional de la imagen
@@ -48,7 +49,7 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
       appBar: AppBar(
         title: Text('Mapa de búsquedas'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
       body: _customIcon == null
           ? Center(child: CircularProgressIndicator())
           : GoogleMap(

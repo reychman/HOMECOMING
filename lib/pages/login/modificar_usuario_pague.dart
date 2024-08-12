@@ -1,12 +1,10 @@
-import 'dart:convert'; // Importar para usar jsonDecode
 import 'package:flutter/material.dart';
-import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/admin_usuarios_page.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'package:http/http.dart' as http;
-import 'package:homecoming/pages/admin_usuarios_page.dart'; // Importa la página a la que quieres redirigir
+import 'package:homecoming/pages/menu/usuario.dart';
 
 class ModificarUsuarioPage extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final Usuario user;
 
   const ModificarUsuarioPage({Key? key, required this.user}) : super(key: key);
 
@@ -21,69 +19,64 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   String _tipoUsuario = '';
-
+  Usuario? usuario;
   @override
   void initState() {
     super.initState();
-    _nombreController.text = widget.user['nombre'];
-    _primerApellidoController.text = widget.user['primerApellido'];
-    _segundoApellidoController.text = widget.user['segundoApellido'];
-    _telefonoController.text = widget.user['telefono'];
-    _emailController.text = widget.user['email'];
-    _tipoUsuario = widget.user['tipo_usuario'];
+    _nombreController.text = widget.user.nombre;
+    _primerApellidoController.text = widget.user.primerApellido;
+    _segundoApellidoController.text = widget.user.segundoApellido;
+    _telefonoController.text = widget.user.telefono;
+    _emailController.text = widget.user.email;
+    _tipoUsuario = widget.user.tipoUsuario;
   }
 
-  Future<void> _updateUser() async {
-    final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/actualizar_usuario.php');
-    final response = await http.post(
-      url,
-      body: {
-        'id': widget.user['id'].toString(),
-        'nombre': _nombreController.text,
-        'primerApellido': _primerApellidoController.text,
-        'segundoApellido': _segundoApellidoController.text,
-        'telefono': _telefonoController.text,
-        'email': _emailController.text,
-        'tipo_usuario': _tipoUsuario.isNotEmpty ? _tipoUsuario : '',
-      },
+Future<void> _updateUser() async {
+  final nombre = _nombreController.text.toUpperCase();
+  final primerApellido = _primerApellidoController.text.toUpperCase();
+  final segundoApellido = _segundoApellidoController.text.toUpperCase();
+  final telefono = _telefonoController.text;
+  final email = _emailController.text;
+  final tipoUsuario = _tipoUsuario;
+
+  final updatedUser = Usuario(
+    id: widget.user.id,
+    nombre: nombre,
+    primerApellido: primerApellido,
+    segundoApellido: segundoApellido,
+    telefono: telefono,
+    email: email,
+    contrasena: widget.user.contrasena, // Mantén la contraseña actual si no se actualiza
+    tipoUsuario: tipoUsuario,
+    fotoPortada: widget.user.fotoPortada,
+    fechaCreacion: widget.user.fechaCreacion,
+    fechaModificacion: DateTime.now(), // Actualiza la fecha
+    estado: widget.user.estado,
+  );
+
+  final result = await updatedUser.updateUsuario(); // Llama al método updateUsuario
+
+  if (result) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Datos Actualizados Correctamente'),
+        duration: Duration(seconds: 2),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      if (responseData['success'] != null) {
-        // Handle successful update
-        print('Usuario actualizado correctamente');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Datos Actualizados Correctamente'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        // Navegar a la página de administración de usuarios
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => AdminUsuariosPage(),
-        ));
-      } else {
-        // Handle error response from the server
-        print('Error al actualizar usuario: ${responseData['error']}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${responseData['error']}'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      // Handle HTTP error
-      print('Error al actualizar usuario: ${response.body}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al actualizar usuario'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => AdminUsuariosPage()),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al actualizar usuario'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +84,7 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
       appBar: AppBar(
         title: Text('Modificar Usuario'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(

@@ -5,50 +5,28 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 require_once('config.php');
 
-$data = json_decode(file_get_contents("php://input"), true);
+$input = json_decode(file_get_contents('php://input'), true);
 
-if (isset($data['contrasena']) && (isset($data['nombre']) || isset($data['email']))) {
-    $contrasena = $data['contrasena'];
-    $nombre = isset($data['nombre']) ? $data['nombre'] : null;
-    $email = isset($data['email']) ? $data['email'] : null;
+if (isset($input['nombre']) && isset($input['contrasena'])) {
+    $nombre = $input['nombre'];
+    $contrasena = $input['contrasena'];
 
-    $sql = "SELECT id, nombre, primerApellido, segundoApellido, telefono, contrasena, email, tipo_usuario, foto_portada FROM usuarios WHERE nombre = ? OR email = ?";
-    if ($stmt = $conexion->prepare($sql)) {
-        $stmt->bind_param("ss", $nombre, $email);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
+    error_log("Nombre recibido: $nombre");
+    error_log("Contraseña recibida: $contrasena");
 
-        if ($resultado->num_rows > 0) {
-            $usuario = $resultado->fetch_assoc();
-            $hashedPassword = $usuario['contrasena'];
+    $query = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param('ss', $nombre, $contrasena);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-            if ($hashedPassword === $contrasena) {
-                $response = array(
-                    'id' => $usuario['id'],
-                    'nombre' => $usuario['nombre'],
-                    'primerApellido' => $usuario['primerApellido'] ?? "",
-                    'segundoApellido' => $usuario['segundoApellido'] ?? "",
-                    'telefono' => $usuario['telefono'] ?? "",
-                    'email' => $usuario['email'],
-                    'tipo_usuario' => $usuario['tipo_usuario'],
-                    'foto_portada' => $usuario['foto_portada'] ?? "",
-                );
-                echo json_encode($response);
-            } else {
-                $response = array('error' => 'Contraseña incorrecta');
-                echo json_encode($response);
-            }
-        } else {
-            $response = array('error' => 'Nombre de usuario o email no encontrado');
-            echo json_encode($response);
-        }
-
-        $stmt->close();
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        echo json_encode($user);
+    } else {
+        echo json_encode(['error' => 'Nombre de usuario o contraseña incorrectos.']);
     }
 } else {
-    $response = array('error' => 'Datos incompletos');
-    echo json_encode($response);
+    echo json_encode(['error' => 'Datos incompletos.']);
 }
-
-$conexion->close();
 ?>

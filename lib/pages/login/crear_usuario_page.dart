@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
-import 'package:homecoming/ip.dart';
-import 'package:homecoming/pages/login/verificar_refugio_page.dart';
-import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'package:homecoming/pages/propietario_page.dart';
+import 'package:homecoming/pages/menu/home_page.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:homecoming/pages/menu/menu_widget.dart';
+import 'package:homecoming/pages/menu/usuario.dart';
 
 class CrearUsuarioPage extends StatefulWidget {
   @override
@@ -20,25 +18,23 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController contrasenaController = TextEditingController();
   final TextEditingController verificarContrasenaController = TextEditingController();
-  bool _passwordVisible1 = false;
-  bool _passwordVisible2 = false;
+  bool _contrasenaVisible1 = false;
+  bool _contrasenaVisible2 = false;
   String? tipoUsuario;
   String mensaje = "";
-
+  Usuario? usuario;
+  
   Future<void> crearUsuario() async {
-    if (nombreController.text.isEmpty ||
-        primerApellidoController.text.isEmpty ||
-        telefonoController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        contrasenaController.text.isEmpty ||
-        verificarContrasenaController.text.isEmpty ||
-        tipoUsuario == null) {
+    // Validaciones de campos obligatorios
+    if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty || telefonoController.text.isEmpty || emailController.text.isEmpty ||contrasenaController.text.isEmpty ||
+        verificarContrasenaController.text.isEmpty || tipoUsuario == null) {
       setState(() {
         mensaje = "Todos los campos son obligatorios";
       });
       return;
     }
 
+    // Validaciones de longitud de contraseña
     if (contrasenaController.text.length < 6 || verificarContrasenaController.text.length < 6) {
       setState(() {
         mensaje = "Las contraseñas deben tener al menos 6 caracteres";
@@ -46,6 +42,7 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
       return;
     }
 
+    // Validaciones de coincidencia de contraseñas
     if (contrasenaController.text != verificarContrasenaController.text) {
       setState(() {
         mensaje = "Verifique que ambas contraseñas sean iguales";
@@ -53,46 +50,33 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
       return;
     }
 
+    // Encriptar contraseña con SHA-1
     final passwordHash = sha1.convert(utf8.encode(contrasenaController.text)).toString();
 
-    final response = await http.post(
-      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/crear_usuario.php'),
-      body: {
-        "nombre": nombreController.text,
-        "primerApellido": primerApellidoController.text,
-        "segundoApellido": segundoApellidoController.text,
-        "telefono": telefonoController.text,
-        "email": emailController.text,
-        "contrasena": passwordHash,
-        "tipo_usuario": tipoUsuario,
-      },
+    // Crear objeto Usuario
+    Usuario nuevoUsuario = Usuario(
+      nombre: nombreController.text.toUpperCase(),
+      primerApellido: primerApellidoController.text.toUpperCase(),
+      segundoApellido: segundoApellidoController.text.toUpperCase(),
+      telefono: telefonoController.text,
+      email: emailController.text,
+      contrasena: passwordHash,
+      tipoUsuario: tipoUsuario!,
     );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    // Llamar al método para crear usuario
+    bool success = await Usuario.createUsuario(nuevoUsuario);
 
-    try {
-      var datauser = json.decode(response.body);
-
-      if (datauser.containsKey('error')) {
-        setState(() {
-          mensaje = datauser['error'];
-        });
-      } else {
-        if (tipoUsuario == 'propietario') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => Propietario()),
-          );
-        } else if (tipoUsuario == 'refugio') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => VerificarRefugioPage(usuarioId: datauser['id'])),
-          );
-        }
+    if (success) {
+      // Redirigir según el tipo de usuario
+      if (tipoUsuario == 'propietario' || tipoUsuario == 'refugio' || tipoUsuario == 'administrador') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => PaginaPrincipal()),
+        );
       }
-    } catch (e) {
-      print('Error decoding JSON: $e');
+    } else {
       setState(() {
-        mensaje = 'Error en el servidor. Intente nuevamente más tarde.';
+        mensaje = "Error al crear el usuario";
       });
     }
   }
@@ -103,7 +87,7 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
       appBar: AppBar(
         title: Text('Crear Usuario'),
       ),
-      drawer: MenuWidget(),
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -151,17 +135,17 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
               SizedBox(height: 10.0),
               TextField(
                 controller: contrasenaController,
-                obscureText: !_passwordVisible1,
+                obscureText: !_contrasenaVisible1,
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   border: OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _passwordVisible1 ? Icons.visibility : Icons.visibility_off,
+                      _contrasenaVisible1 ? Icons.visibility : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
-                        _passwordVisible1 = !_passwordVisible1;
+                        _contrasenaVisible1 = !_contrasenaVisible1;
                       });
                     },
                   ),
@@ -170,17 +154,17 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
               SizedBox(height: 10.0),
               TextField(
                 controller: verificarContrasenaController,
-                obscureText: !_passwordVisible2,
+                obscureText: !_contrasenaVisible2,
                 decoration: InputDecoration(
                   labelText: 'Verificar Contraseña',
                   border: OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _passwordVisible2 ? Icons.visibility : Icons.visibility_off,
+                      _contrasenaVisible2 ? Icons.visibility : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
-                        _passwordVisible2 = !_passwordVisible2;
+                        _contrasenaVisible2 = !_contrasenaVisible2;
                       });
                     },
                   ),

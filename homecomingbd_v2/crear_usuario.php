@@ -15,9 +15,9 @@ if ($conexion->connect_error) {
 }
 
 // Obtener los datos del POST
-$nombre = $_POST['nombre'];
-$primerApellido = $_POST['primerApellido'];
-$segundoApellido = $_POST['segundoApellido'];
+$nombre = strtoupper($_POST['nombre']);
+$primerApellido = strtoupper($_POST['primerApellido']);
+$segundoApellido = strtoupper($_POST['segundoApellido']);
 $telefono = $_POST['telefono'];
 $email = $_POST['email'];
 $contrasena = $_POST['contrasena']; // Asegúrate de que la contraseña llegue ya encriptada con SHA-1
@@ -60,7 +60,7 @@ if (!$stmt) {
 $stmt->bind_param("sssssss", $nombre, $primerApellido, $segundoApellido, $telefono, $email, $contrasena, $tipo_usuario);
 
 if ($stmt->execute()) {
-    echo json_encode(array('success' => 'Usuario creado exitosamente'));
+    echo json_encode(array('success' => true));
 } else {
     echo json_encode(array('error' => 'Error al crear el usuario: ' . $stmt->error));
 }
