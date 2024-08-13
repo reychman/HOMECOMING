@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
-import 'package:homecoming/pages/menu/home_page.dart';
+import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'dart:convert';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:http/http.dart' as http;
 
 class CrearUsuarioPage extends StatefulWidget {
   @override
@@ -26,7 +28,7 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
   
   Future<void> crearUsuario() async {
     // Validaciones de campos obligatorios
-    if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty || telefonoController.text.isEmpty || emailController.text.isEmpty ||contrasenaController.text.isEmpty ||
+    if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty || telefonoController.text.isEmpty || emailController.text.isEmpty || contrasenaController.text.isEmpty ||
         verificarContrasenaController.text.isEmpty || tipoUsuario == null) {
       setState(() {
         mensaje = "Todos los campos son obligatorios";
@@ -68,17 +70,59 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
     bool success = await Usuario.createUsuario(nuevoUsuario);
 
     if (success) {
-      // Redirigir según el tipo de usuario
-      if (tipoUsuario == 'propietario' || tipoUsuario == 'refugio' || tipoUsuario == 'administrador') {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => PaginaPrincipal()),
-        );
+      // Enviar correo de verificación
+      bool correoEnviado = await enviarCorreoVerificacion(nuevoUsuario.email);
+
+      if (correoEnviado) {
+        mostrarDialogoExito();
+      } else {
+        setState(() {
+          mensaje = "Error al enviar el correo de verificación.";
+        });
       }
     } else {
       setState(() {
         mensaje = "Error al crear el usuario";
       });
     }
+  }
+
+  Future<bool> enviarCorreoVerificacion(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/enviar_verificacion.php'),
+        body: {'email': email},
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error al enviar correo de verificación: $e');
+      return false;
+    }
+  }
+
+  void mostrarDialogoExito() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Verificación de Correo Electrónico'),
+          content: Text('Se ha enviado un correo de verificación. Por favor, verifica tu bandeja de entrada para activar tu cuenta.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Aceptar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => IniciarSesionPage()),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

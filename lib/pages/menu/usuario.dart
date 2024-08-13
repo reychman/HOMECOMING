@@ -49,9 +49,10 @@ class Usuario {
         fechaModificacion = null;
 
   // Crear usuario
-  static Future<bool> createUsuario(Usuario usuario) async {
-    const url = 'http://$serverIP/homecoming/homecomingbd_v2/crear_usuario.php';
+static Future<bool> createUsuario(Usuario usuario) async {
+  const url = 'http://$serverIP/homecoming/homecomingbd_v2/crear_usuario.php';
 
+  try {
     final response = await http.post(
       Uri.parse(url),
       body: {
@@ -65,13 +66,20 @@ class Usuario {
       },
     );
 
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['success'] == true;
     } else {
       return false;
     }
+  } catch (e) {
+    print('Error: $e');
+    return false;
   }
+}
 
   // Método para iniciar sesión
   static Future<Usuario?> iniciarSesion(String nombre, String contrasena) async {

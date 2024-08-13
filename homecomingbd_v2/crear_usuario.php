@@ -2,7 +2,6 @@
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization');
-
 header('Content-Type: application/json');
 
 // Incluir configuración de la base de datos
@@ -49,7 +48,7 @@ if ($stmt->num_rows > 0) {
 }
 
 // Insertar el nuevo usuario en la base de datos
-$sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, Now())";
+$sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, ?, Now(),0)";
 $stmt = $conexion->prepare($sql);
 
 if (!$stmt) {

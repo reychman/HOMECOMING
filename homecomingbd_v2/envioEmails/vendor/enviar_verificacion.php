@@ -46,11 +46,11 @@ try {
                 $mail->addAddress($email);
 
                 $mail->isHTML(true);
-                $mail->Subject = 'Restablecer Contraseña';
+                $mail->Subject = 'Verificacion Email';
 
-                $file = fopen("bodyemail.html", "r");
+                $file = fopen("bodyVerificacion.html", "r");
                 if ($file) {
-                    $str = fread($file, filesize("bodyemail.html"));
+                    $str = fread($file, filesize("bodyVerificacion.html"));
                     fclose($file);
 
                     $str = str_replace("{email}", $email, $str);
