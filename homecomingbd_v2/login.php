@@ -14,7 +14,7 @@ if (isset($input['nombre']) && isset($input['contrasena'])) {
     error_log("Nombre recibido: $nombre");
     error_log("Contraseña recibida: $contrasena");
 
-    $query = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ?";
+    $query = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ? AND estado = 1";
     $stmt = $conexion->prepare($query);
     $stmt->bind_param('ss', $nombre, $contrasena);
     $stmt->execute();

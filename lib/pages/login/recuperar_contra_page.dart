@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/menu/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -27,19 +28,39 @@ class _RecuperarContraPageState extends State<RecuperarContraPage> {
 
       final responseData = json.decode(response.body);
       if (responseData.containsKey('success')) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Correo enviado correctamente'),
-        ));
+        mostrarDialogoExito();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: ${responseData['error']}'),
         ));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-      ));
+      mostrarDialogoExito();
     }
+  }
+
+  void mostrarDialogoExito() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Correo Enviado'),
+          content: Text('Correo enviado correctamente, revise su bandeja de entrada'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Aceptar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el AlertDialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => PaginaPrincipal()), // Asegúrate de reemplazar con tu página principal
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
