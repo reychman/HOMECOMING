@@ -25,22 +25,19 @@ Future<void> login() async {
   Usuario? usuarioLogeado = await Usuario.iniciarSesion(controllerUser.text, controllerPass.text);
 
   if (usuarioLogeado != null && usuarioLogeado.id != null) {
-    // Almacena el userId en SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('userId', usuarioLogeado.id!); // Usa el operador `!` para deshacer el nullable
+    await prefs.setInt('userId', usuarioLogeado.id!);
+    await prefs.setBool('isLoggedIn', true); // Nueva bandera
 
-    // Actualizar el estado del usuario
     Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);
-
-    // Navegar a la página correspondiente
     Navigator.of(context).pushReplacementNamed('/inicio');
-  } 
-  else {
+  } else {
     setState(() {
       mensaje = 'Nombre de usuario o contraseña incorrectos.';
     });
   }
 }
+
 
 
   @override

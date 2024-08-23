@@ -35,12 +35,11 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
-  Future<Map<String, String>> obtenerDatosUsuario() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String nombre = prefs.getString('nombre') ?? '';
-    String tipoUsuario = prefs.getString('tipo_usuario') ?? '';
-    return {'nombre': nombre, 'tipo_usuario': tipoUsuario};
-  }
+ Future<bool> usuarioEstaLogeado() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
+}
+
 
   String obtenerMensajeFecha(DateTime fechaPerdida) {
     final hoy = DateTime.now();
@@ -179,14 +178,13 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
           }
         },
       ),
-      floatingActionButton: FutureBuilder<Map<String, String>>(
-        future: obtenerDatosUsuario(),
+      floatingActionButton: FutureBuilder<bool>(
+        future: usuarioEstaLogeado(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return SizedBox(); // Placeholder while loading
+            return SizedBox(); // Placeholder mientras se carga
           }
-          final userData = snapshot.data!;
-          final bool usuarioLogeado = userData['nombre']!.isNotEmpty;
+          final bool usuarioLogeado = snapshot.data ?? false;
 
           return FloatingActionButton(
             onPressed: () {

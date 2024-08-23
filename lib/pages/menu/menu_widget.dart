@@ -13,6 +13,7 @@ class MenuWidget extends StatelessWidget {
     // Elimina los datos del usuario de SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId'); // Elimina el userId almacenado
+    await prefs.setBool('isLoggedIn', false); // Nueva bandera
 
     // Actualiza el estado del usuario en el UsuarioProvider
     Provider.of<UsuarioProvider>(context, listen: false).setUsuario(Usuario.vacio());
