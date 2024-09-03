@@ -35,10 +35,10 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
- Future<bool> usuarioEstaLogeado() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
-}
+  Future<bool> usuarioEstaLogeado() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
+  }
 
 
   String obtenerMensajeFecha(DateTime fechaPerdida) {
@@ -51,8 +51,8 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
       return 'Ayer';
     } else if (diferenciaDias <= 3) {
       return 'Hace un par de días';
-    } else if (diferenciaDias <= 7) {
-      return 'Hace semanas';
+    } else if (diferenciaDias == 7) {
+      return 'Hace 1 semana';
     } else {
       return 'Hace más de una semana';
     }
@@ -137,14 +137,17 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              mascota.foto.isNotEmpty
-                                  ? Image.asset(
-                                      'assets/imagenes/fotos_mascotas/${mascota.foto}',
-                                      width: 400,
-                                      height: 400,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Icon(Icons.pets, size: 200),
+                              mascota.foto.isNotEmpty && mascota.foto != 'null'
+                              ? Image.asset(
+                                  'assets/imagenes/fotos_mascotas/${mascota.foto}',
+                                  width: 400,
+                                  height: 400,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(Icons.error, size: 200, color: Colors.red); // Muestra un icono de error si falla
+                                  },
+                                )
+                              : Icon(Icons.pets, size: 200, color: Colors.grey),
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Text(

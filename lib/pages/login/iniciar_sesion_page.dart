@@ -25,7 +25,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
 
     if (usuarioLogeado != null && usuarioLogeado.id != null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('userId', usuarioLogeado.id!);
+      await prefs.setInt('usuario_id', usuarioLogeado.id!);
       await prefs.setBool('isLoggedIn', true);
 
       Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);

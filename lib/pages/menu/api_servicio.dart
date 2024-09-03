@@ -10,6 +10,6 @@ Future<Reporte> fetchReporte() async {
   if (response.statusCode == 200) {
     return Reporte.fromJson(jsonDecode(response.body));
   } else {
-    throw Exception('Failed to load report');
+    throw Exception('No se pudo cargar el informe');
   }
 }

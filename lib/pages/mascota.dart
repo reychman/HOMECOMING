@@ -9,6 +9,8 @@ class Mascota {
   final String estado;
   final String descripcion;
   final String foto;
+  final double? latitud; // Nuevo campo
+  final double? longitud; // Nuevo campo
   final String nombreDueno;
   final String emailDueno;
   final String telefonoDueno;
@@ -24,6 +26,8 @@ class Mascota {
     required this.estado,
     required this.descripcion,
     required this.foto,
+    this.latitud, // Nuevo campo
+    this.longitud, // Nuevo campo
     required this.nombreDueno,
     required this.emailDueno,
     required this.telefonoDueno,
@@ -41,6 +45,8 @@ class Mascota {
       estado: json['estado'],
       descripcion: json['descripcion'],
       foto: json['foto'],
+      latitud: json['latitud'] != null ? json['latitud'].toDouble() : null,
+      longitud: json['longitud'] != null ? json['longitud'].toDouble() : null,
       nombreDueno: json['nombre_dueno'],
       emailDueno: json['email_dueno'],
       telefonoDueno: json['telefono_dueno'],
