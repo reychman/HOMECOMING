@@ -17,29 +17,57 @@ class PaginaPrincipal extends StatefulWidget {
 
 class _PaginaPrincipalState extends State<PaginaPrincipal> {
   late Future<List<Mascota>> futureMascotas;
+  List<Mascota> _mascotas = []; // Lista de mascotas completa
+  List<Mascota> _mascotasFiltradas = []; // Lista filtrada para mostrar
+  TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     futureMascotas = obtenerMascotas();
+    _searchController.addListener(_onSearchChanged); // Añadir listener al controlador
   }
+
+  @override
+  void dispose() {
+    _searchController.dispose(); // Liberar recursos del controlador
+    super.dispose();
+  }
+
   Usuario? usuario;
+
   Future<List<Mascota>> obtenerMascotas() async {
     final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
-      return jsonResponse.map((data) => Mascota.fromJson(data)).toList();
+      List<Mascota> mascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
+      setState(() {
+        _mascotas = mascotas;
+        _mascotasFiltradas = mascotas;
+      });
+      return mascotas;
     } else {
       throw Exception('Error al cargar las mascotas');
     }
+  }
+
+  void _onSearchChanged() {
+    String searchQuery = _searchController.text.toLowerCase();
+
+    setState(() {
+      _mascotasFiltradas = _mascotas.where((mascota) {
+        final nombreMascota = mascota.nombre.toLowerCase();
+
+        return nombreMascota.contains(searchQuery);
+      }).toList();
+    });
   }
 
   Future<bool> usuarioEstaLogeado() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
   }
-
 
   String obtenerMensajeFecha(DateTime fechaPerdida) {
     final hoy = DateTime.now();
@@ -64,122 +92,141 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:Colors.green[200],
+        backgroundColor: Colors.green[200],
         title: Text('Página Principal'),
       ),
       drawer: MenuWidget(usuario: usuario),
-      body: FutureBuilder<List<Mascota>>(
-        future: futureMascotas,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No se encontraron mascotas.'));
-          } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final mascota = snapshot.data![index];
-                final fechaPerdida = DateTime.parse(mascota.fechaPerdida);
-                final mensajeFecha = obtenerMensajeFecha(fechaPerdida);
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar mascota o propietario',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Mascota>>(
+              future: futureMascotas,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('No se encontraron mascotas.'));
+                } else {
+                  return ListView.builder(
+                    itemCount: _mascotasFiltradas.length,
+                    itemBuilder: (context, index) {
+                      final mascota = _mascotasFiltradas[index];
+                      final fechaPerdida = DateTime.parse(mascota.fechaPerdida);
+                      final mensajeFecha = obtenerMensajeFecha(fechaPerdida);
 
-                return Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => InfoMascotasPage(mascota: mascota),
-                      ));
-                    },
-                    child: Card(
-                      margin: EdgeInsets.all(10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (mascota.estado == 'encontrado')
-                            Container(
-                              width: 400,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  topRight: Radius.circular(10),
-                                ),
-                              ),
-                              child: Text(
-                                '¡Mascota reunida con su familia!',
-                                style: TextStyle(color: Colors.white),
-                                textAlign: TextAlign.center,
-                              ),
+                      return Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => InfoMascotasPage(mascota: mascota),
+                            ));
+                          },
+                          child: Card(
+                            margin: EdgeInsets.all(10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          if (mascota.estado == 'perdido')
-                            Container(
-                              width: 400,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Color.fromARGB(255, 206, 71, 71),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  topRight: Radius.circular(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (mascota.estado == 'encontrado')
+                                  Container(
+                                    width: 400,
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(10),
+                                        topRight: Radius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '¡Mascota reunida con su familia!',
+                                      style: TextStyle(color: Colors.white),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                if (mascota.estado == 'perdido')
+                                  Container(
+                                    width: 400,
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Color.fromARGB(255, 206, 71, 71),
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(10),
+                                        topRight: Radius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '¡Hay una familia que busca a esta mascota!',
+                                      style: TextStyle(color: Colors.white),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    mascota.foto.isNotEmpty && mascota.foto != 'null'
+                                        ? Image.asset(
+                                            'assets/imagenes/fotos_mascotas/${mascota.foto}',
+                                            width: 400,
+                                            height: 400,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(Icons.error, size: 200, color: Colors.red); // Muestra un icono de error si falla
+                                            },
+                                          )
+                                        : Icon(Icons.pets, size: 200, color: Colors.grey),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        mascota.nombre,
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: Text(
+                                        '${mascota.fechaPerdida}  -  ${mensajeFecha}',
+                                        style: TextStyle(color: Color.fromARGB(255, 53, 53, 53), fontSize: 14),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                      child: Text(
+                                        mascota.lugarPerdida,
+                                        style: TextStyle(color: const Color.fromARGB(255, 53, 53, 53), fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              child: Text(
-                                '¡Hay una familia que busca a esta mascota!',
-                                style: TextStyle(color: Colors.white),
-                                textAlign: TextAlign.center,
-                              ),
+                              ],
                             ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              mascota.foto.isNotEmpty && mascota.foto != 'null'
-                              ? Image.asset(
-                                  'assets/imagenes/fotos_mascotas/${mascota.foto}',
-                                  width: 400,
-                                  height: 400,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(Icons.error, size: 200, color: Colors.red); // Muestra un icono de error si falla
-                                  },
-                                )
-                              : Icon(Icons.pets, size: 200, color: Colors.grey),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  mascota.nombre,
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  '${mascota.fechaPerdida}  -  ${mensajeFecha}',
-                                  style: TextStyle(color: Color.fromARGB(255, 53, 53, 53), fontSize: 14),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                                child: Text(
-                                  mascota.lugarPerdida,
-                                  style: TextStyle(color: const Color.fromARGB(255, 53, 53, 53), fontSize: 14),
-                                ),
-                              ),
-                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                        ),
+                      );
+                    },
+                  );
+                }
               },
-            );
-          }
-        },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FutureBuilder<bool>(
         future: usuarioEstaLogeado(),
