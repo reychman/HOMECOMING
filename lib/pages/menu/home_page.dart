@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
-import 'package:homecoming/pages/menu/crear_publicacion_page.dart';
-import 'package:homecoming/pages/menu/mascota.dart';
+import 'package:homecoming/pages/crear_publicacion_page.dart';
+import 'package:homecoming/pages/mascota.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/menu/info_mascotas_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/usuario.dart';
 
 class PaginaPrincipal extends StatefulWidget {
   @override

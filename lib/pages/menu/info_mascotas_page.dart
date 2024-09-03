@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:homecoming/pages/menu/mascota.dart';
+import 'package:homecoming/pages/mascota.dart';
 
 class InfoMascotasPage extends StatelessWidget {
   final Mascota mascota;

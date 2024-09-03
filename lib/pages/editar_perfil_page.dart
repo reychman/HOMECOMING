@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'package:homecoming/pages/menu/perfil_usuario_page.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/login/perfil_usuario_page.dart';
+import 'package:homecoming/pages/usuario.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final Usuario user;

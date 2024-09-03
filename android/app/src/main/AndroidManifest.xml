@@ -1,11 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Agrega los permisos de ubicación aquí, fuera de la etiqueta <application> -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="homecoming"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- Agrega el permiso de ubicación aquí -->
-        <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-        <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -21,10 +24,10 @@
                 to determine the Window background behind the Flutter UI. -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            <meta-data
                 android:name="com.google.android.geo.API_KEY"
                 android:value="AIzaSyCnFDR2hRal-En7zAmC5mWCRQAutwqu5d0"/>
-            />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -36,6 +39,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
+
     <!-- Required to query activities that can process text, see:
         https://developer.android.com/training/package-visibility and
         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/login/modificar_usuario_pague.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/usuario.dart';
 
 class AdminUsuariosPage extends StatefulWidget {
   @override

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/usuario.dart';
 
 class FamiliasReunidasPage extends StatelessWidget {
   @override

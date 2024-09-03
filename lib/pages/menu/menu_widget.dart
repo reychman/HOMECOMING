@@ -1,7 +1,7 @@
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
-import 'package:homecoming/pages/menu/usuario_provider.dart';
+import 'package:homecoming/pages/usuario.dart';
+import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuWidget extends StatelessWidget {
@@ -92,10 +92,10 @@ class MenuWidget extends StatelessWidget {
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.payment),
-                  title: Text('Planes'),
+                  leading: Icon(Icons.picture_as_pdf),
+                  title: Text('Reportes'),
                   onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/planes');
+                    Navigator.of(context).pushReplacementNamed('/reportes');
                   },
                 ),
                 if (!usuarioLogeado)

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
-import 'package:homecoming/pages/menu/usuario.dart';
+import 'package:homecoming/pages/usuario.dart';
 import 'package:http/http.dart' as http;
 
 class UsuarioProvider with ChangeNotifier {

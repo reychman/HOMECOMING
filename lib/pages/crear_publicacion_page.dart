@@ -5,7 +5,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:intl/intl.dart'; // Para el formato de la fecha
+import 'package:intl/intl.dart';
+
 
 class CrearPublicacionPage extends StatefulWidget {
   @override
@@ -38,62 +39,52 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   }
 
   Future<void> _enviarDatos() async {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedImage == null) {
-        _showSnackbar('Por favor seleccione una imagen');
-        return;
-      }
+  if (_formKey.currentState!.validate()) {
+    if (_selectedImage == null) {
+      _showSnackbar('Por favor seleccione una imagen');
+      return;
+    }
 
-      // Primero sube la imagen
-      final imageUploadRequest = http.MultipartRequest(
-        'POST', Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php')
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/publicar_mascota.php'),
       );
-      imageUploadRequest.files.add(await http.MultipartFile.fromPath('foto', _selectedImage!.path));
-      imageUploadRequest.fields['usuario_id'] = usuarioId;
 
-      final streamedResponse = await imageUploadRequest.send();
+      request.files.add(await http.MultipartFile.fromPath('foto', _selectedImage!.path));
+
+      request.fields['nombre'] = _nombreController.text;
+      request.fields['especie'] = _especie;
+      request.fields['raza'] = _razaController.text;
+      request.fields['sexo'] = _sexo;
+      request.fields['fecha_perdida'] = _fechaPerdidaController.text;
+      request.fields['lugar_perdida'] = _lugarPerdidaController.text;
+      request.fields['descripcion'] = _descripcionController.text;
+      request.fields['usuario_id'] = usuarioId;
+
+      final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
         if (jsonResponse['success']) {
-          final imageName = jsonResponse['file_name'];
-
-          // Después guarda la información de la mascota
-          final response = await http.post(
-            Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/agregar_mascota.php'),
-            body: {
-              'nombre': _nombreController.text,
-              'especie': _especie,
-              'raza': _razaController.text,
-              'sexo': _sexo,
-              'fecha_perdida': _fechaPerdidaController.text,
-              'lugar_perdida': _lugarPerdidaController.text,
-              'descripcion': _descripcionController.text,
-              'foto': imageName,
-              'usuario_id': usuarioId,
-            },
-          );
-
-          if (response.statusCode == 200) {
-            final jsonResponse = json.decode(response.body);
-            if (jsonResponse['success']) {
-              _showSnackbar('Mascota registrada con éxito');
-              Navigator.of(context).pop();
-            } else {
-              _showSnackbar('Error al registrar la mascota');
-            }
-          } else {
-            _showSnackbar('Error al conectar con el servidor');
-          }
+          _showSnackbar('Mascota registrada con éxito');
+          Navigator.of(context).pop();
         } else {
-          _showSnackbar('Error al subir la imagen');
+          _showSnackbar('Error: ${jsonResponse['message']}');
         }
       } else {
         _showSnackbar('Error al conectar con el servidor');
+        print('Error: ${response.statusCode} - ${response.reasonPhrase}');
+        print('Response body: ${response.body}');
       }
+    } catch (e) {
+      _showSnackbar('Ocurrió un error: $e');
+      print('Exception: $e');
     }
   }
+}
+
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
