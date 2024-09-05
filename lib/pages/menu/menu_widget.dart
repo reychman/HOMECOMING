@@ -91,13 +91,14 @@ class MenuWidget extends StatelessWidget {
                     Navigator.of(context).pushReplacementNamed('/familias_reunidas');
                   },
                 ),
-                ListTile(
-                  leading: Icon(Icons.picture_as_pdf),
-                  title: Text('Reportes'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/reportes');
-                  },
-                ),
+                if (usuarioLogeado && esAdministrador)
+                  ListTile(
+                    leading: Icon(Icons.picture_as_pdf),
+                    title: Text('Reportes'),
+                    onTap: () {
+                      Navigator.of(context).pushReplacementNamed('/reportes');
+                    },
+                  ),
                 if (!usuarioLogeado)
                   ListTile(
                     leading: Icon(Icons.login),

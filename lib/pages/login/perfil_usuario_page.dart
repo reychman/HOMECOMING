@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/editar_perfil_page.dart';
+import 'package:homecoming/pages/login/EditarPublicacionPage.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
@@ -21,26 +22,32 @@ class PerfilUsuario extends StatefulWidget {
 class _PerfilUsuarioState extends State<PerfilUsuario> {
   Uint8List? _imageBytes;
   Usuario? _usuario;
+  List<dynamic> _misPublicaciones = []; // Lista de publicaciones del usuario
 
   @override
   void initState() {
     super.initState();
-    _loadUserData(); 
+    _loadUserData();
+    _fetchUserPublications(); // Cargar publicaciones del usuario
   }
 
   Future<void> _loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? usuario_id = prefs.getInt('usuario_id');
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int? usuario_id = prefs.getInt('usuario_id');
 
-    if (usuario_id != null) {
-      Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(usuario_id);
-      setState(() {
-        _usuario = usuarioLogeado;
-      });
-    } else {
-      print('No se encontró un usuario_id en SharedPreferences');
-    }
+  if (usuario_id != null) {
+    Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(usuario_id);
+    setState(() {
+      _usuario = usuarioLogeado;
+    });
+    
+    // Llamar a fetchUserPublications una vez cargado el usuario
+    _fetchUserPublications();
+  } else {
+    print('No se encontró un usuario_id en SharedPreferences');
   }
+}
+
 
   Future<void> _uploadImage(Uint8List imageBytes) async {
     if (_usuario == null || _usuario!.id == null) return;
@@ -119,7 +126,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       );
     }
   }
-
   Future<void> _updatePassword() async {
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
@@ -239,6 +245,84 @@ Future<void> _submitNewPassword(String newPassword) async {
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
+  // Obtener las publicaciones del usuario
+  Future<void> _fetchUserPublications() async {
+    if (_usuario == null) return;
+
+    // Imprimir el usuario_id antes de enviar la solicitud
+    //print('Enviando usuario_id: ${_usuario!.id.toString()}');
+
+    try {
+      var response = await http.post(
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+        body: {
+          'usuario_id': _usuario!.id.toString(),
+          'accion': 'obtenerPublicaciones', // Especifica la acción
+        },
+      );
+
+      // Imprimir la respuesta completa del servidor
+      //print('Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+
+        // Verifica si hay un error en la respuesta
+        if (jsonResponse is List) {
+          setState(() {
+            _misPublicaciones = jsonResponse;
+          });
+
+          // Verifica si _misPublicaciones contiene datos
+          if (_misPublicaciones.isNotEmpty) {
+            //print('Mis publicaciones: $_misPublicaciones');
+          } else {
+            print('No se encontraron publicaciones.');
+          }
+        } else {
+          print('Error: ${jsonResponse['error']}');
+        }
+      } else {
+        print('Error al obtener las publicaciones: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error en la solicitud: $e');
+    }
+  }
+
+  // Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
+  Future<void> _changeEstadoMascota(int publicacionId, String nuevoEstado) async {
+    var response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+      body: {
+        'accion': 'actualizarEstado',
+        'id': publicacionId,
+        'estado': nuevoEstado,
+      }
+    );
+    if (response.statusCode == 200) {
+      _fetchUserPublications(); // Actualiza las publicaciones después del cambio
+    } else {
+      print('Error al cambiar el estado: ${response.statusCode}');
+    }
+  }
+
+  // Eliminar una publicación lógicamente (cambiar el estado_registro a 0)
+  Future<void> _eliminarPublicacion(int publicacionId) async {
+    var response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+      body: {
+        'accion': 'eliminarPublicacion',
+        'id': publicacionId,
+      }
+    );
+    if (response.statusCode == 200) {
+      _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
+    } else {
+      print('Error al eliminar la publicación: ${response.statusCode}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,56 +333,109 @@ Future<void> _submitNewPassword(String newPassword) async {
       body: Center(
         child: _usuario == null
             ? CircularProgressIndicator()
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey,
-                      backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
-                          ? NetworkImage(_usuario!.fotoPortada!)
-                          : _imageBytes != null
-                              ? MemoryImage(_imageBytes!)
-                              : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
-                      child: _usuario!.fotoPortada == null && _imageBytes == null
-                          ? Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                            )
-                          : null,
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey,
+                        backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
+                            ? NetworkImage(_usuario!.fotoPortada!)
+                            : _imageBytes != null
+                                ? MemoryImage(_imageBytes!)
+                                : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
+                        child: _usuario!.fotoPortada == null && _imageBytes == null
+                            ? Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    _usuario!.nombre,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    _usuario!.email,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => EditarPerfilPage(user: _usuario!),
-                      ));
-                    },
-                    child: Text('Editar Perfil'),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _updatePassword, // Botón para actualizar contraseña
-                    child: Text('Actualizar Contraseña'),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _logout,
-                    child: Text('Cerrar Sesión'),
-                  ),
-                ],
+                    SizedBox(height: 20),
+                    Text(
+                      _usuario!.nombre,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _usuario!.email,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => EditarPerfilPage(user: _usuario!),
+                        ));
+                      },
+                      child: Text('Editar Perfil'),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _updatePassword, // Botón para actualizar contraseña
+                      child: Text('Actualizar Contraseña'),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _logout,
+                      child: Text('Cerrar Sesión'),
+                    ),
+                    SizedBox(height: 20),
+                    // Sección de "Mis Publicaciones"
+                    Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    ..._misPublicaciones.map((publicacion) {
+                      return Card(
+                        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                        elevation: 3,
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mascota: ${publicacion['nombre']}',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 5),
+                              Text('Estado: ${publicacion['estado']}'),
+                              SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () {
+                                      _changeEstadoMascota(publicacion['id'], 'encontrado');
+                                    },
+                                    child: Text('Cambiar a Encontrado'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                        ),
+                                      );
+                                    },
+                                    child: Text('Editar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      _eliminarPublicacion(publicacion['id']);
+                                    },
+                                    child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
               ),
       ),
     );
