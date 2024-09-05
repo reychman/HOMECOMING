@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/menu/reporte.dart';
@@ -101,7 +102,7 @@ class _ReportesPageState extends State<ReportesPage> {
 
                   final reporte = snapshot.data!;
                   return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       DataTable(
                         columns: [
@@ -123,8 +124,8 @@ class _ReportesPageState extends State<ReportesPage> {
                         ],
                         rows: [
                           DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                              (Set<WidgetState> states) {
                                 return Colors.green[50]; // Fondo verde claro para filas impares
                               },
                             ),
@@ -135,8 +136,8 @@ class _ReportesPageState extends State<ReportesPage> {
                             ],
                           ),
                           DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                              (Set<WidgetState> states) {
                                 return Colors.white; // Fondo blanco para filas pares
                               },
                             ),
@@ -147,8 +148,8 @@ class _ReportesPageState extends State<ReportesPage> {
                             ],
                           ),
                           DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                              (Set<WidgetState> states) {
                                 return Colors.green[50];
                               },
                             ),
@@ -159,8 +160,8 @@ class _ReportesPageState extends State<ReportesPage> {
                             ],
                           ),
                           DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                              (Set<WidgetState> states) {
                                 return Colors.white;
                               },
                             ),
@@ -171,8 +172,8 @@ class _ReportesPageState extends State<ReportesPage> {
                             ],
                           ),
                           DataRow(
-                            color: MaterialStateProperty.resolveWith<Color?>(
-                              (Set<MaterialState> states) {
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                              (Set<WidgetState> states) {
                                 return Colors.green[50];
                               },
                             ),
@@ -186,26 +187,28 @@ class _ReportesPageState extends State<ReportesPage> {
                         border: TableBorder.all(color: Colors.green[800]!),
                       ),
                       SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            final pdf = await _generatePdf(reporte);
-                            final pdfBytes = await pdf.save();
-                            final blob = html.Blob([pdfBytes], 'application/pdf');
-                            final fileName = _generateFileName();
-                            final url = html.Url.createObjectUrlFromBlob(blob);
-                            html.AnchorElement(href: url)
-                              ..setAttribute('download', fileName)
-                              ..click();
-                            html.Url.revokeObjectUrl(url);
-                          } catch (e) {
-                            print('Error generando PDF: $e');
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[400],
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            try {
+                              final pdf = await _generatePdf(reporte);
+                              final pdfBytes = await pdf.save();
+                              final blob = html.Blob([pdfBytes], 'application/pdf');
+                              final fileName = _generateFileName();
+                              final url = html.Url.createObjectUrlFromBlob(blob);
+                              html.AnchorElement(href: url)
+                                ..setAttribute('download', fileName)
+                                ..click();
+                              html.Url.revokeObjectUrl(url);
+                            } catch (e) {
+                              print('Error generando PDF: $e');
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[400],
+                          ),
+                          child: Text('Descargar PDF'),
                         ),
-                        child: Text('Descargar PDF'),
                       ),
                     ],
                   );
@@ -253,12 +256,23 @@ class _ReportesPageState extends State<ReportesPage> {
     final font = await PdfGoogleFonts.robotoRegular();
     final boldFont = await PdfGoogleFonts.robotoBold();
 
+    // Cargar la imagen del logo
+    final imageLogo = pw.MemoryImage(
+      (await rootBundle.load('assets/imagenes/logo.png')).buffer.asUint8List(),
+    );
+
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) {
           return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
+              // Logo centrado y con mayor tamaño
+              pw.Center(
+                child: pw.Image(imageLogo, width: 200, height: 200),
+              ),
+              pw.SizedBox(height: 20),
+              // Título centrado debajo del logo
               pw.Center(
                 child: pw.Text(
                   _tituloReporte,
