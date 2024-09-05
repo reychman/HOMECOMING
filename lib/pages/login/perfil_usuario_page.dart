@@ -28,19 +28,19 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     _loadUserData(); 
   }
 
-Future<void> _loadUserData() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  int? userId = prefs.getInt('userId');
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? usuario_id = prefs.getInt('usuario_id');
 
-  if (userId != null) {
-    Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(userId);
-    setState(() {
-      _usuario = usuarioLogeado;
-    });
-  } else {
-    print('No se encontró un userId en SharedPreferences');
+    if (usuario_id != null) {
+      Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(usuario_id);
+      setState(() {
+        _usuario = usuarioLogeado;
+      });
+    } else {
+      print('No se encontró un usuario_id en SharedPreferences');
+    }
   }
-}
 
   Future<void> _uploadImage(Uint8List imageBytes) async {
     if (_usuario == null || _usuario!.id == null) return;
@@ -120,6 +120,119 @@ Future<void> _loadUserData() async {
     }
   }
 
+  Future<void> _updatePassword() async {
+  TextEditingController newPasswordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
+  bool isPasswordVisible = false; // Controla la visibilidad de la contraseña
+  bool isConfirmPasswordVisible = false; // Controla la visibilidad de la contraseña de confirmación
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Actualizar Contraseña'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: newPasswordController,
+                  decoration: InputDecoration(
+                    labelText: 'Nueva Contraseña',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isPasswordVisible = !isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: !isPasswordVisible,
+                ),
+                TextField(
+                  controller: confirmPasswordController,
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar Contraseña',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isConfirmPasswordVisible = !isConfirmPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: !isConfirmPasswordVisible,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (newPasswordController.text == confirmPasswordController.text) {
+                    // Llamar a la función para actualizar la contraseña en el backend
+                    await _submitNewPassword(newPasswordController.text);
+                    Navigator.of(context).pop(); // Cierra el modal
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Las contraseñas no coinciden')),
+                    );
+                  }
+                },
+                child: Text('Actualizar Contraseña'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
+Future<void> _submitNewPassword(String newPassword) async {
+  if (_usuario == null || _usuario!.id == null) return;
+
+  // Línea de depuración para imprimir los datos que se están enviando
+  print('Enviando id: ${_usuario!.id.toString()} y new_password: $newPassword');
+
+  final response = await http.post(
+    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/update_password.php'),
+    body: {
+      'id': _usuario!.id.toString(),
+      'new_password': newPassword,
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final jsonResponse = jsonDecode(response.body);
+    if (jsonResponse['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Contraseña actualizada correctamente')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar la contraseña')),
+      );
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error de red al actualizar la contraseña')),
+    );
+  }
+}
+
+
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -174,6 +287,11 @@ Future<void> _loadUserData() async {
                       ));
                     },
                     child: Text('Editar Perfil'),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _updatePassword, // Botón para actualizar contraseña
+                    child: Text('Actualizar Contraseña'),
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(

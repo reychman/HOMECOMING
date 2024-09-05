@@ -26,7 +26,8 @@ dependencies:
   provider: ^6.1.2
   dio: ^5.0.0
   path_provider: ^2.0.9
-  pdf: ^3.11.1
+  pdf: ^3.6.1
+  printing: ^5.9.0
   open_file: ^3.2.1
   file_picker: ^5.0.0
 
@@ -40,3 +41,9 @@ flutter:
   assets:
     - assets/imagenes/
     - assets/imagenes/fotos_mascotas/
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

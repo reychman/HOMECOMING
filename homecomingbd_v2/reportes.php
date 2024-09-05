@@ -1,20 +1,61 @@
 <?php
-header("Access-Control-Allow-Origin: *"); // Permitir solicitudes de cualquier origen
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS"); // Métodos permitidos
-header("Access-Control-Allow-Headers: Content-Type"); // Encabezados permitidos
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
 include 'config.php';
 
+// Obtener los parámetros de fecha de inicio y fecha fin
+$start_date = $_GET['start_date'] ?? null;
+$end_date = $_GET['end_date'] ?? null;
+
+// Consulta SQL base
 $sql = "SELECT 
-            (SELECT COUNT(*) FROM mascotas WHERE estado = 'perdido') AS mascotas_perdidas,
-            (SELECT COUNT(*) FROM mascotas WHERE estado = 'encontrado') AS mascotas_encontradas,
-            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'administrador') AS usuarios_administradores,
-            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'propietario') AS usuarios_propietarios,
-            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'refugio') AS usuarios_refugios
+            (SELECT COUNT(*) FROM mascotas WHERE estado = 'perdido'";
+
+// Agregar filtro de fechas para las mascotas perdidas
+if ($start_date && $end_date) {
+    $sql .= " AND fecha_perdida BETWEEN '$start_date' AND '$end_date'";
+}
+
+$sql .= ") AS mascotas_perdidas,
+            (SELECT COUNT(*) FROM mascotas WHERE estado = 'encontrado'";
+
+// Agregar filtro de fechas para las mascotas encontradas
+if ($start_date && $end_date) {
+    $sql .= " AND fecha_perdida BETWEEN '$start_date' AND '$end_date'";
+}
+
+$sql .= ") AS mascotas_encontradas,
+            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'administrador'";
+
+// Agregar filtro de fechas para los usuarios administradores
+if ($start_date && $end_date) {
+    $sql .= " AND fecha_creacion BETWEEN '$start_date' AND '$end_date'";
+}
+
+$sql .= ") AS usuarios_administradores,
+            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'propietario'";
+
+// Agregar filtro de fechas para los usuarios propietarios
+if ($start_date && $end_date) {
+    $sql .= " AND fecha_creacion BETWEEN '$start_date' AND '$end_date'";
+}
+
+$sql .= ") AS usuarios_propietarios,
+            (SELECT COUNT(*) FROM usuarios WHERE tipo_usuario = 'refugio'";
+
+// Agregar filtro de fechas para los usuarios refugios
+if ($start_date && $end_date) {
+    $sql .= " AND fecha_creacion BETWEEN '$start_date' AND '$end_date'";
+}
+
+$sql .= ") AS usuarios_refugios
         FROM (SELECT 1) AS dummy";
 
 $result = $conexion->query($sql);
 
+// Verificar si la consulta fue exitosa y enviar la respuesta en formato JSON
 if ($result) {
     $row = $result->fetch_assoc();
     echo json_encode([
@@ -34,5 +75,6 @@ if ($result) {
     ]);
 }
 
+// Cerrar la conexión a la base de datos
 $conexion->close();
 ?>

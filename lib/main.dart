@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:homecoming/pages/admin_page.dart';
 import 'package:homecoming/pages/admin_usuarios_page.dart';
 import 'package:homecoming/pages/login/perfil_usuario_page.dart';
@@ -9,15 +8,17 @@ import 'package:homecoming/pages/mascotas_perdidas_page.dart';
 import 'package:homecoming/pages/menu/familias_reunidas_page.dart';
 import 'package:homecoming/pages/menu/home_page.dart';
 import 'package:homecoming/pages/menu/mapa_busquedas_page.dart';
-import 'package:homecoming/pages/reportes_page.dart';
+import 'package:homecoming/pages/menu/reportes_page.dart';
 import 'package:homecoming/pages/menu/preguntas_frecuentes_page.dart';
 import 'package:homecoming/pages/menu/quienes_somos_page.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/login/crear_usuario_page.dart';
 import 'package:homecoming/pages/login/recuperar_contra_page.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // Asegúrate de que esto esté presente
   runApp(
     ChangeNotifierProvider(
       create: (context) => UsuarioProvider(),
