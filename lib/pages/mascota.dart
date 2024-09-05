@@ -9,8 +9,8 @@ class Mascota {
   final String estado;
   final String descripcion;
   final String foto;
-  final double? latitud; // Nuevo campo
-  final double? longitud; // Nuevo campo
+  final double? latitud;
+  final double? longitud;
   final String nombreDueno;
   final String emailDueno;
   final String telefonoDueno;
@@ -26,8 +26,8 @@ class Mascota {
     required this.estado,
     required this.descripcion,
     required this.foto,
-    this.latitud, // Nuevo campo
-    this.longitud, // Nuevo campo
+    this.latitud,
+    this.longitud,
     required this.nombreDueno,
     required this.emailDueno,
     required this.telefonoDueno,
@@ -35,21 +35,21 @@ class Mascota {
 
   factory Mascota.fromJson(Map<String, dynamic> json) {
     return Mascota(
-      id: json['id'],
-      nombre: json['nombre'],
-      especie: json['especie'],
-      raza: json['raza'],
-      sexo: json['sexo'],
-      fechaPerdida: json['fecha_perdida'],
-      lugarPerdida: json['lugar_perdida'],
-      estado: json['estado'],
-      descripcion: json['descripcion'],
-      foto: json['foto'],
-      latitud: json['latitud'] != null ? json['latitud'].toDouble() : null,
-      longitud: json['longitud'] != null ? json['longitud'].toDouble() : null,
-      nombreDueno: json['nombre_dueno'],
-      emailDueno: json['email_dueno'],
-      telefonoDueno: json['telefono_dueno'],
+      id: json['id'] != null ? json['id'] as int : 0, // Proveer un valor predeterminado si es null
+      nombre: json['nombre'] ?? 'Desconocido',
+      especie: json['especie'] ?? 'Desconocida',
+      raza: json['raza'] ?? 'Desconocida',
+      sexo: json['sexo'] ?? 'Desconocido',
+      fechaPerdida: json['fecha_perdida'] ?? 'Desconocida',
+      lugarPerdida: json['lugar_perdida'] ?? 'Desconocido',
+      estado: json['estado'] ?? 'Desconocido',
+      descripcion: json['descripcion'] ?? 'Sin descripción',
+      foto: json['foto'] ?? '',
+      latitud: json['latitud'] != null ? (json['latitud'] is double ? json['latitud'] : double.tryParse(json['latitud'].toString())) : null,
+      longitud: json['longitud'] != null ? (json['longitud'] is double ? json['longitud'] : double.tryParse(json['longitud'].toString())) : null,
+      nombreDueno: json['nombre_dueno'] ?? 'Desconocido',
+      emailDueno: json['email_dueno'] ?? '',
+      telefonoDueno: json['telefono_dueno'] ?? '',
     );
   }
 }
