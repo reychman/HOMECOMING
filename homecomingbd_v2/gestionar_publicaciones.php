@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'eliminarPublicacion':
             eliminarPublicacion();
             break;
+        case 'actualizarPublicacion':
+            actualizarPublicacion();
+            break;
         default:
             echo json_encode(['error' => 'Acción no válida']);
             break;
@@ -118,6 +121,52 @@ function eliminarPublicacion() {
         }
     } else {
         echo json_encode(['error' => 'Falta el id de la publicación']);
+    }
+}
+function actualizarPublicacion() {
+    global $conexion;
+
+    $id = isset($_POST['id']) ? $_POST['id'] : null;
+    $nombre = isset($_POST['nombre']) ? $_POST['nombre'] : null;
+    $especie = isset($_POST['especie']) ? $_POST['especie'] : null;
+    $raza = isset($_POST['raza']) ? $_POST['raza'] : null;
+    $sexo = isset($_POST['sexo']) ? $_POST['sexo'] : null;
+    $fecha_perdida = isset($_POST['fecha_perdida']) ? $_POST['fecha_perdida'] : null;
+    $lugar_perdida = isset($_POST['lugar_perdida']) ? $_POST['lugar_perdida'] : null;
+    $descripcion = isset($_POST['descripcion']) ? $_POST['descripcion'] : null;
+    $foto = isset($_FILES['foto']) ? $_FILES['foto'] : null;
+
+    if ($id && $nombre && $especie && $raza && $sexo && $fecha_perdida && $lugar_perdida && $descripcion) {
+        // Actualizar la publicación en la base de datos
+        $sql = "UPDATE mascotas SET 
+                    nombre = ?, 
+                    especie = ?, 
+                    raza = ?, 
+                    sexo = ?, 
+                    fecha_perdida = ?, 
+                    lugar_perdida = ?, 
+                    descripcion = ?
+                WHERE id = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("sssssssi", $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $id);
+
+        if ($stmt->execute()) {
+            // Si hay una nueva foto, manejar la subida
+            if ($foto) {
+                $fotoNombre = $id . '_foto.jpg'; // Puedes personalizar el nombre de la imagen
+                move_uploaded_file($_FILES['foto']['tmp_name'], "uploads/$fotoNombre");
+                $sqlFoto = "UPDATE mascotas SET foto = ? WHERE id = ?";
+                $stmtFoto = $conexion->prepare($sqlFoto);
+                $stmtFoto->bind_param("si", $fotoNombre, $id);
+                $stmtFoto->execute();
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Publicación actualizada']);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la publicación']);
+        }
+    } else {
+        echo json_encode(['error' => 'Faltan datos para actualizar la publicación']);
     }
 }
 ?>
