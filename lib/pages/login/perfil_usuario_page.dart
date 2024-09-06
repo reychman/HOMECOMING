@@ -126,6 +126,22 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       );
     }
   }
+  String obtenerMensajeFecha(DateTime fechaPerdida) {
+    final hoy = DateTime.now();
+    final diferenciaDias = hoy.difference(fechaPerdida).inDays;
+
+    if (diferenciaDias == 0) {
+      return 'Hoy';
+    } else if (diferenciaDias == 1) {
+      return 'Ayer';
+    } else if (diferenciaDias <= 3) {
+      return 'Hace un par de días';
+    } else if (diferenciaDias == 7) {
+      return 'Hace 1 semana';
+    } else {
+      return 'Hace más de una semana';
+    }
+  }
   Future<void> _updatePassword() async {
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
@@ -329,14 +345,17 @@ Future<void> _submitNewPassword(String newPassword) async {
       appBar: AppBar(
         title: Text('Perfil'),
       ),
-      drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()), 
-      body: Center(
-        child: _usuario == null
-            ? CircularProgressIndicator()
-            : SingleChildScrollView(
+      drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
+      body: _usuario == null
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0), // Margen alrededor del contenido
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
+                    SizedBox(height: 20), // Añadir espacio arriba
                     GestureDetector(
                       onTap: _pickImage,
                       child: CircleAvatar(
@@ -386,58 +405,116 @@ Future<void> _submitNewPassword(String newPassword) async {
                     SizedBox(height: 20),
                     // Sección de "Mis Publicaciones"
                     Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 20),
                     ..._misPublicaciones.map((publicacion) {
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                        elevation: 3,
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Mascota: ${publicacion['nombre']}',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(height: 5),
-                              Text('Estado: ${publicacion['estado']}'),
-                              SizedBox(height: 10),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      _changeEstadoMascota(publicacion['id'], 'encontrado');
-                                    },
-                                    child: Text('Cambiar a Encontrado'),
+                      return Center(
+                        child: Container(
+                          width: 400, // Ajustar el ancho del card
+                          margin: EdgeInsets.symmetric(vertical: 10), // Márgenes verticales
+                          child: Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (publicacion['estado'] == 'perdido')
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(10),
+                                      topRight: Radius.circular(10),
+                                    ),
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) => EditarPublicacionPage(publicacion: publicacion),
-                                        ),
-                                      );
-                                    },
-                                    child: Text('Editar'),
+                                  child: Text(
+                                    '¡Hay una familia que busca a esta mascota!',
+                                    style: TextStyle(color: Colors.white),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      _eliminarPublicacion(publicacion['id']);
-                                    },
-                                    child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                ),
+                                SizedBox(
+                                  height: 400, // Altura fija
+                                  width: 400,  // Ancho fijo
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.vertical(
+                                      bottom: Radius.circular(10),
+                                    ),
+                                    child: Image.asset(
+                                      'assets/imagenes/fotos_mascotas/${publicacion['foto']}',
+                                      fit: BoxFit.cover, // Ajusta la imagen dentro de las dimensiones
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Icon(Icons.pets, size: 200, color: Colors.grey); // Icono si la imagen falla
+                                      },
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        publicacion['nombre'],
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                      ),
+                                      SizedBox(height: 5),
+                                      Text(
+                                        'Fecha de perdida: ${publicacion['fecha_perdida']}  -  ${obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida']))}',
+                                        style: TextStyle(color: Colors.grey[600]),
+                                      ),
+                                      SizedBox(height: 5),
+                                      Text(
+                                        'Se perdio en: ${publicacion['lugar_perdida']}',
+                                        style: TextStyle(color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () {
+                                          _changeEstadoMascota(publicacion['id'], 'encontrado');
+                                        },
+                                        child: Text('Cambiar a Encontrado'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                            ),
+                                          );
+                                        },
+                                        child: Text('Editar'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          _eliminarPublicacion(publicacion['id']);
+                                        },
+                                        child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
                     }).toList(),
+                    SizedBox(height: 20), // Añadir espacio al final
                   ],
                 ),
               ),
-      ),
+            ),
     );
   }
 }

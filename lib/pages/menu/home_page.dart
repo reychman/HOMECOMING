@@ -128,7 +128,6 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                       final mascota = _mascotasFiltradas[index];
                       final fechaPerdida = DateTime.parse(mascota.fechaPerdida);
                       final mensajeFecha = obtenerMensajeFecha(fechaPerdida);
-
                       return Center(
                         child: GestureDetector(
                           onTap: () {
@@ -195,7 +194,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Text(
-                                        mascota.nombre,
+                                        mascota.nombre.toUpperCase(),
                                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                                       ),
                                     ),
