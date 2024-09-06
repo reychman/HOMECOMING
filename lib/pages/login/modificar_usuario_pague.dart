@@ -76,8 +76,6 @@ Future<void> _updateUser() async {
   }
 }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

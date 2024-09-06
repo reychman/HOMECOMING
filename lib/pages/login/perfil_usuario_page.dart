@@ -419,19 +419,20 @@ Future<void> _submitNewPassword(String newPassword) async {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (publicacion['estado'] == 'perdido')
                                 Container(
                                   width: double.infinity,
                                   padding: EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.red,
+                                    color: publicacion['estado'] == 'perdido' ? Colors.red : Colors.green,
                                     borderRadius: BorderRadius.only(
                                       topLeft: Radius.circular(10),
                                       topRight: Radius.circular(10),
                                     ),
                                   ),
                                   child: Text(
-                                    '¡Hay una familia que busca a esta mascota!',
+                                    publicacion['estado'] == 'perdido'
+                                      ? '¡Hay una familia que busca a esta mascota!'
+                                      : '¡Mascota reunida con su familia!',
                                     style: TextStyle(color: Colors.white),
                                     textAlign: TextAlign.center,
                                   ),

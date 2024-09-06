@@ -33,10 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Función para obtener las publicaciones del usuario
 function obtenerPublicaciones() {
-    global $conexion; // Uso de la conexión de base de datos desde config.php
+    global $conexion; 
 
     $usuario_id = isset($_POST['usuario_id']) ? $_POST['usuario_id'] : null;
-      // Aquí agregas el log para verificar si el usuario_id se está recibiendo
     error_log("Usuario ID recibido: " . $usuario_id);
     
     if (!$usuario_id) {
@@ -44,10 +43,12 @@ function obtenerPublicaciones() {
         exit;
     }
 
-    $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.foto, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+    $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, 
+                    M.estado, M.descripcion, M.foto, M.latitud, M.longitud, 
+                    U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
             FROM mascotas M
             JOIN usuarios U ON M.usuario_id = U.id
-            WHERE M.usuario_id = ? AND M.estado_registro = 1";  // Filtrar por el usuario logueado y solo mascotas activas
+            WHERE M.usuario_id = ? AND M.estado_registro = 1";  
     $stmt = $conexion->prepare($sql);
     $stmt->bind_param("i", $usuario_id);
     $stmt->execute();
@@ -68,6 +69,8 @@ function obtenerPublicaciones() {
                 'estado' => $row['estado'],
                 'descripcion' => $row['descripcion'],
                 'foto' => $row['foto'],
+                'latitud' => $row['latitud'],  // Incluir latitud
+                'longitud' => $row['longitud'], // Incluir longitud
                 'nombre_dueno' => $row['nombre_dueno'],
                 'email_dueno' => $row['email_dueno'],
                 'telefono_dueno' => $row['telefono_dueno']
@@ -82,6 +85,7 @@ function obtenerPublicaciones() {
         echo json_encode($mascotas);
     }
 }
+
 
 // Función para actualizar el estado de una mascota (perdido/encontrado)
 function actualizarEstado() {
@@ -123,10 +127,11 @@ function eliminarPublicacion() {
         echo json_encode(['error' => 'Falta el id de la publicación']);
     }
 }
+
 function actualizarPublicacion() {
     global $conexion;
 
-    $id = isset($_POST['id']) ? $_POST['id'] : null;
+    $id = isset($_POST['id']) ? $_POST['id'] : null;  // Recupera el ID de la publicación
     $nombre = isset($_POST['nombre']) ? $_POST['nombre'] : null;
     $especie = isset($_POST['especie']) ? $_POST['especie'] : null;
     $raza = isset($_POST['raza']) ? $_POST['raza'] : null;
@@ -134,10 +139,10 @@ function actualizarPublicacion() {
     $fecha_perdida = isset($_POST['fecha_perdida']) ? $_POST['fecha_perdida'] : null;
     $lugar_perdida = isset($_POST['lugar_perdida']) ? $_POST['lugar_perdida'] : null;
     $descripcion = isset($_POST['descripcion']) ? $_POST['descripcion'] : null;
-    $foto = isset($_FILES['foto']) ? $_FILES['foto'] : null;
+    $latitud = isset($_POST['latitud']) ? $_POST['latitud'] : null;
+    $longitud = isset($_POST['longitud']) ? $_POST['longitud'] : null;
 
-    if ($id && $nombre && $especie && $raza && $sexo && $fecha_perdida && $lugar_perdida && $descripcion) {
-        // Actualizar la publicación en la base de datos
+    if ($id && $nombre && $especie && $raza && $sexo && $fecha_perdida && $lugar_perdida && $descripcion && $latitud && $longitud) {
         $sql = "UPDATE mascotas SET 
                     nombre = ?, 
                     especie = ?, 
@@ -145,28 +150,22 @@ function actualizarPublicacion() {
                     sexo = ?, 
                     fecha_perdida = ?, 
                     lugar_perdida = ?, 
-                    descripcion = ?
+                    descripcion = ?, 
+                    latitud = ?, 
+                    longitud = ?
                 WHERE id = ?";
         $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("sssssssi", $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $id);
+        $stmt->bind_param("sssssssddi", $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $id);
 
         if ($stmt->execute()) {
-            // Si hay una nueva foto, manejar la subida
-            if ($foto) {
-                $fotoNombre = $id . '_foto.jpg'; // Puedes personalizar el nombre de la imagen
-                move_uploaded_file($_FILES['foto']['tmp_name'], "uploads/$fotoNombre");
-                $sqlFoto = "UPDATE mascotas SET foto = ? WHERE id = ?";
-                $stmtFoto = $conexion->prepare($sqlFoto);
-                $stmtFoto->bind_param("si", $fotoNombre, $id);
-                $stmtFoto->execute();
-            }
-
             echo json_encode(['success' => true, 'message' => 'Publicación actualizada']);
         } else {
-            echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la publicación']);
+            echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la publicacion']);
         }
     } else {
-        echo json_encode(['error' => 'Faltan datos para actualizar la publicación']);
+        echo json_encode(['error' => 'Faltan datos para actualizar la publicacion']);
     }
 }
+
+
 ?>
