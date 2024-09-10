@@ -116,19 +116,36 @@ function actualizarEstado() {
 function eliminarPublicacion() {
     global $conexion;
 
+    // Recuperar el id de la publicación
     $id = isset($_POST['id']) ? $_POST['id'] : null;
 
-    if ($id) {
-        $sql = "UPDATE mascotas SET estado_registro = 0 WHERE id = ?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Publicación eliminada']);
-        } else {
-            echo json_encode(['success' => false, 'error' => 'No se pudo eliminar la publicación']);
-        }
-    } else {
+    // Verificar si el id es nulo
+    if (!$id) {
         echo json_encode(['error' => 'Falta el id de la publicación']);
+        return;
+    }
+
+    // Registrar el id recibido para eliminar
+    error_log("Eliminando publicación con ID: " . $id);
+
+    // Preparar la consulta para eliminar la publicación lógicamente
+    $sql = "UPDATE mascotas SET estado_registro = 0 WHERE id = ?";
+    $stmt = $conexion->prepare($sql);
+    
+    if ($stmt === false) {
+        echo json_encode(['error' => 'Error preparando la consulta']);
+        error_log("Error preparando la consulta SQL: " . $conexion->error);
+        return;
+    }
+
+    // Asignar el parámetro y ejecutar la consulta
+    $stmt->bind_param("i", $id);
+    
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Publicación eliminada']);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'No se pudo eliminar la publicación']);
+        error_log("Error al ejecutar la consulta SQL: " . $stmt->error);
     }
 }
 

@@ -363,21 +363,91 @@ Future<void> _submitNewPassword(String newPassword) async {
   }
 
 
-  // Eliminar una publicación lógicamente (cambiar el estado_registro a 0)
-  Future<void> _eliminarPublicacion(int publicacionId) async {
-    var response = await http.post(
-      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-      body: {
-        'accion': 'eliminarPublicacion',
-        'id': publicacionId,
-      }
+  Future<void> _confirmarEliminacionPublicacion(int publicacionId) async {
+    // Mostrar el cuadro de diálogo de confirmación
+    bool confirmar = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmar Eliminación'),
+          content: Text('¿Está seguro de que desea eliminar la publicación?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Cancelar
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Confirmar
+              },
+              child: Text('Eliminar'),
+            ),
+          ],
+        );
+      },
     );
-    if (response.statusCode == 200) {
-      _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
-    } else {
-      print('Error al eliminar la publicación: ${response.statusCode}');
+
+    // Si se confirmó la eliminación
+    if (confirmar) {
+      var response = await http.post(
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+        body: {
+          'accion': 'eliminarPublicacion',
+          'id': publicacionId.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(response.body);
+
+        // Verifica si la eliminación fue exitosa
+        if (jsonResponse['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('El registro fue eliminado con éxito.'),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.green, // Color verde para éxito
+            ),
+          );
+          _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Hubo un error al eliminar el registro.'),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.red, // Color rojo para error
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al conectar con el servidor.'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.red, // Color rojo para error
+          ),
+        );
+      }
     }
   }
+
+Future<void> _eliminarPublicacion(int publicacionId) async {
+  var response = await http.post(
+    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+    body: {
+      'accion': 'eliminarPublicacion',
+      'id': publicacionId.toString(), // Convertir a string si es necesario
+    }
+  );
+  if (response.statusCode == 200) {
+    _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
+  } else {
+    print('Error al eliminar la publicación: ${response.statusCode}');
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -538,7 +608,9 @@ Future<void> _submitNewPassword(String newPassword) async {
                                             );
                                           }
                                         },
-                                        child: Text('Cambiar Estado'),
+                                        child: Text('Cambiar Estado',
+                                        style: TextStyle(color: Colors.green[400])
+                                        )
                                       ),
                                       TextButton(
                                         onPressed: () {
@@ -548,13 +620,17 @@ Future<void> _submitNewPassword(String newPassword) async {
                                             ),
                                           );
                                         },
-                                        child: Text('Editar'),
+                                        child: Text('Editar',
+                                        style: TextStyle(color: Colors.amber[500])
+                                        )
                                       ),
                                       TextButton(
                                         onPressed: () {
-                                          _eliminarPublicacion(publicacion['id']);
+                                          _confirmarEliminacionPublicacion(publicacion['id']);
                                         },
-                                        child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                        child: Text('Eliminar',
+                                        style: TextStyle(color: Colors.red)
+                                        )
                                       ),
                                     ],
                                   ),
