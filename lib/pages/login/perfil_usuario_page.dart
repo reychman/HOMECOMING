@@ -448,80 +448,97 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
   }
 }
 
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Perfil'),
-      ),
-      drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
-      body: _usuario == null
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0), // Margen alrededor del contenido
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    SizedBox(height: 20), // Añadir espacio arriba
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey,
-                        backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
-                            ? NetworkImage(_usuario!.fotoPortada!)
-                            : _imageBytes != null
-                                ? MemoryImage(_imageBytes!)
-                                : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
-                        child: _usuario!.fotoPortada == null && _imageBytes == null
-                            ? Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Perfil'),
+    ),
+    drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
+    body: _usuario == null
+        ? Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(  // Esto habilita el scroll para toda la página
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(  // El contenido general estará en una columna
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.grey,
+                      backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
+                          ? NetworkImage(_usuario!.fotoPortada!)
+                          : _imageBytes != null
+                              ? MemoryImage(_imageBytes!)
+                              : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
+                      child: _usuario!.fotoPortada == null && _imageBytes == null
+                          ? Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      _usuario!.nombre,
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      _usuario!.email,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => EditarPerfilPage(user: _usuario!),
-                        ));
-                      },
-                      child: Text('Editar Perfil'),
-                    ),
-                    SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: _updatePassword, // Botón para actualizar contraseña
-                      child: Text('Actualizar Contraseña'),
-                    ),
-                    SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: _logout,
-                      child: Text('Cerrar Sesión'),
-                    ),
-                    SizedBox(height: 20),
-                    // Sección de "Mis Publicaciones"
-                    Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 20),
-                    ..._misPublicaciones.map((publicacion) {
-                      return Center(
-                        child: Container(
-                          width: 400, // Ajustar el ancho del card
-                          margin: EdgeInsets.symmetric(vertical: 10), // Márgenes verticales
-                          child: Card(
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    _usuario!.nombre,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _usuario!.email,
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => EditarPerfilPage(user: _usuario!),
+                      ));
+                    },
+                    child: Text('Editar Perfil'),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _updatePassword,
+                    child: Text('Actualizar Contraseña'),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _logout,
+                    child: Text('Cerrar Sesión'),
+                  ),
+                  SizedBox(height: 20),
+                  // Sección de "Mis Publicaciones"
+                  Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 20),
+                  // Convertimos la lista de publicaciones en un GridView
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      int crossAxisCount = 1;  // Default para pantallas pequeñas
+                      // Si la pantalla es más ancha, cambiamos el número de columnas
+                      if (constraints.maxWidth > 600) {
+                        crossAxisCount = 2;  // 2 columnas para pantallas medianas
+                      }
+                      if (constraints.maxWidth > 900) {
+                        crossAxisCount = 3;  // 3 columnas para pantallas grandes
+                      }
+                      return GridView.builder(
+                        physics: NeverScrollableScrollPhysics(), // Evita que el GridView tenga su propio scroll
+                        shrinkWrap: true,  // Deja que el GridView ocupe solo el espacio necesario
+                        padding: EdgeInsets.all(10),
+                        itemCount: _misPublicaciones.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,  // Se ajusta automáticamente según el ancho
+                          crossAxisSpacing: 10, // Espaciado horizontal entre las columnas
+                          mainAxisSpacing: 10, // Espaciado vertical entre las filas
+                          childAspectRatio: 3 / 4, // Ajusta este valor para controlar la proporción entre ancho y alto del card
+                        ),
+                        itemBuilder: (context, index) {
+                          var publicacion = _misPublicaciones[index];
+                          return Card(
                             elevation: 3,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -547,18 +564,16 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
-                                SizedBox(
-                                  height: 400, // Altura fija
-                                  width: 400,  // Ancho fijo
+                                Expanded(
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.vertical(
                                       bottom: Radius.circular(10),
                                     ),
                                     child: Image.asset(
                                       'assets/imagenes/fotos_mascotas/${publicacion['foto']}',
-                                      fit: BoxFit.cover, // Ajusta la imagen dentro de las dimensiones
+                                      fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
-                                        return Icon(Icons.pets, size: 200, color: Colors.grey); // Icono si la imagen falla
+                                        return Icon(Icons.pets, size: 200, color: Colors.grey);
                                       },
                                     ),
                                   ),
@@ -608,9 +623,7 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                                             );
                                           }
                                         },
-                                        child: Text('Cambiar Estado',
-                                        style: TextStyle(color: Colors.green[400])
-                                        )
+                                        child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
                                       ),
                                       TextButton(
                                         onPressed: () {
@@ -620,32 +633,28 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                                             ),
                                           );
                                         },
-                                        child: Text('Editar',
-                                        style: TextStyle(color: Colors.amber[500])
-                                        )
+                                        child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
                                       ),
                                       TextButton(
                                         onPressed: () {
                                           _confirmarEliminacionPublicacion(publicacion['id']);
                                         },
-                                        child: Text('Eliminar',
-                                        style: TextStyle(color: Colors.red)
-                                        )
+                                        child: Text('Eliminar', style: TextStyle(color: Colors.red)),
                                       ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       );
-                    }).toList(),
-                    SizedBox(height: 20), // Añadir espacio al final
-                  ],
-                ),
+                    },
+                  ),
+                ],
               ),
             ),
-    );
-  }
+          ),
+  );
+}
 }
