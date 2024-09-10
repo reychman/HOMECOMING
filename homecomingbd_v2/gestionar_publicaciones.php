@@ -93,6 +93,8 @@ function actualizarEstado() {
 
     $id = isset($_POST['id']) ? $_POST['id'] : null;
     $nuevoEstado = isset($_POST['estado']) ? $_POST['estado'] : null;
+    error_log("ID recibido: " . $id);
+    error_log("Estado recibido: " . $nuevoEstado);
 
     if ($id && $nuevoEstado) {
         $sql = "UPDATE mascotas SET estado = ? WHERE id = ?";
@@ -107,6 +109,8 @@ function actualizarEstado() {
         echo json_encode(['error' => 'Faltan datos']);
     }
 }
+
+
 
 // Función para eliminar una publicación lógicamente
 function eliminarPublicacion() {

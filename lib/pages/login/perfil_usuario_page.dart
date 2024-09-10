@@ -306,22 +306,62 @@ Future<void> _submitNewPassword(String newPassword) async {
     }
   }
 
+  Future<void> _mostrarConfirmacionCambioEstado(
+    int publicacionId,
+    String nuevoEstado,
+    String titulo,
+    String mensaje,
+  ) async {
+    // Mostrar una ventana emergente de confirmación
+    bool confirmar = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(titulo),
+          content: Text(mensaje),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Cancelar
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Aceptar
+              },
+              child: Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Si el usuario aceptó, realiza el cambio de estado
+    if (confirmar) {
+      _changeEstadoMascota(publicacionId, nuevoEstado);
+    }
+  }
   // Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
   Future<void> _changeEstadoMascota(int publicacionId, String nuevoEstado) async {
     var response = await http.post(
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
       body: {
         'accion': 'actualizarEstado',
-        'id': publicacionId,
-        'estado': nuevoEstado,
+        'id': publicacionId.toString(), // El ID de la mascota
+        'estado': nuevoEstado,          // El nuevo estado
       }
     );
+    
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
       _fetchUserPublications(); // Actualiza las publicaciones después del cambio
     } else {
       print('Error al cambiar el estado: ${response.statusCode}');
     }
   }
+
 
   // Eliminar una publicación lógicamente (cambiar el estado_registro a 0)
   Future<void> _eliminarPublicacion(int publicacionId) async {
@@ -431,8 +471,8 @@ Future<void> _submitNewPassword(String newPassword) async {
                                   ),
                                   child: Text(
                                     publicacion['estado'] == 'perdido'
-                                      ? '¡Hay una familia que busca a esta mascota!'
-                                      : '¡Mascota reunida con su familia!',
+                                      ? 'Tu mascota te extraña tanto tu a el/ella'
+                                      : 'Nos complace saber que tu mascota fue encontrada',
                                     style: TextStyle(color: Colors.white),
                                     textAlign: TextAlign.center,
                                   ),
@@ -482,9 +522,23 @@ Future<void> _submitNewPassword(String newPassword) async {
                                     children: [
                                       TextButton(
                                         onPressed: () {
-                                          _changeEstadoMascota(publicacion['id'], 'encontrado');
+                                          if (publicacion['estado'] == 'perdido') {
+                                            _mostrarConfirmacionCambioEstado(
+                                              publicacion['id'],
+                                              'encontrado',
+                                              'Confirmación',
+                                              'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?'
+                                            );
+                                          } else if (publicacion['estado'] == 'encontrado') {
+                                            _mostrarConfirmacionCambioEstado(
+                                              publicacion['id'],
+                                              'perdido',
+                                              'Confirmación',
+                                              'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota. Es recomendable actualizar los datos antiguos.'
+                                            );
+                                          }
                                         },
-                                        child: Text('Cambiar a Encontrado'),
+                                        child: Text('Cambiar Estado'),
                                       ),
                                       TextButton(
                                         onPressed: () {
