@@ -20,6 +20,28 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
 
   Usuario? usuario;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus(); // Revisar si hay una sesión activa cuando la app inicia
+  }
+
+  // Método para revisar si el usuario ya está logueado
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    int? usuarioId = prefs.getInt('usuario_id');
+
+    if (isLoggedIn && usuarioId != null) {
+      Usuario? usuarioLogeado = await UsuarioProvider.getUsuarioActual(usuarioId);
+      if (usuarioLogeado != null) {
+        // Si el usuario está logueado y se ha recuperado su info correctamente
+        Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);
+        Navigator.of(context).pushReplacementNamed('/inicio');
+      }
+    }
+  }
+
   Future<void> login() async {
     Usuario? usuarioLogeado = await Usuario.iniciarSesion(controllerUser.text, controllerPass.text);
 

@@ -16,9 +16,10 @@ import 'package:homecoming/pages/login/crear_usuario_page.dart';
 import 'package:homecoming/pages/login/recuperar_contra_page.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // Asegúrate de que esto esté presente
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (context) => UsuarioProvider(),
@@ -31,15 +32,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Quitar el texto de debug
+      debugShowCheckedModeBanner: false,
       title: 'Homecoming',
       theme: ThemeData(
-        // Definir estilos de texto
         textTheme: TextTheme(
           headlineLarge: TextStyle(fontSize: 96.0, fontWeight: FontWeight.bold),
         ),
       ),
-      initialRoute: '/inicio',
+      home: CheckLoginStatus(),
       routes: <String, WidgetBuilder>{
         '/inicio': (BuildContext context) => PaginaPrincipal(),
         '/quienes_somos': (BuildContext context) => QuienesSomosPage(),
@@ -58,5 +58,61 @@ class MyApp extends StatelessWidget {
         '/admin_usuarios': (BuildContext context) => AdminUsuariosPage(),
       },
     );
+  }
+}
+
+class CheckLoginStatus extends StatefulWidget {
+  @override
+  _CheckLoginStatusState createState() => _CheckLoginStatusState();
+}
+
+class _CheckLoginStatusState extends State<CheckLoginStatus> {
+  bool isLoading = true;
+  bool isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _attemptAutoLogin();
+  }
+
+  Future<void> _attemptAutoLogin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? storedUsername = prefs.getString('username');
+    String? storedPassword = prefs.getString('password');
+
+    if (storedUsername != null && storedPassword != null) {
+      // Si las credenciales están guardadas, intentamos el login
+      bool loginSuccess = await _login(storedUsername, storedPassword);
+      if (loginSuccess) {
+        setState(() {
+          isLoggedIn = true;
+        });
+      }
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<bool> _login(String username, String password) async {
+    // Simulamos el método de login. Debes reemplazar esta parte con tu lógica real de login.
+    // Supongamos que el login fue exitoso:
+    await Future.delayed(Duration(seconds: 1));
+    return true; // Devuelve true si el login fue exitoso.
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    } else {
+      return isLoggedIn ? PaginaPrincipal() : IniciarSesionPage();
+    }
   }
 }
