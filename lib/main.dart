@@ -17,9 +17,26 @@ import 'package:homecoming/pages/login/recuperar_contra_page.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart'; // Importa Firebase
+import 'package:firebase_messaging/firebase_messaging.dart'; // Importa Firebase Messaging
+import 'firebase_options.dart'; // Importa opciones de Firebase
+
+// Función para manejar mensajes en segundo plano
+Future<void> _notificacionSegundoPlano(RemoteMessage message) async {
+  print("Mensaje en segundo plano: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // Opciones de Firebase según la plataforma
+  );
+
+  // Configurar el manejo de mensajes en segundo plano
+  FirebaseMessaging.onBackgroundMessage(_notificacionSegundoPlano);
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => UsuarioProvider(),
@@ -74,6 +91,20 @@ class _CheckLoginStatusState extends State<CheckLoginStatus> {
   void initState() {
     super.initState();
     _attemptAutoLogin();
+    _setupFCM(); // Configurar FCM al iniciar
+  }
+
+  // Método para configurar FCM
+  void _setupFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Obtener token FCM del dispositivo
+    String? token = await messaging.getToken();
+    print("FCM Token: $token");
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Mensaje en primer plano: ${message.notification?.title}');
+    });
   }
 
   Future<void> _attemptAutoLogin() async {
