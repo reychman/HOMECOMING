@@ -1,6 +1,6 @@
 <?php
     // Datos de conexión a la base de datos
-    $hostname = 'localhost:3307'; // Host donde está alojada la base de datos (generalmente localhost)
+    $hostname = 'localhost:3309'; // Host donde está alojada la base de datos (generalmente localhost)
     $username = 'root';      // Usuario de la base de datos (por ejemplo, root)
     $password = '';          // Contraseña del usuario de la base de datos
     $database = 'homecoming_v1'; // Nombre de la base de datos a la que te quieres conectar

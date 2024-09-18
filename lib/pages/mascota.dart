@@ -8,7 +8,7 @@ class Mascota {
   final String lugarPerdida;
   final String estado;
   final String descripcion;
-  final String foto;
+  final List<String> fotos; // Cambiamos foto por una lista de fotos
   final double? latitud;
   final double? longitud;
   final String nombreDueno;
@@ -25,7 +25,7 @@ class Mascota {
     required this.lugarPerdida,
     required this.estado,
     required this.descripcion,
-    required this.foto,
+    required this.fotos, // Lista de fotos
     this.latitud,
     this.longitud,
     required this.nombreDueno,
@@ -35,7 +35,7 @@ class Mascota {
 
   factory Mascota.fromJson(Map<String, dynamic> json) {
     return Mascota(
-      id: json['id'] != null ? json['id'] as int : 0, // Proveer un valor predeterminado si es null
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) ?? 0 : 0, // Convertir el id a int
       nombre: json['nombre'] ?? 'Desconocido',
       especie: json['especie'] ?? 'Desconocida',
       raza: json['raza'] ?? 'Desconocida',
@@ -44,7 +44,7 @@ class Mascota {
       lugarPerdida: json['lugar_perdida'] ?? 'Desconocido',
       estado: json['estado'] ?? 'Desconocido',
       descripcion: json['descripcion'] ?? 'Sin descripción',
-      foto: json['foto'] ?? '',
+      fotos: json['fotos'] != null ? List<String>.from(json['fotos']) : [], // Convertir fotos en una lista
       latitud: json['latitud'] != null ? (json['latitud'] is double ? json['latitud'] : double.tryParse(json['latitud'].toString())) : null,
       longitud: json['longitud'] != null ? (json['longitud'] is double ? json['longitud'] : double.tryParse(json['longitud'].toString())) : null,
       nombreDueno: json['nombre_dueno'] ?? 'Desconocido',

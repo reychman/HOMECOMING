@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/mascota.dart';
-import 'package:homecoming/pages/menu/info_mascotas_page.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
+import 'package:homecoming/pages/menu/modals.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'dart:convert'; // Importa para decodificar JSON
 import 'package:http/http.dart' as http; // Importa para solicitudes HTTP
@@ -14,7 +14,7 @@ class MapaBusquedasPage extends StatefulWidget {
 }
 
 class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
-  GoogleMapController? _mapController;
+  GoogleMapController? _mapController; // Controlador del mapa
   BitmapDescriptor? _perroIcon;
   BitmapDescriptor? _gatoIcon;
 
@@ -26,8 +26,15 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
   @override
   void initState() {
     super.initState();
-    _loadCustomMarkers();
+    _loadCustomMarkers(); // Cargar íconos personalizados
     _fetchMascotas(); // Cargar mascotas desde la base de datos
+  }
+
+  // Asegurarse de liberar el controlador cuando el widget es destruido
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   Usuario? usuario;
@@ -42,29 +49,29 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
       ImageConfiguration(size: Size(48, 48)),
       'assets/imagenes/gato.png',
     );
-    setState(() {});
+    setState(() {}); // Actualiza el estado con los íconos cargados
   }
 
-Future<void> _fetchMascotas() async {
-  final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mapa_busquedas.php'));
+  Future<void> _fetchMascotas() async {
+    final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mapa_busquedas.php'));
 
-  if (response.statusCode == 200) {
-    final List<dynamic> data = json.decode(response.body);
-    setState(() {
-      _mascotas = data.map((json) => Mascota.fromJson(json)).toList();
-    });
-  } else {
-    print('Error al obtener los datos: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        _mascotas = data.map((json) => Mascota.fromJson(json)).toList();
+      });
+    } else {
+      print('Error al obtener los datos: ${response.statusCode}');
+    }
   }
-}
 
-
+  // Configura el controlador del mapa y anima la cámara a la posición inicial
   void _onMapCreated(GoogleMapController controller) {
-    setState(() {
-      _mapController = controller;
-    });
+    _mapController = controller;
     _animateToInitialPosition(); // Llama a la función para animar la cámara
   }
+
+  // Animar la cámara a la posición inicial
   void _animateToInitialPosition() {
     if (_mapController != null) {
       _mapController!.animateCamera(
@@ -84,17 +91,18 @@ Future<void> _fetchMascotas() async {
       appBar: AppBar(
         title: Text('Mapa de búsquedas'),
       ),
-      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), // Menú lateral
       body: (_perroIcon == null || _gatoIcon == null)
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator()) // Muestra el loading mientras se cargan los íconos
           : GoogleMap(
               initialCameraPosition: _initialPosition,
-              onMapCreated: _onMapCreated, // Asegúrate de asignar el método aquí
-              markers: _createMarkers(),
+              onMapCreated: _onMapCreated,
+              markers: _createMarkers(), // Crear marcadores
             ),
     );
   }
 
+  // Crear los marcadores de las mascotas
   Set<Marker> _createMarkers() {
     return _mascotas.map((mascota) {
       BitmapDescriptor? icon = (mascota.especie == 'perro') ? _perroIcon : _gatoIcon;
@@ -103,87 +111,131 @@ Future<void> _fetchMascotas() async {
         markerId: MarkerId(mascota.id.toString()),
         position: LatLng(mascota.latitud!, mascota.longitud!),
         icon: icon ?? BitmapDescriptor.defaultMarker,
-        onTap: () => _showMascotaInfoDialog(mascota), // Mostrar el diálogo al hacer clic
+        onTap: () => _showMascotaInfoDialog(mascota), // Mostrar el diálogo al hacer clic en el marcador
       );
     }).toSet();
   }
 
+  // Mostrar un diálogo con la información de la mascota
   void _showMascotaInfoDialog(Mascota mascota) {
+    int _currentImageIndex = 0;
+
     showDialog(
       context: context,
+      barrierDismissible: false, // Impide cerrar el modal al hacer clic fuera de él
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'No me dejes solo,',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+              title: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'No me dejes solo,',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Ayúdame a encontrar el camino.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
-                Text(
-                  'Ayúdame a encontrar el camino.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          contentPadding: EdgeInsets.all(16), // Padding alrededor del contenido
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Mostrar la foto de la mascota
-              Center(
-                child: mascota.foto.isNotEmpty
-                    ? Image.asset(
-                        'assets/imagenes/fotos_mascotas/${mascota.foto}',
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.cover,
-                      )
-                    : Icon(Icons.pets, size: 100, color: Colors.grey),
               ),
-              SizedBox(height: 16),
-              // Mostrar el nombre de la mascota
-              Text(
-                'Nombre: ${mascota.nombre.isNotEmpty ? mascota.nombre.toUpperCase() : 'Desconocido'}',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              // Mostrar la descripción de la mascota
-              Text(mascota.descripcion),
-              SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              contentPadding: EdgeInsets.all(16), // Padding alrededor del contenido
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Botón para ver más detalles
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Cerrar el diálogo
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => InfoMascotasPage(mascota: mascota), // Navegar a la página de información
-                        ),
-                      );
-                    },
-                    child: Text('Ver más detalles'),
+                  // Mostrar la foto de la mascota con controles de navegación
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.arrow_back),
+                        onPressed: () {
+                          if (mascota.fotos.isNotEmpty) {
+                            setState(() {
+                              // Navegar a la imagen anterior
+                              if (_currentImageIndex > 0) {
+                                _currentImageIndex--;
+                              } else {
+                                _currentImageIndex = mascota.fotos.length - 1; // Ir a la última si estamos en la primera
+                              }
+                            });
+                          }
+                        },
+                      ),
+                      SizedBox(width: 10),
+                      Center(
+                        child: mascota.fotos.isNotEmpty
+                            ? Image.asset(
+                                'assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex]}', // Mostrar la imagen actual
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.error, size: 100, color: Colors.red); // Muestra un icono de error si falla
+                                },
+                              )
+                            : Icon(Icons.pets, size: 100, color: Colors.grey), // Icono si no hay fotos
+                      ),
+                      SizedBox(width: 10),
+                      IconButton(
+                        icon: Icon(Icons.arrow_forward),
+                        onPressed: () {
+                          if (mascota.fotos.isNotEmpty) {
+                            setState(() {
+                              // Navegar a la siguiente imagen
+                              if (_currentImageIndex < mascota.fotos.length - 1) {
+                                _currentImageIndex++;
+                              } else {
+                                _currentImageIndex = 0; // Volver a la primera si estamos en la última
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 8), // Espacio entre los botones
-                  // Botón para cerrar el diálogo
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text('Cerrar'),
+                  SizedBox(height: 16),
+                  // Mostrar el nombre de la mascota
+                  Text(
+                    'Nombre: ${mascota.nombre.isNotEmpty ? mascota.nombre.toUpperCase() : 'Desconocido'}',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 8),
+                  // Mostrar la descripción de la mascota
+                  Text(mascota.descripcion),
+                  SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Botón para ver más detalles
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Cerrar el diálogo actual
+                          mostrarModalInfoMascota(context, mascota); // Llamar al método de home_page.dart
+                        },
+                        child: Text('Ver más detalles'),
+                      ),
+                      SizedBox(width: 8), // Espacio entre los botones
+                      // Botón para cerrar el diálogo
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('Cerrar'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:homecoming/pages/mascota.dart';
 
-class InfoMascotasPage extends StatelessWidget {
+class InfoMascotasPage extends StatefulWidget {
   final Mascota mascota;
 
   InfoMascotasPage({required this.mascota});
 
   @override
+  _InfoMascotasPageState createState() => _InfoMascotasPageState();
+}
+
+class _InfoMascotasPageState extends State<InfoMascotasPage> {
+  // Variable para almacenar el índice actual de la imagen
+  int _currentImageIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
+    final mascota = widget.mascota; // Acceder a la mascota desde widget
     return Scaffold(
       appBar: AppBar(
         title: Text('Mascota: ${mascota.nombre}'),
@@ -52,15 +61,66 @@ class InfoMascotasPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-            Center(
-              child: mascota.foto.isNotEmpty
-                  ? Image.asset(
-                      'assets/imagenes/fotos_mascotas/${mascota.foto}',
-                      width: 400,
-                      height: 400,
-                      fit: BoxFit.cover,
-                    )
-                  : Icon(Icons.pets, size: 200, color: Colors.grey),
+            SizedBox(height: 16),
+            // Contenedor de la imagen con flechas de navegación
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Botón de imagen anterior
+                IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  iconSize: 30.0,
+                  onPressed: () {
+                    if (mascota.fotos.isNotEmpty) {
+                      setState(() {
+                        // Navegar a la imagen anterior
+                        if (_currentImageIndex > 0) {
+                          _currentImageIndex--;
+                        } else {
+                          _currentImageIndex = mascota.fotos.length - 1; // Ir a la última imagen si estamos en la primera
+                        }
+                      });
+                    }
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        // Aquí puedes agregar alguna funcionalidad si es necesario
+                      },
+                      child: mascota.fotos.isNotEmpty
+                          ? Image.asset(
+                              'assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex]}',
+                              width: 400,
+                              height: 400,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.error, size: 200, color: Colors.red);
+                              },
+                            )
+                          : Icon(Icons.pets, size: 200, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                // Botón de imagen siguiente
+                IconButton(
+                  icon: Icon(Icons.arrow_forward),
+                  iconSize: 30.0,
+                  onPressed: () {
+                    if (mascota.fotos.isNotEmpty) {
+                      setState(() {
+                        // Navegar a la siguiente imagen
+                        if (_currentImageIndex < mascota.fotos.length - 1) {
+                          _currentImageIndex++;
+                        } else {
+                          _currentImageIndex = 0; // Volver a la primera imagen si estamos en la última
+                        }
+                      });
+                    }
+                  },
+                ),
+              ],
             ),
             SizedBox(height: 16),
             _buildInfoCard('Información de la Mascota', [
@@ -85,7 +145,7 @@ class InfoMascotasPage extends StatelessWidget {
   }
 
   Widget _buildInfoCard(String title, List<Widget> children) {
-    return Container(
+    return SizedBox(
       width: 500, // Ajusta el ancho deseado aquí
       child: Card(
         elevation: 4,
@@ -153,8 +213,9 @@ class InfoMascotasPage extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () async {
-                if (await canLaunch(url)) {
-                  await launch(url);
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
                 } else {
                   throw 'No se pudo iniciar $url';
                 }
@@ -192,11 +253,11 @@ class InfoMascotasPage extends StatelessWidget {
               children: [
                 InkWell(
                   onTap: () async {
-                    final telUrl = 'tel:$phoneNumber';
-                    if (await canLaunch(telUrl)) {
-                      await launch(telUrl);
+                    final telUri = Uri.parse('tel:$phoneNumber');
+                    if (await canLaunchUrl(telUri)) {
+                      await launchUrl(telUri);
                     } else {
-                      throw 'Could not launch $telUrl';
+                      throw 'No se pudo iniciar $telUri';
                     }
                   },
                   child: Text(
@@ -211,11 +272,11 @@ class InfoMascotasPage extends StatelessWidget {
                 SizedBox(width: 8),
                 InkWell(
                   onTap: () async {
-                    final whatsappUrl = 'https://wa.me/$phoneNumber';
-                    if (await canLaunch(whatsappUrl)) {
-                      await launch(whatsappUrl);
+                    final whatsappUri = Uri.parse('https://wa.me/$phoneNumber');
+                    if (await canLaunchUrl(whatsappUri)) {
+                      await launchUrl(whatsappUri);
                     } else {
-                      throw 'Could not launch $whatsappUrl';
+                      throw 'No se pudo iniciar $whatsappUri';
                     }
                   },
                   child: Image.asset(
