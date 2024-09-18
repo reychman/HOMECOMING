@@ -282,6 +282,7 @@ Future<void> _submitNewPassword(String newPassword) async {
 
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
+        print('Response body: ${response.body}'); // Imprime el cuerpo de la respuesta
 
         // Verifica si hay un error en la respuesta
         if (jsonResponse is List) {
@@ -291,15 +292,13 @@ Future<void> _submitNewPassword(String newPassword) async {
 
           // Verifica si _misPublicaciones contiene datos
           if (_misPublicaciones.isNotEmpty) {
-            //print('Mis publicaciones: $_misPublicaciones');
+            print('Mis publicaciones: $_misPublicaciones'); // Verifica si la lista no está vacía
           } else {
             print('No se encontraron publicaciones.');
           }
         } else {
           print('Error: ${jsonResponse['error']}');
         }
-      } else {
-        print('Error al obtener las publicaciones: ${response.statusCode}');
       }
     } catch (e) {
       print('Error en la solicitud: $e');
@@ -449,212 +448,207 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
 }
 
 @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Perfil'),
-    ),
-    drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
-    body: _usuario == null
-        ? Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(  // Esto habilita el scroll para toda la página
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(  // El contenido general estará en una columna
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey,
-                      backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
-                          ? NetworkImage(_usuario!.fotoPortada!)
-                          : _imageBytes != null
-                              ? MemoryImage(_imageBytes!)
-                              : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
-                      child: _usuario!.fotoPortada == null && _imageBytes == null
-                          ? Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                            )
-                          : null,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Perfil'),
+      ),
+      drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
+      body: _usuario == null
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey,
+                        backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
+                            ? NetworkImage(_usuario!.fotoPortada!)
+                            : _imageBytes != null
+                                ? MemoryImage(_imageBytes!)
+                                : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
+                        child: _usuario!.fotoPortada == null && _imageBytes == null
+                            ? Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    _usuario!.nombre,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    _usuario!.email,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => EditarPerfilPage(user: _usuario!),
-                      ));
-                    },
-                    child: Text('Editar Perfil'),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _updatePassword,
-                    child: Text('Actualizar Contraseña'),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _logout,
-                    child: Text('Cerrar Sesión'),
-                  ),
-                  SizedBox(height: 20),
-                  // Sección de "Mis Publicaciones"
-                  Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 20),
-                  // Convertimos la lista de publicaciones en un GridView
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      int crossAxisCount = 1;  // Default para pantallas pequeñas
-                      // Si la pantalla es más ancha, cambiamos el número de columnas
-                      if (constraints.maxWidth > 600) {
-                        crossAxisCount = 2;  // 2 columnas para pantallas medianas
-                      }
-                      if (constraints.maxWidth > 900) {
-                        crossAxisCount = 3;  // 3 columnas para pantallas grandes
-                      }
-                      return GridView.builder(
-                        physics: NeverScrollableScrollPhysics(), // Evita que el GridView tenga su propio scroll
-                        shrinkWrap: true,  // Deja que el GridView ocupe solo el espacio necesario
-                        padding: EdgeInsets.all(10),
-                        itemCount: _misPublicaciones.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,  // Se ajusta automáticamente según el ancho
-                          crossAxisSpacing: 10, // Espaciado horizontal entre las columnas
-                          mainAxisSpacing: 10, // Espaciado vertical entre las filas
-                          childAspectRatio: 3 / 4, // Ajusta este valor para controlar la proporción entre ancho y alto del card
-                        ),
-                        itemBuilder: (context, index) {
-                          var publicacion = _misPublicaciones[index];
-                          return Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: publicacion['estado'] == 'perdido' ? Colors.red : Colors.green,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(10),
-                                      topRight: Radius.circular(10),
+                    SizedBox(height: 20),
+                    Text(
+                      _usuario!.nombre,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _usuario!.email,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => EditarPerfilPage(user: _usuario!),
+                        ));
+                      },
+                      child: Text('Editar Perfil'),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _updatePassword,
+                      child: Text('Actualizar Contraseña'),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _logout,
+                      child: Text('Cerrar Sesión'),
+                    ),
+                    SizedBox(height: 20),
+                    // Sección de "Mis Publicaciones"
+                    Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 20),
+                    // Convertimos la lista de publicaciones en un GridView
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        int crossAxisCount = 1;
+                        if (constraints.maxWidth > 600) crossAxisCount = 2;
+                        if (constraints.maxWidth > 900) crossAxisCount = 3;
+
+                        return GridView.builder(
+                          physics: NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          padding: EdgeInsets.all(10),
+                          itemCount: _misPublicaciones.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount, // Número de columnas, ajustado según el tamaño de la pantalla
+                          crossAxisSpacing: 40, // Espacio horizontal entre los cards
+                          mainAxisSpacing: 20,  // Espacio vertical entre los cards
+                          childAspectRatio: 2 / 2, // Proporción entre ancho y alto de cada card
+                          ),
+                          itemBuilder: (context, index) {
+                            var publicacion = _misPublicaciones[index];
+                            List<String> fotos = List<String>.from(publicacion['fotos']); // Obtener la lista de fotos
+                            return Card(
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: publicacion['estado'] == 'perdido' ? Colors.red : Colors.green,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(10),
+                                        topRight: Radius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      publicacion['estado'] == 'perdido'
+                                          ? 'Tu mascota te extraña tanto tú a él/ella'
+                                          : 'Nos complace saber que tu mascota fue encontrada',
+                                      style: TextStyle(color: Colors.white),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ),
-                                  child: Text(
-                                    publicacion['estado'] == 'perdido'
-                                      ? 'Tu mascota te extraña tanto tu a el/ella'
-                                      : 'Nos complace saber que tu mascota fue encontrada',
-                                    style: TextStyle(color: Colors.white),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.vertical(
-                                      bottom: Radius.circular(10),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/imagenes/fotos_mascotas/${publicacion['foto']}',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(Icons.pets, size: 200, color: Colors.grey);
-                                      },
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+                                      child: fotos.isNotEmpty
+                                          ? Image.asset(
+                                              'assets/imagenes/fotos_mascotas/${fotos[0]}', // Mostrar la primera foto
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Icon(Icons.pets, size: 200, color: Colors.grey);
+                                              },
+                                            )
+                                          : Icon(Icons.pets, size: 200, color: Colors.grey),
                                     ),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        publicacion['nombre'],
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        'Fecha de perdida: ${publicacion['fecha_perdida']}  -  ${obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida']))}',
-                                        style: TextStyle(color: Colors.grey[600]),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        'Se perdio en: ${publicacion['lugar_perdida']}',
-                                        style: TextStyle(color: Colors.grey[600]),
-                                      ),
-                                    ],
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          publicacion['nombre'],
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          'Fecha de perdida: ${publicacion['fecha_perdida']}  -  ${obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida']))}',
+                                          style: TextStyle(color: Colors.grey[600]),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          'Se perdio en: ${publicacion['lugar_perdida']}',
+                                          style: TextStyle(color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () {
-                                          if (publicacion['estado'] == 'perdido') {
-                                            _mostrarConfirmacionCambioEstado(
-                                              publicacion['id'],
-                                              'encontrado',
-                                              'Confirmación',
-                                              'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?'
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () {
+                                            if (publicacion['estado'] == 'perdido') {
+                                              _mostrarConfirmacionCambioEstado(
+                                                publicacion['id'],
+                                                'encontrado',
+                                                'Confirmación',
+                                                'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?'
+                                              );
+                                            } else if (publicacion['estado'] == 'encontrado') {
+                                              _mostrarConfirmacionCambioEstado(
+                                                publicacion['id'],
+                                                'perdido',
+                                                'Confirmación',
+                                                'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota. Es recomendable actualizar los datos antiguos.'
+                                              );
+                                            }
+                                          },
+                                          child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                              ),
                                             );
-                                          } else if (publicacion['estado'] == 'encontrado') {
-                                            _mostrarConfirmacionCambioEstado(
-                                              publicacion['id'],
-                                              'perdido',
-                                              'Confirmación',
-                                              'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota. Es recomendable actualizar los datos antiguos.'
-                                            );
-                                          }
-                                        },
-                                        child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) => EditarPublicacionPage(publicacion: publicacion),
-                                            ),
-                                          );
-                                        },
-                                        child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          _confirmarEliminacionPublicacion(publicacion['id']);
-                                        },
-                                        child: Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                      ),
-                                    ],
+                                          },
+                                          child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            _confirmarEliminacionPublicacion(publicacion['id']);
+                                          },
+                                          child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-  );
-}
+    );
+  }
 }

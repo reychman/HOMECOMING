@@ -44,11 +44,14 @@ function obtenerPublicaciones() {
     }
 
     $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, 
-                    M.estado, M.descripcion, M.foto, M.latitud, M.longitud, 
-                    U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
-            FROM mascotas M
-            JOIN usuarios U ON M.usuario_id = U.id
-            WHERE M.usuario_id = ? AND M.estado_registro = 1";  
+                M.estado, M.descripcion, GROUP_CONCAT(F.foto) AS fotos, M.latitud, M.longitud, 
+                U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+        FROM mascotas M
+        JOIN usuarios U ON M.usuario_id = U.id
+        LEFT JOIN fotos_mascotas F ON M.id = F.mascota_id
+        WHERE M.usuario_id = ? AND M.estado_registro = 1
+        GROUP BY M.id";  // Agrupar por ID de mascota para concatenar las fotos
+
     $stmt = $conexion->prepare($sql);
     $stmt->bind_param("i", $usuario_id);
     $stmt->execute();
@@ -58,6 +61,9 @@ function obtenerPublicaciones() {
 
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+            // Dividimos las fotos en una lista si se han concatenado
+            $fotos = !empty($row['fotos']) ? explode(',', $row['fotos']) : [];
+
             $mascotas[] = array(
                 'id' => (int)$row['id'],
                 'nombre' => $row['nombre'],
@@ -68,9 +74,9 @@ function obtenerPublicaciones() {
                 'lugar_perdida' => $row['lugar_perdida'],
                 'estado' => $row['estado'],
                 'descripcion' => $row['descripcion'],
-                'foto' => $row['foto'],
-                'latitud' => $row['latitud'],  // Incluir latitud
-                'longitud' => $row['longitud'], // Incluir longitud
+                'fotos' => $fotos, // Incluimos la lista de fotos
+                'latitud' => $row['latitud'],
+                'longitud' => $row['longitud'],
                 'nombre_dueno' => $row['nombre_dueno'],
                 'email_dueno' => $row['email_dueno'],
                 'telefono_dueno' => $row['telefono_dueno']
@@ -78,7 +84,6 @@ function obtenerPublicaciones() {
         }
     }
 
-    // Verifica si se encontraron mascotas
     if (empty($mascotas)) {
         echo json_encode(['error' => 'No se encontraron publicaciones para este usuario']);
     } else {
