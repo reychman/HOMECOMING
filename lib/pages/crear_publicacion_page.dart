@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
+//import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart'; // Asegúrate de tener este import
@@ -22,7 +27,7 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   final TextEditingController _lugarPerdidaController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
 
-  Uint8List? _selectedImage;
+  List<Uint8List> _selectedImages = []; // Para almacenar varias imágenes
   String _especie = 'Seleccione una especie';
   String _sexo = 'Seleccione el sexo';
   String usuarioId = '';
@@ -50,8 +55,8 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
 
   Future<void> _enviarDatos() async {
     if (_formKeyStep1.currentState!.validate() && _formKeyStep2.currentState!.validate()) {
-      if (_selectedImage == null) {
-        _showSnackbar('Por favor seleccione una imagen');
+      if (_selectedImages.isEmpty) {
+        _showSnackbar('Por favor seleccione una o más imágenes');
         return;
       }
 
@@ -66,11 +71,14 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
           Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/publicar_mascota.php'),
         );
 
-        request.files.add(http.MultipartFile.fromBytes(
-          'foto',
-          _selectedImage!,
-          filename: 'foto.png',
-        ));
+        // Agregar todas las imágenes seleccionadas
+        for (int i = 0; i < _selectedImages.length; i++) {
+          request.files.add(http.MultipartFile.fromBytes(
+            'fotos[]', // Enviar como array
+            _selectedImages[i],
+            filename: 'foto_$i.png',
+          ));
+        }
 
         request.fields['nombre'] = _nombreController.text;
         request.fields['especie'] = _especie;
@@ -84,13 +92,9 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
         request.fields['usuario_id'] = usuarioId;
 
         final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+        final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        // Imprimir el cuerpo de la respuesta para debug
-        print('Response body: ${response.body}');
-
-        try {
+        if (response.statusCode == 200) {
           final jsonResponse = json.decode(response.body);
           if (jsonResponse['success']) {
             _showSnackbar('Mascota registrada con éxito');
@@ -98,21 +102,15 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
           } else {
             _showSnackbar('Error: ${jsonResponse['message']}');
           }
-        } catch (e) {
-          _showSnackbar('Error al decodificar JSON: $e');
-          print('Error decoding JSON: $e');
+        } else {
+          _showSnackbar('Error al conectar con el servidor');
         }
-      } else {
-        _showSnackbar('Error al conectar con el servidor');
-        print('Error response status: ${response.statusCode}');
-        print('Error response body: ${response.body}');
+      } catch (e) {
+        _showSnackbar('Ocurrió un error: $e');
       }
-    } catch (e) {
-      _showSnackbar('Ocurrió un error: $e');
-      print('Error sending data: $e');
     }
   }
-}
+
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -123,15 +121,45 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
     );
   }
 
-  Future<void> _pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+  Future<void> _pickImages() async {
+    final ImagePicker _picker = ImagePicker();
+    
+    // El usuario selecciona múltiples imágenes
+    List<XFile> pickedFiles = await _picker.pickMultiImage();
 
-    if (result != null) {
+    // Iterar sobre las imágenes seleccionadas
+    for (XFile file in pickedFiles) {
+      Uint8List? imageBytes;
+
+      // Recorte para Android
+      if (!kIsWeb && Platform.isAndroid) {
+        CroppedFile? croppedFile = await ImageCropper().cropImage(
+          sourcePath: file.path,
+          cropStyle: CropStyle.rectangle,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Recortar Imagen',
+              toolbarColor: Colors.green,
+              toolbarWidgetColor: Colors.white,
+              lockAspectRatio: false,  // El usuario puede ajustar el aspecto
+              hideBottomControls: false,
+            ),
+          ],
+        );
+
+        if (croppedFile != null) {
+          imageBytes = await croppedFile.readAsBytes();
+        }
+      }
+
+      // Para web o si no se recorta la imagen, usar la imagen original
+      if (kIsWeb || imageBytes == null) {
+        imageBytes = await file.readAsBytes();
+      }
+
+      // Almacenar las imágenes recortadas o las originales
       setState(() {
-        _selectedImage = result.files.first.bytes;
+        _selectedImages.add(imageBytes!);
       });
     }
   }
@@ -354,23 +382,58 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildStep3() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-          onPressed: _pickImage,
-          child: Text('Seleccionar Imagen'),
-        ),
-        if (_selectedImage != null) Image.memory(_selectedImage!),
-        ElevatedButton(
-          onPressed: _nextStep,
-          child: Text('Siguiente'),
-        ),
-        ElevatedButton(
-          onPressed: _previousStep,
-          child: Text('Anterior'),
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed: _pickImages,
+            child: Text('Seleccionar Imágenes'),
+          ),
+          SizedBox(height: 20),
+          // Mostrar las imágenes seleccionadas (y recortadas)
+          if (_selectedImages.isNotEmpty)
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _selectedImages.map((image) {
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8.0),
+                      child: Image.memory(
+                        image,
+                        width: 150,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 5,
+                      right: 5,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImages.remove(image);  // Remover imagen si se hace clic en "Eliminar"
+                          });
+                        },
+                        child: Icon(Icons.close, color: Colors.red),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ElevatedButton(
+            onPressed: _nextStep,
+            child: Text('Siguiente'),
+          ),
+          ElevatedButton(
+            onPressed: _previousStep,
+            child: Text('Anterior'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -12,9 +12,10 @@ if ($conexion->connect_error) {
 }
 
 // Consulta para obtener todas las mascotas
-$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
         FROM mascotas M
-        JOIN usuarios U ON M.usuario_id = U.id";
+        JOIN usuarios U ON M.usuario_id = U.id
+        ORDER BY M.fecha_creacion DESC";
 
 $result = $conexion->query($sql);
 $mascotas = array();
