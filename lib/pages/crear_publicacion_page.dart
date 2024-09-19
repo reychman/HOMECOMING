@@ -111,7 +111,6 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
     }
   }
 
-
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -125,43 +124,85 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
     final ImagePicker _picker = ImagePicker();
     
     // El usuario selecciona múltiples imágenes
-    List<XFile> pickedFiles = await _picker.pickMultiImage();
+    List<XFile>? pickedFiles = await _picker.pickMultiImage();
 
-    // Iterar sobre las imágenes seleccionadas
-    for (XFile file in pickedFiles) {
-      Uint8List? imageBytes;
+      for (XFile file in pickedFiles) {
+        Uint8List? imageBytes;
 
-      // Recorte para Android
-      if (!kIsWeb && Platform.isAndroid) {
-        CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: file.path,
-          cropStyle: CropStyle.rectangle,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Recortar Imagen',
-              toolbarColor: Colors.green,
-              toolbarWidgetColor: Colors.white,
-              lockAspectRatio: false,  // El usuario puede ajustar el aspecto
-              hideBottomControls: false,
-            ),
-          ],
-        );
+        // Recorte para Android
+        if (!kIsWeb && Platform.isAndroid) {
+          CroppedFile? croppedFile = await ImageCropper().cropImage(
+            sourcePath: file.path,
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Recortar Imagen',
+                toolbarColor: Colors.green,
+                toolbarWidgetColor: Colors.white,
+                lockAspectRatio: true, // Bloquear la relación de aspecto fija
+                aspectRatioPresets: [
+                  CropAspectRatioPreset.square,  // Forzar la relación de aspecto cuadrada
+                ],
+                hideBottomControls: true,  // Ocultar controles inferiores para evitar cambios
+              ),
+            ],
+          );
 
-        if (croppedFile != null) {
-          imageBytes = await croppedFile.readAsBytes();
+          if (croppedFile != null) {
+            imageBytes = await croppedFile.readAsBytes();
+          }
+          else {
+            // El usuario canceló el recorte
+            continue; // Saltar esta iteración y no hacer nada
+          }
         }
-      }
 
-      // Para web o si no se recorta la imagen, usar la imagen original
-      if (kIsWeb || imageBytes == null) {
-        imageBytes = await file.readAsBytes();
-      }
+        // Recorte para Web usando Cropper.js
+        if (kIsWeb) {
+          if (!mounted) return;  // Verificar si el widget sigue montado antes de usar el contexto
 
-      // Almacenar las imágenes recortadas o las originales
-      setState(() {
-        _selectedImages.add(imageBytes!);
-      });
-    }
+          CroppedFile? croppedFile = await ImageCropper().cropImage(
+            sourcePath: file.path,
+            uiSettings: [
+              WebUiSettings(
+                context: context,  // Usamos el context, pero solo si el widget sigue montado
+                size: CropperSize(width: 500, height: 500), // Tamaño fijo
+                dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
+                initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
+                zoomable: true,  // Habilitar zoom
+                rotatable: true,  // Habilitar rotación
+                cropBoxResizable: false,
+                translations: WebTranslations(
+                  title: 'Recortar Imagen',  // Personaliza el título aquí
+                  cropButton: 'Recortar',   // Cambia el texto del botón de recorte
+                  cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
+                  rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
+                  rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
+                ),
+              ),
+            ],
+          );
+          if (croppedFile != null) {
+            imageBytes = await croppedFile.readAsBytes();
+          }
+          else {
+            // si el usuario cancela el recorte saltar esa imagen
+            continue; 
+          }
+        }
+
+        // Para plataformas donde no se recorta, usar la imagen original
+        if (!kIsWeb && imageBytes == null) {
+          imageBytes = await file.readAsBytes();
+        }
+
+        // Verificar si el widget sigue montado antes de usar el contexto
+        if (!mounted) return;
+
+        // Almacenar las imágenes recortadas o las originales
+        setState(() {
+          _selectedImages.add(imageBytes!);
+        });
+      }
   }
 
   Future<void> _selectDate(BuildContext context) async {
