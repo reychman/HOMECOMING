@@ -51,11 +51,11 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(vertical: 60.0), // Añade un padding para bajar la imagen
                                           child: mascota.fotos.isNotEmpty
-                                              ? Image.asset(
-                                                  'assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
+                                              ? Image.network(
+                                                  'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
                                                   width: 400,
                                                   height: 400,
-                                                  fit: BoxFit.cover,
+                                                  fit: BoxFit.contain,
                                                   errorBuilder: (context, error, stackTrace) {
                                                     return Icon(Icons.error, size: 200, color: Colors.red);
                                                   },
@@ -167,19 +167,19 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                     }
                                   },
                                 ),
-                                Expanded(
+                                /*Expanded(//por demas
                                   child: mascota.fotos.isNotEmpty
-                                      ? Image.asset(
-                                          'assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
+                                      ? Image.network(
+                                          'http://localhost/homecomingassets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
                                           width: 400,
                                           height: 400,
-                                          fit: BoxFit.cover,
+                                          fit: BoxFit.contain,
                                           errorBuilder: (context, error, stackTrace) {
                                             return Icon(Icons.error, size: 200, color: Colors.red);
                                           },
                                         )
                                       : Icon(Icons.pets, size: 200, color: Colors.grey),
-                                ),
+                                ),*/
                                 IconButton(
                                   icon: Icon(Icons.arrow_forward),
                                   iconSize: 30.0,
@@ -366,10 +366,13 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                       throw 'No se pudo iniciar $whatsappUri';
                     }
                   },
-                  child: Image.asset(
-                    '../../../assets/imagenes/whatsapp.png',
+                  child: Image.network(
+                    'http://localhost/homecoming/assets/imagenes/whatsapp.png',
                     width: 24,
                     height: 24,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.error, size: 24, color: Colors.red);
+                    },
                   ),
                 ),
               ],

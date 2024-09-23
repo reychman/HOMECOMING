@@ -231,8 +231,8 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                                                 mostrarModalInfoMascota(context, mascota); // Mostrar modal cuando se hace clic en la imagen
                                               },
                                               child: mascota.fotos.isNotEmpty
-                                                  ? Image.asset(
-                                                      'assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
+                                                  ? Image.network(
+                                                      'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
                                                       width: 400,
                                                       height: 250, // Ajustar la altura de la imagen
                                                       fit: BoxFit.contain, // Cambiar a BoxFit.contain para que la imagen se muestre completa
