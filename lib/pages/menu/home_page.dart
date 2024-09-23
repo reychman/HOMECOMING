@@ -35,6 +35,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
   void dispose() {
     _searchController.dispose(); // Liberar recursos del controlador
     super.dispose();
+
   }
 
   Usuario? usuario;
@@ -60,6 +61,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
   Future<List<Mascota>> obtenerMascotas() async {
+    print("Obteniendo las mascotas...");
     final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
     if (response.statusCode == 200) {
@@ -112,9 +114,6 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
       }
     });
   }
-
-  // Función para mostrar el modal con la información de la mascota
-
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +235,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                                                       'assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
                                                       width: 400,
                                                       height: 250, // Ajustar la altura de la imagen
-                                                      fit: BoxFit.cover,
+                                                      fit: BoxFit.contain, // Cambiar a BoxFit.contain para que la imagen se muestre completa
                                                       errorBuilder: (context, error, stackTrace) {
                                                         return Icon(Icons.error, size: 100, color: Colors.red);
                                                       },
@@ -302,11 +301,18 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
           final bool usuarioLogeado = snapshot.data ?? false;
 
           return FloatingActionButton(
-            onPressed: () {
+            onPressed: () async {
               if (usuarioLogeado) {
-                Navigator.of(context).push(MaterialPageRoute(
+                final result = await Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => CrearPublicacionPage(),
                 ));
+
+                if (result == true) {
+                  // Refrescar la lista de mascotas si se publicó una mascota nueva
+                  setState(() {
+                    futureMascotas = obtenerMascotas();
+                  });
+                }
               } else {
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => IniciarSesionPage(),

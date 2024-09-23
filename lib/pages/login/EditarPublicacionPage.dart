@@ -87,7 +87,7 @@ Future<void> _editarPublicacion() async {
         try {
           final jsonResponse = json.decode(response.body);
           if (jsonResponse['success']) {
-            _showSnackbar('Mascota registrada con éxito');
+            _showSnackbar('Datos de la mascota actualizados con éxito');
             Navigator.of(context).pop();
           } else {
             _showSnackbar('Error: ${jsonResponse['message']}');

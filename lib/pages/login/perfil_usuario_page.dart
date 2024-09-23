@@ -447,7 +447,7 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
   }
 }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -526,10 +526,10 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                           padding: EdgeInsets.all(10),
                           itemCount: _misPublicaciones.length,
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount, // Número de columnas, ajustado según el tamaño de la pantalla
-                          crossAxisSpacing: 40, // Espacio horizontal entre los cards
-                          mainAxisSpacing: 20,  // Espacio vertical entre los cards
-                          childAspectRatio: 2 / 2, // Proporción entre ancho y alto de cada card
+                            crossAxisCount: crossAxisCount, // Número de columnas, ajustado según el tamaño de la pantalla
+                            crossAxisSpacing: 40, // Espacio horizontal entre los cards
+                            mainAxisSpacing: 20,  // Espacio vertical entre los cards
+                            childAspectRatio: 2 / 2, // Proporción entre ancho y alto de cada card
                           ),
                           itemBuilder: (context, index) {
                             var publicacion = _misPublicaciones[index];
@@ -564,12 +564,14 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                                       child: fotos.isNotEmpty
                                           ? Image.asset(
                                               'assets/imagenes/fotos_mascotas/${fotos[0]}', // Mostrar la primera foto
+                                              width: MediaQuery.of(context).size.width * 0.8, // Ajustar al 80% del ancho de la pantalla
+                                              height: MediaQuery.of(context).size.height * 0.25, // Ajustar al 25% del alto de la pantalla
                                               fit: BoxFit.cover,
                                               errorBuilder: (context, error, stackTrace) {
-                                                return Icon(Icons.pets, size: 200, color: Colors.grey);
+                                                return Icon(Icons.pets, size: 100, color: Colors.grey);
                                               },
                                             )
-                                          : Icon(Icons.pets, size: 200, color: Colors.grey),
+                                          : Icon(Icons.pets, size: 100, color: Colors.grey),
                                     ),
                                   ),
                                   Padding(
@@ -599,45 +601,54 @@ Future<void> _eliminarPublicacion(int publicacionId) async {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
-                                        TextButton(
-                                          onPressed: () {
-                                            if (publicacion['estado'] == 'perdido') {
-                                              _mostrarConfirmacionCambioEstado(
-                                                publicacion['id'],
-                                                'encontrado',
-                                                'Confirmación',
-                                                'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?'
-                                              );
-                                            } else if (publicacion['estado'] == 'encontrado') {
-                                              _mostrarConfirmacionCambioEstado(
-                                                publicacion['id'],
-                                                'perdido',
-                                                'Confirmación',
-                                                'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota. Es recomendable actualizar los datos antiguos.'
-                                              );
-                                            }
-                                          },
-                                          child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
+                                        SizedBox(
+                                          width: 80,  // Limitar el ancho de cada botón
+                                          child: TextButton(
+                                            onPressed: () {
+                                              if (publicacion['estado'] == 'perdido') {
+                                                _mostrarConfirmacionCambioEstado(
+                                                  publicacion['id'],
+                                                  'encontrado',
+                                                  'Confirmación',
+                                                  'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?'
+                                                );
+                                              } else if (publicacion['estado'] == 'encontrado') {
+                                                _mostrarConfirmacionCambioEstado(
+                                                  publicacion['id'],
+                                                  'perdido',
+                                                  'Confirmación',
+                                                  'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota. Es recomendable actualizar los datos antiguos.'
+                                                );
+                                              }
+                                            },
+                                            child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
+                                          ),
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (context) => EditarPublicacionPage(publicacion: publicacion),
-                                              ),
-                                            );
-                                          },
-                                          child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                                ),
+                                              );
+                                            },
+                                            child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
+                                          ),
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            _confirmarEliminacionPublicacion(publicacion['id']);
-                                          },
-                                          child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextButton(
+                                            onPressed: () {
+                                              _confirmarEliminacionPublicacion(publicacion['id']);
+                                            },
+                                            child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                  ),
+                                  ),// ancho total256 px
                                 ],
                               ),
                             );

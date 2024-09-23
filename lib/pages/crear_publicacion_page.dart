@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/menu/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -98,7 +99,10 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
           final jsonResponse = json.decode(response.body);
           if (jsonResponse['success']) {
             _showSnackbar('Mascota registrada con éxito');
-            Navigator.of(context).pop();
+            // Redirigir a la página principal y actualizar la lista de mascotas
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => PaginaPrincipal())
+            );
           } else {
             _showSnackbar('Error: ${jsonResponse['message']}');
           }
@@ -165,7 +169,7 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
             uiSettings: [
               WebUiSettings(
                 context: context,  // Usamos el context, pero solo si el widget sigue montado
-                size: CropperSize(width: 500, height: 500), // Tamaño fijo
+                size: CropperSize(width: 400, height: 400), // Tamaño fijo
                 dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
                 initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
                 zoomable: true,  // Habilitar zoom
@@ -423,57 +427,59 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildStep3() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: _pickImages,
-            child: Text('Seleccionar Imágenes'),
-          ),
-          SizedBox(height: 20),
-          // Mostrar las imágenes seleccionadas (y recortadas)
-          if (_selectedImages.isNotEmpty)
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: _selectedImages.map((image) {
-                return Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: Image.memory(
-                        image,
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      top: 5,
-                      right: 5,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedImages.remove(image);  // Remover imagen si se hace clic en "Eliminar"
-                          });
-                        },
-                        child: Icon(Icons.close, color: Colors.red),
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
+    return Expanded(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: _pickImages,
+              child: Text('Seleccionar Imágenes'),
             ),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: Text('Siguiente'),
-          ),
-          ElevatedButton(
-            onPressed: _previousStep,
-            child: Text('Anterior'),
-          ),
-        ],
+            SizedBox(height: 20),
+            if (_selectedImages.isNotEmpty)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: _selectedImages.map((image) {
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: Image.memory(
+                          image,
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 5,
+                        right: 5,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedImages.remove(image);  // Remover imagen si se hace clic en "Eliminar"
+                            });
+                          },
+                          child: Icon(Icons.close, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _nextStep,
+              child: Text('Siguiente'),
+            ),
+            ElevatedButton(
+              onPressed: _previousStep,
+              child: Text('Anterior'),
+            ),
+          ],
+        ),
       ),
     );
   }
