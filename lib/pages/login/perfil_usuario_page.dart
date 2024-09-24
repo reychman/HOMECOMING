@@ -346,7 +346,6 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
     }
   }
 
-
   Future<void> _loadUserData() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   int? usuario_id = prefs.getInt('usuario_id');
@@ -364,63 +363,130 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
   }
 }
 
+Future<void> _uploadImage(Uint8List imageBytes) async {
+  if (_usuario == null || _usuario!.id == null) return;
 
-  Future<void> _uploadImage(Uint8List imageBytes) async {
-    if (_usuario == null || _usuario!.id == null) return;
+  final request = http.MultipartRequest(
+    'POST',
+    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
+  );
 
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
-    );
+  // Enviar los campos requeridos por el servidor
+  request.fields['accion'] = 'subirFotoPerfil'; // Asegúrate de que esto coincida con lo esperado en el servidor
+  request.fields['id'] = _usuario!.id.toString(); // Enviar el ID del usuario
 
-    request.fields['id'] = _usuario!.id.toString();
-    request.files.add(http.MultipartFile.fromBytes(
-      'foto_portada',
-      imageBytes,
-      contentType: MediaType('image', 'jpeg'),
-    ));
+  // Añadir la imagen
+  request.files.add(http.MultipartFile.fromBytes(
+    'foto_perfil', // Nombre del campo en la tabla 'usuarios'
+    imageBytes,
+    filename: 'foto_perfil_${_usuario!.id}.jpg', // Asigna un nombre único a la imagen
+    contentType: MediaType('image', 'jpeg'),
+  ));
 
-    try {
-      final response = await request.send();
-      final responseData = await response.stream.bytesToString();
-      final jsonResponse = jsonDecode(responseData);
+  try {
+    final response = await request.send();
+    final responseData = await response.stream.bytesToString();
+    final jsonResponse = jsonDecode(responseData);
 
-      if (jsonResponse['success'] != null) {
-        print('Imagen subida correctamente');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Imagen subida correctamente'),
-            duration: Duration(seconds: 2),
+    if (jsonResponse['success']) {
+      // Actualiza la foto de perfil en la interfaz
+      setState(() {
+        _usuario!.fotoPortada = jsonResponse['foto_perfil'];
+      });
+
+      // Guardar la foto en SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('foto_perfil', jsonResponse['foto_perfil']);
+
+      // Refrescar la página después de la operación
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PerfilUsuario(),
           ),
         );
+    } else {
+      print('Error al subir la imagen: ${jsonResponse['error']}');
+    }
+  } catch (e) {
+    print('Error en _uploadImage: $e');
+  }
+}
 
+Future<void> _reemplazarFotoPerfil() async {
+  final picker = ImagePicker();
+  try {
+    // Seleccionar una nueva imagen desde la galería
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      // Recortar la imagen seleccionada
+      final croppedBytes = await _cropImage(context, pickedFile.path);
+
+      if (croppedBytes != null) {
+        // Actualizar la imagen en la interfaz
         setState(() {
-          _usuario!.fotoPortada = jsonResponse['foto_portada'];
+          _imageBytes = croppedBytes;
         });
 
-        if (_usuario!.id != null) {
-          await UsuarioProvider.actualizarFotoPortada(_usuario!.id!, jsonResponse['foto_portada']);
-        }
-
-        Navigator.of(context).pop(); 
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (context) => PerfilUsuario(),
-        ));
+        // Subir la nueva imagen al servidor
+        await _uploadImage(croppedBytes);
       } else {
-        print('Error al subir imagen: ${jsonResponse['error']}');
+        // Si no se recortó correctamente
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${jsonResponse['error']}'),
-            duration: Duration(seconds: 2),
-          ),
+          SnackBar(content: Text('No se recortó la imagen.')),
         );
       }
-    } catch (e) {
-      print('Error en _uploadImage: $e');
+    } else {
+      // Si no se seleccionó ninguna imagen
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+      );
+    }
+  } catch (e) {
+    // Manejar errores
+    print('Error al seleccionar o recortar la imagen: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
+    );
+  }
+}
+
+  Future<void> _eliminarFotoPerfil() async {
+    if (_usuario == null || _usuario!.id == null) return;
+
+    final response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
+      body: {
+        'accion': 'eliminarFotoPerfil',
+        'id': _usuario!.id.toString(),
+      },
+    );
+
+    final jsonResponse = jsonDecode(response.body);
+
+    if (jsonResponse['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al subir imagen'),
+          content: Text('Foto de perfil eliminada correctamente'),
           duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Eliminar la foto de perfil en la UI y en SharedPreferences
+      setState(() {
+        _usuario!.fotoPortada = null;
+        _imageBytes = null;
+      });
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('foto_perfil');
+
+      // Refrescar la página después de la eliminación
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PerfilUsuario(),
         ),
       );
     }
@@ -428,20 +494,43 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      // Seleccionar imagen desde la galería
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      final imageBytes = await pickedFile.readAsBytes();
-      setState(() {
-        _imageBytes = imageBytes;
-      });
-      await _uploadImage(_imageBytes!);
-    } else {
+      if (pickedFile != null) {
+        // Llamamos al método _cropImage para recortar la imagen
+        final croppedBytes = await _cropImage(context, pickedFile.path);
+
+        if (croppedBytes != null) {
+          // Mostramos la imagen recortada antes de subirla
+          setState(() {
+            _imageBytes = croppedBytes;
+          });
+
+          // Subimos la imagen recortada al servidor
+          await _uploadImage(croppedBytes);
+        } else {
+          // Si no se recortó correctamente la imagen
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No se recortó la imagen.')),
+          );
+        }
+      } else {
+        // Si no se seleccionó ninguna imagen
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+        );
+      }
+    } catch (e) {
+      // Captura cualquier error durante la selección o recorte de la imagen
+      print('Error al seleccionar o recortar la imagen: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+        SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
       );
     }
   }
+
   String obtenerMensajeFecha(DateTime fechaPerdida) {
     final hoy = DateTime.now();
     final diferenciaDias = hoy.difference(fechaPerdida).inDays;
@@ -767,16 +856,41 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
                     SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: _pickImage,
+                    PopupMenuButton<String>(
+                      onSelected: (String result) {
+                        if (result == 'agregar') {
+                          // Llamar a la función para seleccionar y agregar una nueva imagen
+                          _pickImage();
+                        } else if (result == 'reemplazar') {
+                          // Llamar a la función para reemplazar la imagen de perfil
+                          _reemplazarFotoPerfil();
+                        } else if (result == 'eliminar') {
+                          // Llamar a la función para eliminar la imagen de perfil
+                          _eliminarFotoPerfil();
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'agregar',
+                          child: Text('Agregar Foto de Perfil'),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'reemplazar',
+                          child: Text('Reemplazar Foto de Perfil'),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'eliminar',
+                          child: Text('Eliminar Foto de Perfil'),
+                        ),
+                      ],
                       child: CircleAvatar(
                         radius: 50,
                         backgroundColor: Colors.grey,
                         backgroundImage: _usuario!.fotoPortada != null && _usuario!.fotoPortada!.isNotEmpty
-                            ? NetworkImage(_usuario!.fotoPortada!)
-                            : _imageBytes != null
-                                ? MemoryImage(_imageBytes!)
-                                : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
+                        ? NetworkImage('http://$serverIP/homecoming/assets/imagenes/fotos_perfil/${_usuario!.fotoPortada}?${DateTime.now().millisecondsSinceEpoch}')
+                        : _imageBytes != null
+                            ? MemoryImage(_imageBytes!)
+                            : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
                         child: _usuario!.fotoPortada == null && _imageBytes == null
                             ? Icon(
                                 Icons.camera_alt,

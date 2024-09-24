@@ -50,7 +50,13 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
       await prefs.setInt('usuario_id', usuarioLogeado.id!);
       await prefs.setBool('isLoggedIn', true);
 
+      // Almacenar la foto de perfil en SharedPreferences
+      await prefs.setString('foto_perfil', usuarioLogeado.fotoPortada ?? '');
+
+      // Configurar el usuario en el estado global usando Provider
       Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);
+
+      // Navegar a la página de inicio
       Navigator.of(context).pushReplacementNamed('/inicio');
     } else {
       setState(() {
