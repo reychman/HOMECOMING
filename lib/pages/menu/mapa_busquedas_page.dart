@@ -173,7 +173,7 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
                       Center(
                         child: mascota.fotos.isNotEmpty
                             ? Image.network(
-                                'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex]}', // Mostrar la imagen actual
+                                'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex]}', // Mostrar la imagen actual
                                 width: 150,
                                 height: 150,
                                 fit: BoxFit.cover,

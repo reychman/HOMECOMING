@@ -1,3 +1,4 @@
+import 'package:homecoming/ip.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/usuario.dart';
@@ -78,7 +79,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('../../../assets/background.jpg'),
+            image: NetworkImage('http://$serverIP/homecoming/assets/background.jpg'),
             fit: BoxFit.cover,
           ),
         ),

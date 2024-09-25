@@ -7,8 +7,10 @@ import 'package:homecoming/pages/menu/api_servicio.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'dart:html' as html;
 import 'package:intl/intl.dart';
+import 'package:homecoming/utils/web_utils.dart' if (dart.library.io) 'package:homecoming/utils/non_web_utils.dart';
+
+
 
 class ReportesPage extends StatefulWidget {
   @override
@@ -193,13 +195,10 @@ class _ReportesPageState extends State<ReportesPage> {
                             try {
                               final pdf = await _generatePdf(reporte);
                               final pdfBytes = await pdf.save();
-                              final blob = html.Blob([pdfBytes], 'application/pdf');
                               final fileName = _generateFileName();
-                              final url = html.Url.createObjectUrlFromBlob(blob);
-                              html.AnchorElement(href: url)
-                                ..setAttribute('download', fileName)
-                                ..click();
-                              html.Url.revokeObjectUrl(url);
+
+                              // Descargar el PDF según la plataforma
+                              descargarPdfWeb(pdfBytes, fileName);
                             } catch (e) {
                               print('Error generando PDF: $e');
                             }

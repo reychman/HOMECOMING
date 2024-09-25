@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/mascota.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -52,7 +53,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                           padding: const EdgeInsets.symmetric(vertical: 60.0), // Añade un padding para bajar la imagen
                                           child: mascota.fotos.isNotEmpty
                                               ? Image.network(
-                                                  'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
+                                                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
                                                   width: 400,
                                                   height: 400,
                                                   fit: BoxFit.contain,
@@ -170,7 +171,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                 /*Expanded(//por demas
                                   child: mascota.fotos.isNotEmpty
                                       ? Image.network(
-                                          'http://localhost/homecomingassets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
+                                          'http://$serverIP/homecomingassets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
                                           width: 400,
                                           height: 400,
                                           fit: BoxFit.contain,
@@ -367,7 +368,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                     }
                   },
                   child: Image.network(
-                    'http://localhost/homecoming/assets/imagenes/whatsapp.png',
+                    'http://$serverIP/homecoming/assets/imagenes/whatsapp.png',
                     width: 24,
                     height: 24,
                     errorBuilder: (context, error, stackTrace) {

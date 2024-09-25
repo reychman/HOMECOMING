@@ -1029,7 +1029,7 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                                                       child: AspectRatio(
                                                         aspectRatio: 1.5,
                                                         child: Image.network(
-                                                          'http://localhost/homecoming/assets/imagenes/fotos_mascotas/$foto',
+                                                          'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
                                                           fit: BoxFit.contain,
                                                           errorBuilder: (context, error, stackTrace) {
                                                             return Icon(Icons.pets, size: 100, color: Colors.grey);
@@ -1043,7 +1043,7 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                                                   child: AspectRatio(
                                                     aspectRatio: 1.5,
                                                     child: Image.network(
-                                                      'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
+                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
                                                       fit: BoxFit.contain,
                                                       errorBuilder: (context, error, stackTrace) {
                                                         return Icon(Icons.pets, size: 100, color: Colors.grey);
