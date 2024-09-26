@@ -381,55 +381,72 @@ Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8Li
   }
 }
 
-Future<void> _uploadImage(Uint8List imageBytes) async {
-  if (_usuario == null || _usuario!.id == null) return;
+  Future<void> _uploadImage(Uint8List imageBytes) async {
+    if (_usuario == null || _usuario!.id == null) return;
 
-  final request = http.MultipartRequest(
-    'POST',
-    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
-  );
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/upload_image.php'),
+    );
 
-  // Enviar los campos requeridos por el servidor
-  request.fields['accion'] = 'subirFotoPerfil'; // Asegúrate de que esto coincida con lo esperado en el servidor
-  request.fields['id'] = _usuario!.id.toString(); // Enviar el ID del usuario
+    // Enviar los campos requeridos por el servidor
+    request.fields['accion'] = 'subirFotoPerfil'; // Asegúrate de que esto coincida con lo esperado en el servidor
+    request.fields['id'] = _usuario!.id.toString(); // Enviar el ID del usuario
 
-  // Añadir la imagen
-  request.files.add(http.MultipartFile.fromBytes(
-    'foto_perfil', // Nombre del campo en la tabla 'usuarios'
-    imageBytes,
-    filename: 'foto_perfil_${_usuario!.id}.jpg', // Asigna un nombre único a la imagen
-    contentType: MediaType('image', 'jpeg'),
-  ));
+    // Añadir la imagen
+    request.files.add(http.MultipartFile.fromBytes(
+      'foto_perfil', // Nombre del campo en la tabla 'usuarios'
+      imageBytes,
+      filename: 'foto_perfil_${_usuario!.id}.jpg', // Asigna un nombre único a la imagen
+      contentType: MediaType('image', 'jpeg'),
+    ));
 
-  try {
-    final response = await request.send();
-    final responseData = await response.stream.bytesToString();
-    final jsonResponse = jsonDecode(responseData);
+    try {
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      final jsonResponse = jsonDecode(responseData);
 
-    if (jsonResponse['success']) {
-      // Actualiza la foto de perfil en la interfaz
-      setState(() {
-        _usuario!.fotoPortada = jsonResponse['foto_perfil'];
-      });
+      if (jsonResponse['success']) {
+        // Actualiza la foto de perfil en la interfaz
+        setState(() {
+          _usuario!.fotoPortada = jsonResponse['foto_perfil'];
+        });
 
-      // Guardar la foto en SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('foto_perfil', jsonResponse['foto_perfil']);
+        // Guardar la foto en SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('foto_perfil', jsonResponse['foto_perfil']);
 
-      // Refrescar la página después de la operación
+        // Mostrar mensaje de confirmación
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Foto de perfil subida correctamente.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Refrescar la página después de la operación
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => PerfilUsuario(),
           ),
         );
-    } else {
-      print('Error al subir la imagen: ${jsonResponse['error']}');
+      }
+    } catch (e) {
+      // Manejar los errores de red u otros
+      print('Error en _uploadImage: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ocurrió un error al subir la foto de perfil.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
-  } catch (e) {
-    print('Error en _uploadImage: $e');
   }
-}
 
   Future<void> _reemplazarFotoPerfil() async {
     final picker = ImagePicker();
@@ -456,16 +473,6 @@ Future<void> _uploadImage(Uint8List imageBytes) async {
 
           // Llamar al método para recargar las publicaciones del usuario
           _publicacioPropiaUsuario(); // Recargar las publicaciones o realizar alguna acción después de subir la imagen
-
-          // Mostrar mensaje de éxito
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('La imagen se subió correctamente.'),
-                duration: Duration(seconds: 2), // Mensaje temporal de 2 segundos
-              ),
-            );
-          }
         } else {
           // Si no se recortó correctamente
           if (mounted) {
