@@ -30,7 +30,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   void initState() {
     super.initState();
     _loadUserData();
-    _fetchUserPublications(); // Cargar publicaciones del usuario
+    _publicacioPropiaUsuario(); // Cargar publicaciones del usuario
   }
   Future<void> _mostrarModalCambiarFotos(BuildContext context, int publicacionId) async {
     List<Uint8List> nuevasFotos = [];
@@ -272,7 +272,7 @@ Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8Li
 
       if (jsonResponse != null && jsonResponse is Map && jsonResponse.containsKey('success') && jsonResponse['success'] == true) {
         scaffoldMessenger.showSnackBar(SnackBar(content: Text('Fotos actualizadas con éxito.')));
-        _fetchUserPublications(); // Asegúrate de que esta función esté definida en tu clase
+        _publicacioPropiaUsuario(); // Asegúrate de que esta función esté definida en tu clase
       } else {
         // Manejar el error si 'success' es null o falso
         String errorMessage = jsonResponse != null && jsonResponse.containsKey('error')
@@ -375,7 +375,7 @@ Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8Li
     });
     
     // Llamar a fetchUserPublications una vez cargado el usuario
-    _fetchUserPublications();
+    _publicacioPropiaUsuario();
   } else {
     print('No se encontró un usuario_id en SharedPreferences');
   }
@@ -431,54 +431,67 @@ Future<void> _uploadImage(Uint8List imageBytes) async {
   }
 }
 
-Future<void> _reemplazarFotoPerfil() async {
-  final picker = ImagePicker();
-  try {
-    // Seleccionar una nueva imagen desde la galería
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (!mounted) return; // Verificar si el widget sigue montado
-
-    if (pickedFile != null) {
-      // Recortar la imagen seleccionada
-      final croppedBytes = await _cropImage(context, pickedFile.path);
+  Future<void> _reemplazarFotoPerfil() async {
+    final picker = ImagePicker();
+    try {
+      // Seleccionar una nueva imagen desde la galería
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
       if (!mounted) return; // Verificar si el widget sigue montado
 
-      if (croppedBytes != null) {
-        // Actualizar la imagen en la interfaz
-        setState(() {
-          _imageBytes = croppedBytes;
-        });
+      if (pickedFile != null) {
+        // Recortar la imagen seleccionada
+        final croppedBytes = await _cropImage(context, pickedFile.path);
 
-        // Subir la nueva imagen al servidor
-        await _uploadImage(croppedBytes);
+        if (!mounted) return; // Verificar si el widget sigue montado
+
+        if (croppedBytes != null) {
+          // Actualizar la imagen en la interfaz
+          setState(() {
+            _imageBytes = croppedBytes;
+          });
+
+          // Subir la nueva imagen al servidor
+          await _uploadImage(croppedBytes);
+
+          // Llamar al método para recargar las publicaciones del usuario
+          _publicacioPropiaUsuario(); // Recargar las publicaciones o realizar alguna acción después de subir la imagen
+
+          // Mostrar mensaje de éxito
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('La imagen se subió correctamente.'),
+                duration: Duration(seconds: 2), // Mensaje temporal de 2 segundos
+              ),
+            );
+          }
+        } else {
+          // Si no se recortó correctamente
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('No se recortó la imagen.')),
+            );
+          }
+        }
       } else {
-        // Si no se recortó correctamente
+        // Si no se seleccionó ninguna imagen
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No se recortó la imagen.')),
+            SnackBar(content: Text('No se seleccionó ninguna imagen.')),
           );
         }
       }
-    } else {
-      // Si no se seleccionó ninguna imagen
+    } catch (e) {
+      // Manejar errores
+      print('Error al seleccionar o recortar la imagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+          SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
         );
       }
     }
-  } catch (e) {
-    // Manejar errores
-    print('Error al seleccionar o recortar la imagen: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
-      );
-    }
   }
-}
 
   Future<void> _eliminarFotoPerfil() async {
     if (_usuario == null || _usuario!.id == null) return;
@@ -500,7 +513,6 @@ Future<void> _reemplazarFotoPerfil() async {
           duration: Duration(seconds: 2),
         ),
       );
-
       // Eliminar la foto de perfil en la UI y en SharedPreferences
       setState(() {
         _usuario!.fotoPortada = null;
@@ -705,7 +717,7 @@ Future<void> _reemplazarFotoPerfil() async {
   }
 
   // Obtener las publicaciones del usuario
-  Future<void> _fetchUserPublications() async {
+  Future<void> _publicacioPropiaUsuario() async {
     if (_usuario == null) return;
 
     // Imprimir el usuario_id antes de enviar la solicitud
@@ -800,7 +812,7 @@ Future<void> _reemplazarFotoPerfil() async {
     print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      _fetchUserPublications(); // Actualiza las publicaciones después del cambio
+      _publicacioPropiaUsuario(); // Actualiza las publicaciones después del cambio
     } else {
       print('Error al cambiar el estado: ${response.statusCode}');
     }
@@ -857,7 +869,7 @@ Future<void> _reemplazarFotoPerfil() async {
             backgroundColor: Colors.green, // Color verde para éxito
           ),
         );
-        _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
+        _publicacioPropiaUsuario(); // Actualiza las publicaciones después de eliminar
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -931,8 +943,8 @@ Future<void> _reemplazarFotoPerfil() async {
                         ? NetworkImage('http://$serverIP/homecoming/assets/imagenes/fotos_perfil/${_usuario!.fotoPortada}?${DateTime.now().millisecondsSinceEpoch}')
                         : _imageBytes != null
                             ? MemoryImage(_imageBytes!)
-                            : AssetImage('assets/imagenes/avatar7.png') as ImageProvider,
-                        child: _usuario!.fotoPortada == null && _imageBytes == null
+                            : NetworkImage('http://$serverIP/homecoming/assets/imagenes/avatarDefecto.png') as ImageProvider,
+                        child: _usuario!.fotoPortada == null && _imageBytes != null
                             ? Icon(
                                 Icons.camera_alt,
                                 color: Colors.white,
