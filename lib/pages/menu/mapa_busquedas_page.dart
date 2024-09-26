@@ -89,6 +89,7 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green[200],
         title: Text('Mapa de búsquedas'),
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), // Menú lateral

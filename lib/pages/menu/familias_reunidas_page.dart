@@ -97,7 +97,7 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Familias Reunidas'),
-        backgroundColor: Color.fromARGB(255, 123, 209, 125),
+        backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario),
       body: Column(

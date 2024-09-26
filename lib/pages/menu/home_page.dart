@@ -67,15 +67,15 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       List<Mascota> mascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
+      List<Mascota> mascotasEncontradas = mascotas.where((m) => m.estado == 'perdido').toList();
       setState(() {
-        _mascotas = mascotas;
-        _mascotasFiltradas = mascotas;
-        // Inicializamos el índice de la imagen actual para cada mascota
-        for (var mascota in mascotas) {
+        _mascotas = mascotasEncontradas;
+        _mascotasFiltradas = mascotasEncontradas;
+        for (var mascota in mascotasEncontradas) {
           _currentImageIndex[mascota.id] = 0;
         }
       });
-      return mascotas;
+      return mascotasEncontradas;
     } else {
       throw Exception('Error al cargar las mascotas');
     }

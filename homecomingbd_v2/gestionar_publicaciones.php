@@ -211,6 +211,22 @@
             return;
         }
     
+        // Consulta para obtener el nombre de la mascota y el usuario_id
+        $sql = "SELECT m.nombre, m.usuario_id 
+                FROM mascotas m 
+                WHERE m.id = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param('i', $publicacion_id);
+        $stmt->execute();
+        $stmt->bind_result($nombre_mascota, $usuario_id);
+        $stmt->fetch();
+        $stmt->close();
+    
+        if (!$nombre_mascota || !$usuario_id) {
+            echo json_encode(['error' => 'No se encontró la mascota o el usuario asociado']);
+            return;
+        }
+    
         $errores = [];
     
         foreach ($_FILES['fotos_mascotas']['tmp_name'] as $index => $tmpName) {
@@ -227,7 +243,9 @@
             }
     
             $foto_id = $conexion->insert_id;
-            $nuevo_nombre_foto = $foto_id . 'mascota' . $publicacion_id . '.' . $foto_extension;
+    
+            // Crear el nuevo nombre de la foto con el formato deseado
+            $nuevo_nombre_foto = $foto_id . preg_replace('/[^A-Za-z0-9]/', '', $nombre_mascota) . $usuario_id . '.' . $foto_extension;
             $ruta_foto = '../assets/imagenes/fotos_mascotas/' . $nuevo_nombre_foto;
     
             if (!move_uploaded_file($tmpName, $ruta_foto)) {
@@ -235,6 +253,7 @@
                 continue;
             }
     
+            // Actualizar el registro de la foto con el nuevo nombre
             $sql_update_foto = "UPDATE fotos_mascotas SET foto = ? WHERE id = ?";
             $stmt_update_foto = $conexion->prepare($sql_update_foto);
             $stmt_update_foto->bind_param('si', $nuevo_nombre_foto, $foto_id);
@@ -250,17 +269,21 @@
         }
     }
     
+    
     function eliminarFoto() {
         global $conexion;
     
         $foto_id = isset($_POST['foto_id']) ? $_POST['foto_id'] : null;
     
         if (!$foto_id) {
-            echo json_encode(['error' => 'ID de la foto no proporcionado']);
-            exit;
+            echo json_encode(['success' => false, 'error' => 'ID de la foto no proporcionado']);
+            return;
         }
     
-        // Buscar la foto en la base de datos
+        // Depurar el valor de foto_id
+        error_log("Recibiendo foto_id: $foto_id");
+    
+        // Consultar la ruta de la foto
         $sql = "SELECT foto FROM fotos_mascotas WHERE id = ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param('i', $foto_id);
@@ -269,24 +292,37 @@
         $stmt->fetch();
         $stmt->close();
     
-        if ($foto) {
-            // Eliminar el archivo de la carpeta local
-            $ruta_foto = 'assets/imagenes/fotos_mascotas/' . $foto;
-            if (file_exists($ruta_foto)) {
-                unlink($ruta_foto); // Elimina el archivo
-            }
-    
-            // Eliminar la referencia en la base de datos
-            $sql = "DELETE FROM fotos_mascotas WHERE id = ?";
-            $stmt = $conexion->prepare($sql);
-            $stmt->bind_param('i', $foto_id);
-            $stmt->execute();
-    
-            echo json_encode(['success' => true, 'message' => 'Foto eliminada con éxito']);
+        // Depurar el resultado de la consulta
+        if (!$foto) {
+            error_log("No se encontró la foto en la base de datos para foto_id: $foto_id");
+            echo json_encode(['success' => false, 'error' => 'No se encontró la foto']);
+            return;
         } else {
-            echo json_encode(['error' => 'Foto no encontrada']);
+            error_log("Se encontró la foto: $foto");
+        }
+    
+        // Eliminar la foto del servidor
+        $ruta_foto = '../assets/imagenes/fotos_mascotas/' . $foto;
+        if (file_exists($ruta_foto)) {
+            unlink($ruta_foto);  // Eliminar el archivo
+            error_log("Archivo eliminado: $ruta_foto");
+        } else {
+            error_log("No se encontró el archivo en la carpeta local: $ruta_foto");
+        }
+    
+        // Eliminar el registro de la base de datos
+        $sql = "DELETE FROM fotos_mascotas WHERE id = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param('i', $foto_id);
+    
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true]);
+        } else {
+            error_log("Error al eliminar la foto de la base de datos para foto_id: $foto_id");
+            echo json_encode(['success' => false, 'error' => 'Error al eliminar la foto de la base de datos']);
         }
     }
+    
     
     // Función para reemplazar una foto de una mascota
     function reemplazarFoto() {

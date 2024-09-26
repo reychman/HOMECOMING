@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/ip.dart';
+import 'package:homecoming/pages/login/perfil_usuario_page.dart';
 import 'package:http/http.dart' as http;
 
 class EditarPublicacionPage extends StatefulWidget {
@@ -87,8 +88,23 @@ Future<void> _editarPublicacion() async {
         try {
           final jsonResponse = json.decode(response.body);
           if (jsonResponse['success']) {
-            _showSnackbar('Datos de la mascota actualizados con éxito');
-            Navigator.of(context).pop();
+            // Mostrar mensaje de éxito
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Datos de la mascota actualizados con éxito'),
+                duration: Duration(seconds: 2), // Mostrar por 2 segundos
+              ),
+            );
+            
+            // Esperar 2 segundos y navegar de regreso a la página de perfil
+            await Future.delayed(Duration(seconds: 1));
+
+            // Recargar la página de perfil
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => PerfilUsuario(), // Reemplaza por tu página de perfil
+              ),
+            );
           } else {
             _showSnackbar('Error: ${jsonResponse['message']}');
           }
@@ -107,6 +123,8 @@ Future<void> _editarPublicacion() async {
     }
   }
 }
+
+
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime? selectedDate = await showDatePicker(

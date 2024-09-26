@@ -18,7 +18,7 @@ class QuienesSomosPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('¿Quiénes somos?'),
-        backgroundColor: Color.fromARGB(255, 123, 209, 125),
+        backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
       body: SingleChildScrollView(
