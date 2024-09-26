@@ -242,7 +242,10 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
     return null;
   }
 
-  Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
+Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
+    // Capture the ScaffoldMessenger before the async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
@@ -268,21 +271,24 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
       final jsonResponse = jsonDecode(responseData);
 
       if (jsonResponse != null && jsonResponse is Map && jsonResponse.containsKey('success') && jsonResponse['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fotos actualizadas con éxito.')));
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Fotos actualizadas con éxito.')));
         _fetchUserPublications(); // Asegúrate de que esta función esté definida en tu clase
       } else {
         // Manejar el error si 'success' es null o falso
         String errorMessage = jsonResponse != null && jsonResponse.containsKey('error')
           ? jsonResponse['error']
           : 'Error desconocido al actualizar las fotos.';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $errorMessage')));
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error: $errorMessage')));
       }
     } catch (e) {
       // Manejar los errores en la solicitud HTTP
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al subir fotos: $e')));
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error al subir fotos: $e')));
     }
   }
+  
   Future<void> eliminarFoto(BuildContext context, int fotoId) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);  // Capture before async call
+    
     final response = await http.post(
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
       body: {
@@ -294,19 +300,25 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
     final jsonResponse = jsonDecode(response.body);
 
     if (jsonResponse['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Foto eliminada con éxito'),
-        duration: Duration(seconds: 3),
-      ));
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Foto eliminada con éxito'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error: ${jsonResponse['error']}'),
-        duration: Duration(seconds: 3),
-      ));
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: ${jsonResponse['error']}'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
   Future<void> reemplazarFoto(BuildContext context, int fotoId, Uint8List nuevaFoto) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);  // Extract before the async operation
+
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
@@ -328,21 +340,27 @@ Future<void> _mostrarModalEliminarFoto(BuildContext context, int publicacionId) 
       final jsonResponse = jsonDecode(responseData);
 
       if (jsonResponse['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Foto reemplazada con éxito'),
-          duration: Duration(seconds: 3),
-        ));
+        scaffoldMessenger.showSnackBar(  // Using scaffoldMessenger directly
+          SnackBar(
+            content: Text('Foto reemplazada con éxito'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: ${jsonResponse['error']}'),
-          duration: Duration(seconds: 3),
-        ));
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Error: ${jsonResponse['error']}'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error al reemplazar foto: $e'),
-        duration: Duration(seconds: 3),
-      ));
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error al reemplazar foto: $e'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -419,9 +437,13 @@ Future<void> _reemplazarFotoPerfil() async {
     // Seleccionar una nueva imagen desde la galería
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
+    if (!mounted) return; // Verificar si el widget sigue montado
+
     if (pickedFile != null) {
       // Recortar la imagen seleccionada
       final croppedBytes = await _cropImage(context, pickedFile.path);
+
+      if (!mounted) return; // Verificar si el widget sigue montado
 
       if (croppedBytes != null) {
         // Actualizar la imagen en la interfaz
@@ -433,22 +455,28 @@ Future<void> _reemplazarFotoPerfil() async {
         await _uploadImage(croppedBytes);
       } else {
         // Si no se recortó correctamente
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se recortó la imagen.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No se recortó la imagen.')),
+          );
+        }
       }
     } else {
       // Si no se seleccionó ninguna imagen
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se seleccionó ninguna imagen.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+        );
+      }
     }
   } catch (e) {
     // Manejar errores
     print('Error al seleccionar o recortar la imagen: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
+      );
+    }
   }
 }
 
@@ -498,9 +526,13 @@ Future<void> _reemplazarFotoPerfil() async {
       // Seleccionar imagen desde la galería
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
+      if (!mounted) return; // Verificar si el widget sigue montado
+
       if (pickedFile != null) {
         // Llamamos al método _cropImage para recortar la imagen
         final croppedBytes = await _cropImage(context, pickedFile.path);
+
+        if (!mounted) return; // Verificar nuevamente después de la operación async
 
         if (croppedBytes != null) {
           // Mostramos la imagen recortada antes de subirla
@@ -512,22 +544,28 @@ Future<void> _reemplazarFotoPerfil() async {
           await _uploadImage(croppedBytes);
         } else {
           // Si no se recortó correctamente la imagen
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No se recortó la imagen.')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('No se recortó la imagen.')),
+            );
+          }
         }
       } else {
         // Si no se seleccionó ninguna imagen
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se seleccionó ninguna imagen.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+          );
+        }
       }
     } catch (e) {
       // Captura cualquier error durante la selección o recorte de la imagen
       print('Error al seleccionar o recortar la imagen: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al seleccionar o recortar la imagen.')),
+        );
+      }
     }
   }
 
@@ -626,39 +664,39 @@ Future<void> _reemplazarFotoPerfil() async {
   );
 }
 
+  Future<void> _enviarNuevaContrasena(String newPassword) async {
+    if (_usuario == null || _usuario!.id == null) return;
 
-Future<void> _enviarNuevaContrasena(String newPassword) async {
-  if (_usuario == null || _usuario!.id == null) return;
+    // Línea de depuración para imprimir los datos que se están enviando
+    print('Enviando id: ${_usuario!.id.toString()} y new_password: $newPassword');
 
-  // Línea de depuración para imprimir los datos que se están enviando
-  print('Enviando id: ${_usuario!.id.toString()} y new_password: $newPassword');
+    final response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/update_password.php'),
+      body: {
+        'id': _usuario!.id.toString(),
+        'new_password': newPassword,
+      },
+    );
 
-  final response = await http.post(
-    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/update_password.php'),
-    body: {
-      'id': _usuario!.id.toString(),
-      'new_password': newPassword,
-    },
-  );
+    if (!mounted) return; // Check if the widget is still mounted
 
-  if (response.statusCode == 200) {
-    final jsonResponse = jsonDecode(response.body);
-    if (jsonResponse['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Contraseña actualizada correctamente')),
-      );
+    if (response.statusCode == 200) {
+      final jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Contraseña actualizada correctamente')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar la contraseña')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar la contraseña')),
+        SnackBar(content: Text('Error de red al actualizar la contraseña')),
       );
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error de red al actualizar la contraseña')),
-    );
   }
-}
-
 
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -745,11 +783,11 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
 
     // Si el usuario aceptó, realiza el cambio de estado
     if (confirmar) {
-      _changeEstadoMascota(publicacionId, nuevoEstado);
+      _cambiarEstadoMascota(publicacionId, nuevoEstado);
     }
   }
   // Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
-  Future<void> _changeEstadoMascota(int publicacionId, String nuevoEstado) async {
+  Future<void> _cambiarEstadoMascota(int publicacionId, String nuevoEstado) async {
     var response = await http.post(
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
       body: {
@@ -770,74 +808,77 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
 
 
   Future<void> _confirmarEliminacionPublicacion(int publicacionId) async {
-    // Mostrar el cuadro de diálogo de confirmación
-    bool confirmar = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmar Eliminación'),
-          content: Text('¿Está seguro de que desea eliminar la publicación?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // Cancelar
-              },
-              child: Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // Confirmar
-              },
-              child: Text('Eliminar'),
-            ),
-          ],
-        );
+  // Mostrar el cuadro de diálogo de confirmación
+  bool confirmar = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Confirmar Eliminación'),
+        content: Text('¿Está seguro de que desea eliminar la publicación?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false); // Cancelar
+            },
+            child: Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true); // Confirmar
+            },
+            child: Text('Eliminar'),
+          ),
+        ],
+      );
+    },
+  );
+
+  // Si se confirmó la eliminación
+  if (confirmar) {
+    var response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+      body: {
+        'accion': 'eliminarPublicacion',
+        'id': publicacionId.toString(),
       },
     );
 
-    // Si se confirmó la eliminación
-    if (confirmar) {
-      var response = await http.post(
-        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-        body: {
-          'accion': 'eliminarPublicacion',
-          'id': publicacionId.toString(),
-        },
-      );
+    if (!mounted) return; // Comprueba si el widget todavía está montado antes de acceder al contexto
 
-      if (response.statusCode == 200) {
-        var jsonResponse = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
 
-        // Verifica si la eliminación fue exitosa
-        if (jsonResponse['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('El registro fue eliminado con éxito.'),
-              duration: Duration(seconds: 3),
-              backgroundColor: Colors.green, // Color verde para éxito
-            ),
-          );
-          _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Hubo un error al eliminar el registro.'),
-              duration: Duration(seconds: 3),
-              backgroundColor: Colors.red, // Color rojo para error
-            ),
-          );
-        }
+      // Verifica si la eliminación fue exitosa
+      if (jsonResponse['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('El registro fue eliminado con éxito.'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.green, // Color verde para éxito
+          ),
+        );
+        _fetchUserPublications(); // Actualiza las publicaciones después de eliminar
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al conectar con el servidor.'),
+            content: Text('Hubo un error al eliminar el registro.'),
             duration: Duration(seconds: 3),
             backgroundColor: Colors.red, // Color rojo para error
           ),
         );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al conectar con el servidor.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red, // Color rojo para error
+        ),
+      );
     }
   }
+}
+
 
 
   @override
@@ -934,10 +975,10 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                     // Convertimos la lista de publicaciones en un GridView
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        int crossAxisCount = 1;
-                        if (constraints.maxWidth > 600) crossAxisCount = 2;
-                        if (constraints.maxWidth > 900) crossAxisCount = 3;
-
+                        int crossAxisCount = 1; // Por defecto, una sola columna para pantallas muy pequeñas
+                        if (constraints.maxWidth > 600) crossAxisCount = 2; // Dos columnas si el ancho es mayor a 600px
+                        if (constraints.maxWidth > 900) crossAxisCount = 3; // Tres columnas si el ancho es mayor a 900px
+                        
                         return GridView.builder(
                           physics: NeverScrollableScrollPhysics(),
                           shrinkWrap: true,
@@ -945,9 +986,9 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                           itemCount: _misPublicaciones.length,
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount, // Número de columnas, ajustado según el tamaño de la pantalla
-                            crossAxisSpacing: 40, // Espacio horizontal entre los cards
+                            crossAxisSpacing: 20, // Espacio horizontal entre los cards
                             mainAxisSpacing: 20,  // Espacio vertical entre los cards
-                            childAspectRatio: 2 / 2, // Proporción entre ancho y alto de cada card
+                            childAspectRatio: 2 / 1.5, // Proporción entre ancho y alto de cada card
                           ),
                           itemBuilder: (context, index) {
                             var publicacion = _misPublicaciones[index];
@@ -978,7 +1019,6 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                                           textAlign: TextAlign.center,
                                         ),
                                       ),
-                                      // Agregar el PopupMenuButton (Three Dots)
                                       Positioned(
                                         right: 10,
                                         top: 10,
@@ -1025,30 +1065,26 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                                                     autoPlay: true,
                                                   ),
                                                   items: fotos.map((foto) {
-                                                    return Container(
-                                                      child: AspectRatio(
-                                                        aspectRatio: 1.5,
-                                                        child: Image.network(
-                                                          'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
-                                                          fit: BoxFit.contain,
-                                                          errorBuilder: (context, error, stackTrace) {
-                                                            return Icon(Icons.pets, size: 100, color: Colors.grey);
-                                                          },
-                                                        ),
+                                                    return AspectRatio(
+                                                      aspectRatio: 1.5,
+                                                      child: Image.network(
+                                                        'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
+                                                        fit: BoxFit.contain,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                        },
                                                       ),
                                                     );
                                                   }).toList(),
                                                 )
-                                              : Container(
-                                                  child: AspectRatio(
-                                                    aspectRatio: 1.5,
-                                                    child: Image.network(
-                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
-                                                      fit: BoxFit.contain,
-                                                      errorBuilder: (context, error, stackTrace) {
-                                                        return Icon(Icons.pets, size: 100, color: Colors.grey);
-                                                      },
-                                                    ),
+                                              : AspectRatio(
+                                                  aspectRatio: 1.5,
+                                                  child: Image.network(
+                                                    'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                    },
                                                   ),
                                                 )
                                           : Icon(Icons.pets, size: 100, color: Colors.grey),
@@ -1078,57 +1114,117 @@ Future<void> _enviarNuevaContrasena(String newPassword) async {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                    child: Wrap(
-                                      alignment: WrapAlignment.end,
-                                      spacing: 10.0,
-                                      runSpacing: 5.0,
-                                      children: [
-                                        SizedBox(
-                                          width: 80,
-                                          child: TextButton(
-                                            onPressed: () {
-                                              if (publicacion['estado'] == 'perdido') {
-                                                _mostrarConfirmacionCambioEstado(
-                                                  publicacion['id'],
-                                                  'encontrado',
-                                                  'Confirmación',
-                                                  'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?',
-                                                );
-                                              } else if (publicacion['estado'] == 'encontrado') {
-                                                _mostrarConfirmacionCambioEstado(
-                                                  publicacion['id'],
-                                                  'perdido',
-                                                  'Confirmación',
-                                                  'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota.',
-                                                );
-                                              }
-                                            },
-                                            child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: 80,
-                                          child: TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (context) => EditarPublicacionPage(publicacion: publicacion),
-                                                ),
-                                              );
-                                            },
-                                            child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: 80,
-                                          child: TextButton(
-                                            onPressed: () {
-                                              _confirmarEliminacionPublicacion(publicacion['id']);
-                                            },
-                                            child: Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                          ),
-                                        ),
-                                      ],
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        bool isSmallScreen = constraints.maxWidth < 300;
+                                        return Column(
+                                          children: [
+                                            if (isSmallScreen)
+                                              Column(
+                                                children: [
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        if (publicacion['estado'] == 'perdido') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'encontrado',
+                                                            'Confirmación',
+                                                            'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?',
+                                                          );
+                                                        } else if (publicacion['estado'] == 'encontrado') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'perdido',
+                                                            'Confirmación',
+                                                            'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota.',
+                                                          );
+                                                        }
+                                                      },
+                                                      child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: double.infinity,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        _confirmarEliminacionPublicacion(publicacion['id']);
+                                                      },
+                                                      child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            else
+                                              Wrap(
+                                                alignment: WrapAlignment.end,
+                                                spacing: 10.0,
+                                                runSpacing: 5.0,
+                                                children: [
+                                                  SizedBox(
+                                                    width: 80,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        if (publicacion['estado'] == 'perdido') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'encontrado',
+                                                            'Confirmación',
+                                                            'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?',
+                                                          );
+                                                        } else if (publicacion['estado'] == 'encontrado') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'perdido',
+                                                            'Confirmación',
+                                                            'Si tu mascota se volvió a perder, acepta este mensaje para hacer pública la desaparición de tu mascota.',
+                                                          );
+                                                        }
+                                                      },
+                                                      child: Text('Cambiar Estado', style: TextStyle(color: Colors.green[400])),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 80,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) => EditarPublicacionPage(publicacion: publicacion),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: Text('Editar', style: TextStyle(color: Colors.amber[500])),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 80,
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        _confirmarEliminacionPublicacion(publicacion['id']);
+                                                      },
+                                                      child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],

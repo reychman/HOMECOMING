@@ -15,6 +15,7 @@ if ($conexion->connect_error) {
 $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
         FROM mascotas M
         JOIN usuarios U ON M.usuario_id = U.id
+        WHERE estado_registro=1
         ORDER BY M.fecha_creacion DESC";
 
 $result = $conexion->query($sql);
