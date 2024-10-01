@@ -32,6 +32,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     _loadUserData();
     _publicacioPropiaUsuario(); // Cargar publicaciones del usuario
   }
+  //inicio donde se administra las fotos de las mascotas
   Future<void> _mostrarModalAgregarFotos(BuildContext context, int publicacionId) async {
     List<Uint8List> nuevasFotos = [];
 
@@ -112,137 +113,90 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     });
   }
   Future<void> _mostrarModalReemplazarFoto(BuildContext context, int publicacionId) async {
-  Uint8List? nuevaFoto;
+    Uint8List? nuevaFoto;
 
-  await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text('Reemplazar Foto'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Reemplazar Foto'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      final ImagePicker _picker = ImagePicker();
+                      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        Uint8List? croppedBytes = await _cropImage(context, pickedFile.path);
+                        if (croppedBytes != null) {
+                          setState(() {
+                            nuevaFoto = croppedBytes;
+                          });
+                        }
+                      }
+                    },
+                    child: Text('Seleccionar y Recortar Foto'),
+                  ),
+                  SizedBox(height: 10),
+                  if (nuevaFoto != null)
+                    Image.memory(nuevaFoto!, height: 100, width: 100, fit: BoxFit.contain),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancelar'),
+                ),
                 ElevatedButton(
                   onPressed: () async {
-                    final ImagePicker _picker = ImagePicker();
-                    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                    if (pickedFile != null) {
-                      Uint8List? croppedBytes = await _cropImage(context, pickedFile.path);
-                      if (croppedBytes != null) {
-                        setState(() {
-                          nuevaFoto = croppedBytes;
-                        });
-                      }
+                    if (nuevaFoto != null) {
+                      Navigator.of(context).pop();
+                      await reemplazarFoto(context, publicacionId, nuevaFoto!);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se seleccionó una nueva foto.')));
                     }
                   },
-                  child: Text('Seleccionar y Recortar Foto'),
+                  child: Text('Reemplazar Foto'),
                 ),
-                SizedBox(height: 10),
-                if (nuevaFoto != null)
-                  Image.memory(nuevaFoto!, height: 100, width: 100, fit: BoxFit.contain),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (nuevaFoto != null) {
-                    Navigator.of(context).pop();
-                    await reemplazarFoto(context, publicacionId, nuevaFoto!);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se seleccionó una nueva foto.')));
-                  }
-                },
-                child: Text('Reemplazar Foto'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
-Future<void> _mostrarModalEliminarFoto(BuildContext context, int fotoId) async {
-  await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Eliminar Foto'),
-        content: Text('¿Estás seguro de que deseas eliminar esta foto?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await eliminarFoto(context, fotoId); // Asegúrate de pasar el fotoId, no publicacionId
-            },
-            child: Text('Eliminar Foto'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-  Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
-    CroppedFile? croppedFile;
-
-    // Configuración para Web y Android/iOS
-    croppedFile = await ImageCropper().cropImage(
-      sourcePath: imagePath,
-      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),  // Relación de aspecto cuadrada
-      uiSettings: [
-        if (!kIsWeb)
-          AndroidUiSettings(
-            toolbarTitle: 'Recortar Imagen',
-            toolbarColor: Colors.green,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-        if (kIsWeb)
-          WebUiSettings(
-                  context: context,  // Usamos el context, pero solo si el widget sigue montado
-                  size: CropperSize(width: 400, height: 400), // Tamaño fijo
-                  dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
-                  initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
-                  zoomable: true,  // Habilitar zoom
-                  rotatable: true,  // Habilitar rotación
-                  cropBoxResizable: false,
-                  translations: WebTranslations(
-                    title: 'Recortar Imagen',  // Personaliza el título aquí
-                    cropButton: 'Recortar',   // Cambia el texto del botón de recorte
-                    cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
-                    rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
-                    rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
-                  ),
-                ),
-      ],
+            );
+          },
+        );
+      },
     );
-
-    // Si se ha recortado correctamente la imagen, devolver los bytes
-    if (croppedFile != null) {
-      return await croppedFile.readAsBytes();
-    }
-
-    // Si el usuario cancela el recorte o falla, devolver null
-    return null;
   }
-
-Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
+  Future<void> _mostrarModalEliminarFoto(BuildContext context, int fotoId) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Eliminar Foto'),
+          content: Text('¿Estás seguro de que deseas eliminar esta foto?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await eliminarFoto(context, fotoId); // Asegúrate de pasar el fotoId, no publicacionId
+              },
+              child: Text('Eliminar Foto'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
     // Capture the ScaffoldMessenger before the async operations
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -285,42 +239,50 @@ Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8Li
       scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error al subir fotos: $e')));
     }
   }
-  
-Future<void> eliminarFoto(BuildContext context, int fotoId) async {
-  print('Eliminando foto con foto_id: $fotoId'); // Depurar foto_id
 
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  Future<void> eliminarFoto(BuildContext context, int fotoId) async {
+    print('Eliminando foto con foto_id: $fotoId'); // Depurar foto_id
 
-  try {
-    final response = await http.post(
-      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-      body: {
-        'accion': 'eliminarFoto',
-        'foto_id': fotoId.toString(),
-      },
-    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    try {
+      final response = await http.post(
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+        body: {
+          'accion': 'eliminarFoto',
+          'foto_id': fotoId.toString(),
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final jsonResponse = jsonDecode(response.body);
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
-      if (jsonResponse != null && jsonResponse is Map && jsonResponse.containsKey('success')) {
-        if (jsonResponse['success'] == true) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('Foto eliminada con éxito'),
-              duration: Duration(seconds: 3),
-            ),
-          );
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse != null && jsonResponse is Map && jsonResponse.containsKey('success')) {
+          if (jsonResponse['success'] == true) {
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('Foto eliminada con éxito'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            String errorMessage = jsonResponse.containsKey('error')
+                ? jsonResponse['error']
+                : 'Error desconocido al eliminar la foto.';
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('Error: $errorMessage'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         } else {
-          String errorMessage = jsonResponse.containsKey('error')
-              ? jsonResponse['error']
-              : 'Error desconocido al eliminar la foto.';
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: Text('Error: $errorMessage'),
+              content: Text('Error: Respuesta inesperada del servidor'),
               duration: Duration(seconds: 3),
             ),
           );
@@ -328,29 +290,20 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
       } else {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Error: Respuesta inesperada del servidor'),
+            content: Text('Error al conectar con el servidor. Código: ${response.statusCode}'),
             duration: Duration(seconds: 3),
           ),
         );
       }
-    } else {
+    } catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Error al conectar con el servidor. Código: ${response.statusCode}'),
+          content: Text('Error al eliminar la foto: $e'),
           duration: Duration(seconds: 3),
         ),
       );
     }
-  } catch (e) {
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: Text('Error al eliminar la foto: $e'),
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
-}
-
 
   Future<void> reemplazarFoto(BuildContext context, int fotoId, Uint8List nuevaFoto) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);  // Extract before the async operation
@@ -399,6 +352,7 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
       );
     }
   }
+//fin de administrador de las fotos de las mascotas
 
   Future<void> _loadUserData() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -416,8 +370,8 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
     print('No se encontró un usuario_id en SharedPreferences');
   }
 }
-
-  Future<void> _uploadImage(Uint8List imageBytes) async {
+  //inicio de la administrador de la foto de perfil
+  Future<void> _subirFotoPerfil(Uint8List imageBytes) async {
     if (_usuario == null || _usuario!.id == null) return;
 
     final request = http.MultipartRequest(
@@ -472,7 +426,7 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
       }
     } catch (e) {
       // Manejar los errores de red u otros
-      print('Error en _uploadImage: $e');
+      print('Error en _subirFotoPerfil: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -505,7 +459,7 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
           });
 
           // Subir la nueva imagen al servidor
-          await _uploadImage(croppedBytes);
+          await _subirFotoPerfil(croppedBytes);
 
           // Llamar al método para recargar las publicaciones del usuario
           _publicacioPropiaUsuario(); // Recargar las publicaciones o realizar alguna acción después de subir la imagen
@@ -574,7 +528,7 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
       );
     }
   }
-
+// fin de la administracion de foto de perfil
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     try {
@@ -596,7 +550,7 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
           });
 
           // Subimos la imagen recortada al servidor
-          await _uploadImage(croppedBytes);
+          await _subirFotoPerfil(croppedBytes);
         } else {
           // Si no se recortó correctamente la imagen
           if (mounted) {
@@ -758,7 +712,6 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
     await prefs.clear();
     Navigator.of(context).pushReplacementNamed('/home');
   }
-
   // Obtener las publicaciones del usuario
   Future<void> _publicacioPropiaUsuario() async {
     if (_usuario == null) return;
@@ -861,7 +814,6 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
     }
   }
 
-
   Future<void> _confirmarEliminacionPublicacion(int publicacionId) async {
   // Mostrar el cuadro de diálogo de confirmación
   bool confirmar = await showDialog(
@@ -934,11 +886,50 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
   }
 }
 
+Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
+    CroppedFile? croppedFile;
 
+    // Configuración para Web y Android/iOS
+    croppedFile = await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),  // Relación de aspecto cuadrada
+      uiSettings: [
+        if (!kIsWeb)
+          AndroidUiSettings(
+            toolbarTitle: 'Recortar Imagen',
+            toolbarColor: Colors.green,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+        if (kIsWeb)
+          WebUiSettings(
+                  context: context,  // Usamos el context, pero solo si el widget sigue montado
+                  size: CropperSize(width: 400, height: 400), // Tamaño fijo
+                  dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
+                  initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
+                  zoomable: true,  // Habilitar zoom
+                  rotatable: true,  // Habilitar rotación
+                  cropBoxResizable: false,
+                  translations: WebTranslations(
+                    title: 'Recortar Imagen',  // Personaliza el título aquí
+                    cropButton: 'Recortar',   // Cambia el texto del botón de recorte
+                    cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
+                    rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
+                    rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
+                  ),
+                ),
+      ],
+    );
 
+    // Si se ha recortado correctamente la imagen, devolver los bytes
+    if (croppedFile != null) {
+      return await croppedFile.readAsBytes();
+    }
 
-
-
+    // Si el usuario cancela el recorte o falla, devolver null
+    return null;
+  }
 
 
 
@@ -1051,7 +1042,6 @@ Future<void> eliminarFoto(BuildContext context, int fotoId) async {
                                 int crossAxisCount = 1;
                                 if (constraints.maxWidth > 600) crossAxisCount = 2;
                                 if (constraints.maxWidth > 900) crossAxisCount = 3;
-
                                 return GridView.builder(
                                   physics: NeverScrollableScrollPhysics(),
                                   shrinkWrap: true, // Evita que el GridView ocupe más espacio del necesario
