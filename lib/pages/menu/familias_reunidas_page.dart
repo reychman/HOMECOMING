@@ -198,7 +198,7 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
                                               },
                                               child: mascota.fotos.isNotEmpty
                                                   ? Image.network(
-                                                      'http://localhost/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
+                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
                                                       width: 400,
                                                       height: 250,
                                                       fit: BoxFit.contain,

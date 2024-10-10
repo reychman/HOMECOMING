@@ -23,13 +23,53 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   final _formKeyStep1 = GlobalKey<FormState>();
   final _formKeyStep2 = GlobalKey<FormState>();
   final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _razaController = TextEditingController();
+  //final TextEditingController _razaController = TextEditingController();
   final TextEditingController _fechaPerdidaController = TextEditingController();
   final TextEditingController _lugarPerdidaController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
+  // Lista de razas de perros y gatos
+final List<String> _razasPerro = [
+  'Beagle',
+  'Boxer',
+  'Bulldog',
+  'Caniche',
+  'Chihuahua',
+  'Dálmata',
+  'Golden Retriever',
+  'Gran Danés',
+  'Labrador',
+  'Pastor Alemán',
+  'Pitbull',
+  'Pomerania',
+  'Rottweiler',
+  'Schnauzer',
+  'Shih Tzu',
+  'Terrier Escocés',
+  'Yorkshire Terrier',
+  'Otro'
+];
 
+final List<String> _razasGato = [
+  'Angora',
+  'Azul Ruso',
+  'Bengalí',
+  'Bombay',
+  'Británico de pelo corto',
+  'Himalayo',
+  'Maine Coon',
+  'Persa',
+  'Ragdoll',
+  'Siamés',
+  'Siberiano',
+  'Sphynx',
+  'Otro'
+];
+
+
+  List<String> _razas = []; // Lista vacía de razas a mostrar
   List<Uint8List> _selectedImages = []; // Para almacenar varias imágenes
   String _especie = 'Seleccione una especie';
+  String? _selectedRaza;
   String _sexo = 'Seleccione el sexo';
   String usuarioId = '';
   LatLng? _selectedLocation;
@@ -83,7 +123,7 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
 
         request.fields['nombre'] = _nombreController.text;
         request.fields['especie'] = _especie;
-        request.fields['raza'] = _razaController.text;
+        request.fields['raza'] = _selectedRaza ?? '';
         request.fields['sexo'] = _sexo;
         request.fields['fecha_perdida'] = _fechaPerdidaController.text;
         request.fields['lugar_perdida'] = _lugarPerdidaController.text;
@@ -310,7 +350,8 @@ Widget build(BuildContext context) {
           DropdownButtonFormField<String>(
             value: _especie,
             decoration: InputDecoration(labelText: 'Especie'),
-            items: ['Seleccione una especie', 'gato', 'perro'].map((String value) {
+            items: ['Seleccione una especie', 'gato', 'perro']
+                .map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
                 child: Text(value),
@@ -319,6 +360,16 @@ Widget build(BuildContext context) {
             onChanged: (newValue) {
               setState(() {
                 _especie = newValue!;
+                // Actualiza las razas dependiendo de la especie seleccionada
+                if (_especie == 'gato') {
+                  _razas = _razasGato;
+                } else if (_especie == 'perro') {
+                  _razas = _razasPerro;
+                } else {
+                  _razas = [];
+                }
+                // Reinicia el valor de la raza seleccionada
+                _selectedRaza = null;
               });
             },
             validator: (value) {
@@ -328,12 +379,29 @@ Widget build(BuildContext context) {
               return null;
             },
           ),
-          TextFormField(
-            controller: _razaController,
+          // Dropdown para seleccionar la raza
+          DropdownButtonFormField<String>(
             decoration: InputDecoration(labelText: 'Raza'),
+            value: _selectedRaza,
+            onChanged: (_especie == 'gato' || _especie == 'perro')
+                ? (value) {
+                    setState(() {
+                      _selectedRaza = value;
+                    });
+                  }
+                : null, // Deshabilita el campo si no hay una especie seleccionada
+            items: _razas.map((raza) {
+              return DropdownMenuItem(
+                value: raza,
+                child: Text(raza),
+              );
+            }).toList(),
             validator: (value) {
-              if (value!.isEmpty) {
-                return 'Por favor ingrese la raza de la mascota';
+              if (_especie != 'gato' && _especie != 'perro') {
+                return null; // No valida si el campo está deshabilitado
+              }
+              if (value == null || value.isEmpty) {
+                return 'Por favor seleccione una raza';
               }
               return null;
             },

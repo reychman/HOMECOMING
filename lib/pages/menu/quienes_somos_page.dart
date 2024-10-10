@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
@@ -46,7 +47,7 @@ class QuienesSomosPage extends StatelessWidget {
                   ),
                   SizedBox(height: 20.0),
                   Image.network(
-                    'http://localhost/homecoming/assets/imagenes/quienes_somos.png',
+                    'http://$serverIP/homecoming/assets/imagenes/quienes_somos.png',
                     fit: BoxFit.cover,
                     height: 200.0,
                     errorBuilder: (context, error, stackTrace) {
