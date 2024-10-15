@@ -14,6 +14,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
   List<Usuario> usuarios = [];
   List<Usuario> refugiosActivos = [];
   List<Usuario> refugiosInactivos = [];
+  List<Usuario> refugiosRechazados = [];
   String tipoVistaActual = '';
 
   @override
@@ -59,6 +60,9 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
           SizedBox(height: 20),
           Text('Refugios Pendientes de Aprobación', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           _construirTablaRefugios(refugiosInactivos, false),
+          SizedBox(height: 20),
+          Text('Refugios Rechazados', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          _construirTablaRefugios(refugiosRechazados, false, esRechazado: true),
         ],
       ),
     );
@@ -106,7 +110,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     );
   }
 
-  Widget _construirTablaRefugios(List<Usuario> refugios, bool esActivo) {
+  Widget _construirTablaRefugios(List<Usuario> refugios, bool esActivo, {bool esRechazado = false}) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -122,7 +126,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
           DataColumn(label: Text('Email Refugio')),
           DataColumn(label: Text('Ubicación Refugio')),
           DataColumn(label: Text('Teléfono Refugio')),
-          DataColumn(label: Text('Acciones')),
+          if (!esRechazado) DataColumn(label: Text('Acciones')),
         ],
         rows: refugios.asMap().entries.map((entry) {
           int idx = entry.key;
@@ -139,7 +143,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
             DataCell(Text(refugio.emailRefugio ?? '')),
             DataCell(Text(refugio.ubicacionRefugio ?? '')),
             DataCell(Text(refugio.telefonoRefugio ?? '')),
-            DataCell(Row(
+            if (!esRechazado) DataCell(Row(
               children: esActivo
                 ? [
                     IconButton(
@@ -191,6 +195,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
       setState(() {
         refugiosActivos = todosRefugios.where((refugio) => refugio.estado == 1).toList();
         refugiosInactivos = todosRefugios.where((refugio) => refugio.estado == 0).toList();
+        refugiosRechazados = todosRefugios.where((refugio) => refugio.estado == 2).toList();
         tipoVistaActual = 'refugio';
       });
     }
@@ -243,26 +248,33 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     );
   }
 
-  void _aprobarRefugio(Usuario refugio) async {
-    refugio.estado = 1;
-    Map<String, dynamic> result = await refugio.updateUsuario();
+void _aprobarRefugio(Usuario refugio) async {
+  try {
+    Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(1);
     if (result['success'] == true) {
       _mostrarMensaje('Refugio aprobado con éxito');
       _actualizarListas();
     } else {
       _mostrarMensaje('Error al aprobar refugio: ${result['message']}', esError: true);
     }
+  } catch (e) {
+    _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
   }
+}
 
-  void _rechazarRefugio(Usuario refugio) async {
-    bool success = await refugio.deleteUsuario();
-    if (success) {
-      _mostrarMensaje('Refugio rechazado y eliminado con éxito');
+void _rechazarRefugio(Usuario refugio) async {
+  try {
+    Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(2);
+    if (result['success'] == true) {
+      _mostrarMensaje('Refugio rechazado con éxito');
       _actualizarListas();
     } else {
-      _mostrarMensaje('Error al rechazar refugio', esError: true);
+      _mostrarMensaje('Error al rechazar refugio: ${result['message']}', esError: true);
     }
+  } catch (e) {
+    _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
   }
+}
 
   void _mostrarMensaje(String mensaje, {bool esError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(

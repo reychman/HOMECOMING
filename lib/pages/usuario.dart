@@ -128,21 +128,7 @@ static Future<bool> createUsuario(Usuario usuario) async {
     }
   }
   // Mostrar usuarios
-  static Future<List<Usuario>> fetchUsuariosPorEstado(String tipo, int estado) async {
-    String url;
 
-    // Construir la URL basada en el tipo y estado
-    url = 'http://$serverIP/homecoming/homecomingbd_v2/lista_usuarios.php?tipo=$tipo';
-
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      List<dynamic> jsonResponse = json.decode(response.body);
-      return jsonResponse.map((json) => Usuario.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load users');
-    }
-  }
 
   // Actualizar usuario
   Future<Map<String, dynamic>> updateUsuario() async {
@@ -217,6 +203,31 @@ static Future<bool> createUsuario(Usuario usuario) async {
       return data['success'] == 'Usuario eliminado correctamente';
     } else {
       return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> cambiarEstadoRefugio(int nuevoEstado) async {
+    try {
+      const url = 'http://$serverIP/homecoming/homecomingbd_v2/lista_usuarios.php?tipo=cambiar_estado_refugio';
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'id': id.toString(),
+          'estado': nuevoEstado.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        if (result['success'] == true) {
+          estado = nuevoEstado;
+        }
+        return result;
+      } else {
+        return {'success': false, 'message': 'Error de conexión: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: ${e.toString()}'};
     }
   }
 
