@@ -18,8 +18,16 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
   final TextEditingController _segundoApellidoController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  
+  // Campos para refugio
+  final TextEditingController _nombreRefugioController = TextEditingController();
+  final TextEditingController _emailRefugioController = TextEditingController();
+  final TextEditingController _ubicacionRefugioController = TextEditingController();
+  final TextEditingController _telefonoRefugioController = TextEditingController();
+
   String _tipoUsuario = '';
   Usuario? usuario;
+
   @override
   void initState() {
     super.initState();
@@ -29,52 +37,68 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
     _telefonoController.text = widget.user.telefono;
     _emailController.text = widget.user.email;
     _tipoUsuario = widget.user.tipoUsuario;
+
+    // Inicializa campos de refugio si el tipo de usuario es refugio
+    if (_tipoUsuario == 'refugio') {
+      _nombreRefugioController.text = widget.user.nombreRefugio ?? '';
+      _emailRefugioController.text = widget.user.emailRefugio ?? '';
+      _ubicacionRefugioController.text = widget.user.ubicacionRefugio ?? '';
+      _telefonoRefugioController.text = widget.user.telefonoRefugio ?? '';
+    }
   }
 
-Future<void> _updateUser() async {
-  final nombre = _nombreController.text.toUpperCase();
-  final primerApellido = _primerApellidoController.text.toUpperCase();
-  final segundoApellido = _segundoApellidoController.text.toUpperCase();
-  final telefono = _telefonoController.text;
-  final email = _emailController.text;
-  final tipoUsuario = _tipoUsuario;
+  Future<void> _updateUser() async {
+    final nombre = _nombreController.text.toUpperCase();
+    final primerApellido = _primerApellidoController.text.toUpperCase();
+    final segundoApellido = _segundoApellidoController.text.toUpperCase();
+    final telefono = _telefonoController.text;
+    final email = _emailController.text;
+    final tipoUsuario = _tipoUsuario;
 
-  final updatedUser = Usuario(
-    id: widget.user.id,
-    nombre: nombre,
-    primerApellido: primerApellido,
-    segundoApellido: segundoApellido,
-    telefono: telefono,
-    email: email,
-    contrasena: widget.user.contrasena, // Mantén la contraseña actual si no se actualiza
-    tipoUsuario: tipoUsuario,
-    fotoPortada: widget.user.fotoPortada,
-    fechaCreacion: widget.user.fechaCreacion,
-    fechaModificacion: DateTime.now(), // Actualiza la fecha
-    estado: widget.user.estado,
-  );
+    final updatedUser = Usuario(
+      id: widget.user.id,
+      nombre: nombre,
+      primerApellido: primerApellido,
+      segundoApellido: segundoApellido,
+      telefono: telefono,
+      email: email,
+      contrasena: widget.user.contrasena, // Mantén la contraseña actual si no se actualiza
+      tipoUsuario: tipoUsuario,
+      fotoPortada: widget.user.fotoPortada,
+      fechaCreacion: widget.user.fechaCreacion,
+      fechaModificacion: DateTime.now(), // Actualiza la fecha
+      estado: widget.user.estado,
+      // Campos adicionales para refugio
+      nombreRefugio: _tipoUsuario == 'refugio' ? _nombreRefugioController.text.toUpperCase() : null,
+      emailRefugio: _tipoUsuario == 'refugio' ? _emailRefugioController.text : null,
+      ubicacionRefugio: _tipoUsuario == 'refugio' ? _ubicacionRefugioController.text.toUpperCase() : null,
+      telefonoRefugio: _tipoUsuario == 'refugio' ? _telefonoRefugioController.text : null,
+    );
 
-  final result = await updatedUser.updateUsuario(); // Llama al método updateUsuario
+    final result = await updatedUser.updateUsuario(); // Llama al método updateUsuario
 
-  if (result) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Datos Actualizados Correctamente'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => AdminUsuariosPage()),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error al actualizar usuario'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Verificamos la respuesta del servidor
+    if (result['success'] != null) {
+      // Cambiamos a éxito en lugar de un booleano
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Datos Actualizados Correctamente'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // Redirigir a la página de administración de usuarios
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => AdminUsuarios()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error'] ?? 'Error al actualizar usuario'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +136,13 @@ Future<void> _updateUser() async {
               onChanged: (newValue) {
                 setState(() {
                   _tipoUsuario = newValue!;
+                  // Limpiar los campos de refugio si cambia el tipo de usuario
+                  if (_tipoUsuario != 'refugio') {
+                    _nombreRefugioController.clear();
+                    _emailRefugioController.clear();
+                    _ubicacionRefugioController.clear();
+                    _telefonoRefugioController.clear();
+                  }
                 });
               },
               items: ['administrador', 'propietario', 'refugio']
@@ -123,6 +154,26 @@ Future<void> _updateUser() async {
               }).toList(),
               decoration: InputDecoration(labelText: 'Tipo Usuario'),
             ),
+
+            // Campos adicionales solo para refugios
+            if (_tipoUsuario == 'refugio') ...[
+              TextField(
+                controller: _nombreRefugioController,
+                decoration: InputDecoration(labelText: 'Nombre Refugio'),
+              ),
+              TextField(
+                controller: _emailRefugioController,
+                decoration: InputDecoration(labelText: 'Email Refugio'),
+              ),
+              TextField(
+                controller: _ubicacionRefugioController,
+                decoration: InputDecoration(labelText: 'Ubicación Refugio'),
+              ),
+              TextField(
+                controller: _telefonoRefugioController,
+                decoration: InputDecoration(labelText: 'Teléfono Refugio'),
+              ),
+            ],
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _updateUser,

@@ -22,10 +22,24 @@ $email = $_POST['email'];
 $contrasena = $_POST['contrasena']; // Asegúrate de que la contraseña llegue ya encriptada con SHA-1
 $tipo_usuario = $_POST['tipo_usuario'];
 
+// Inicializar variables para los datos del refugio
+$nombreRefugio = isset($_POST['nombreRefugio']) ? $_POST['nombreRefugio'] : null;
+$emailRefugio = isset($_POST['emailRefugio']) ? $_POST['emailRefugio'] : null;
+$ubicacionRefugio = isset($_POST['ubicacionRefugio']) ? $_POST['ubicacionRefugio'] : null;
+$telefonoRefugio = isset($_POST['telefonoRefugio']) ? $_POST['telefonoRefugio'] : null;
+
 // Validar que los campos obligatorios no estén vacíos
 if (empty($nombre) || empty($primerApellido) || empty($telefono) || empty($email) || empty($contrasena) || empty($tipo_usuario)) {
     echo json_encode(array('error' => 'Todos los campos son obligatorios'));
     exit();
+}
+
+// Validaciones adicionales si el tipo de usuario es refugio
+if ($tipo_usuario == 'refugio') {
+    if (empty($nombreRefugio) || empty($emailRefugio) || empty($ubicacionRefugio) || empty($telefonoRefugio)) {
+        echo json_encode(array('error' => 'Todos los campos del refugio son obligatorios'));
+        exit();
+    }
 }
 
 // Validar si el usuario ya existe
@@ -48,15 +62,32 @@ if ($stmt->num_rows > 0) {
 }
 
 // Insertar el nuevo usuario en la base de datos
-$sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, ?, Now(),0)";
-$stmt = $conexion->prepare($sql);
+if ($tipo_usuario == 'propietario') {
+    // Si es un propietario, el estado es 1 (activo)
+    $sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, fecha_creacion, estado) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, Now(), 1)";
+    $stmt = $conexion->prepare($sql);
 
-if (!$stmt) {
-    echo json_encode(array('error' => 'Error en la preparación de la consulta de inserción: ' . $conexion->error));
-    exit();
+    if (!$stmt) {
+        echo json_encode(array('error' => 'Error en la preparación de la consulta de inserción: ' . $conexion->error));
+        exit();
+    }
+
+    $stmt->bind_param("sssssss", $nombre, $primerApellido, $segundoApellido, $telefono, $email, $contrasena, $tipo_usuario);
+
+} else if ($tipo_usuario == 'refugio') {
+    // Si es un refugio, el estado es 0 (inactivo)
+    $sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, nombreRefugio, emailRefugio, ubicacionRefugio, telefonoRefugio, fecha_creacion, estado) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, Now(), 0)";
+    $stmt = $conexion->prepare($sql);
+
+    if (!$stmt) {
+        echo json_encode(array('error' => 'Error en la preparación de la consulta de inserción: ' . $conexion->error));
+        exit();
+    }
+
+    $stmt->bind_param("sssssssssss", $nombre, $primerApellido, $segundoApellido, $telefono, $email, $contrasena, $tipo_usuario, $nombreRefugio, $emailRefugio, $ubicacionRefugio, $telefonoRefugio);
 }
-
-$stmt->bind_param("sssssss", $nombre, $primerApellido, $segundoApellido, $telefono, $email, $contrasena, $tipo_usuario);
 
 if ($stmt->execute()) {
     echo json_encode(array('success' => true));

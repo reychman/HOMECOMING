@@ -20,12 +20,37 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController contrasenaController = TextEditingController();
   final TextEditingController verificarContrasenaController = TextEditingController();
+  final TextEditingController nombreRefugioController = TextEditingController();
+  final TextEditingController emailRefugioController = TextEditingController();
+  final TextEditingController ubicacionRefugioController = TextEditingController();
+  final TextEditingController telefonoRefugioController = TextEditingController();
+
   bool _contrasenaVisible1 = false;
   bool _contrasenaVisible2 = false;
   String? tipoUsuario;
   String mensaje = "";
   Usuario? usuario;
-  
+  int _currentStep = 0;
+
+  // Método para avanzar de paso
+  void _nextStep() {
+    setState(() {
+      if (_currentStep < 3) {
+        _currentStep++;
+      }
+    });
+  }
+
+  // Método para retroceder de paso
+  void _previousStep() {
+    setState(() {
+      if (_currentStep > 0) {
+        _currentStep--;
+      }
+    });
+  }
+
+  // Método para validar y crear un usuario o refugio
   Future<void> crearUsuario() async {
     // Validaciones de campos obligatorios
     if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty || telefonoController.text.isEmpty || emailController.text.isEmpty || contrasenaController.text.isEmpty ||
@@ -34,6 +59,16 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
         mensaje = "Todos los campos son obligatorios";
       });
       return;
+    }
+
+    // Validaciones adicionales si se selecciona refugio
+    if (tipoUsuario == 'refugio') {
+      if (nombreRefugioController.text.isEmpty || emailRefugioController.text.isEmpty || ubicacionRefugioController.text.isEmpty || telefonoRefugioController.text.isEmpty) {
+        setState(() {
+          mensaje = "Todos los campos de refugio son obligatorios";
+        });
+        return;
+      }
     }
 
     // Validaciones de longitud de contraseña
@@ -55,36 +90,75 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
     // Encriptar contraseña con SHA-1
     final passwordHash = sha1.convert(utf8.encode(contrasenaController.text)).toString();
 
-    // Crear objeto Usuario
-    Usuario nuevoUsuario = Usuario(
-      nombre: nombreController.text.toUpperCase(),
-      primerApellido: primerApellidoController.text.toUpperCase(),
-      segundoApellido: segundoApellidoController.text.toUpperCase(),
-      telefono: telefonoController.text,
-      email: emailController.text,
-      contrasena: passwordHash,
-      tipoUsuario: tipoUsuario!,
-    );
+    if (tipoUsuario == 'propietario') {
+      // Lógica para crear un usuario propietario (estado normal)
+      Usuario nuevoUsuario = Usuario(
+        nombre: nombreController.text.toUpperCase(),
+        primerApellido: primerApellidoController.text.toUpperCase(),
+        segundoApellido: segundoApellidoController.text.toUpperCase(),
+        telefono: telefonoController.text,
+        email: emailController.text,
+        contrasena: passwordHash,
+        tipoUsuario: tipoUsuario!,
+      );
 
-    // Llamar al método para crear usuario
-    bool success = await Usuario.createUsuario(nuevoUsuario);
+      bool success = await Usuario.createUsuario(nuevoUsuario);
 
-    if (success) {
-      // Enviar correo de verificación
-      bool correoEnviado = await enviarCorreoVerificacion(nuevoUsuario.email);
-
-      if (correoEnviado) {
+      if (success) {
         mostrarDialogoExito();
       } else {
         setState(() {
-          mensaje = "Error al enviar el correo de verificación.";
+          mensaje = "Error al crear el usuario";
         });
       }
-    } else {
-      setState(() {
-        mensaje = "Error al crear el usuario";
-      });
+    } else if (tipoUsuario == 'refugio') {
+      // Lógica para crear un refugio con estado 0 (inactivo)
+      Usuario nuevoRefugio = Usuario(
+        nombre: nombreController.text.toUpperCase(),
+        primerApellido: primerApellidoController.text.toUpperCase(),
+        segundoApellido: segundoApellidoController.text.toUpperCase(),
+        telefono: telefonoController.text,
+        email: emailController.text,
+        contrasena: passwordHash,
+        tipoUsuario: tipoUsuario!,
+        estado: 0, // Estado inactivo
+        nombreRefugio: nombreRefugioController.text.toUpperCase(),
+        emailRefugio: emailRefugioController.text,
+        ubicacionRefugio: ubicacionRefugioController.text.toUpperCase(),
+        telefonoRefugio: telefonoRefugioController.text,
+      );
+
+      bool success = await Usuario.createUsuario(nuevoRefugio);
+
+      if (success) {
+        mostrarDialogoRevision();
+      } else {
+        setState(() {
+          mensaje = "Error al crear el refugio";
+        });
+      }
     }
+  }
+
+  // Mostrar el mensaje de cuenta en revisión para refugios
+  void mostrarDialogoRevision() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Cuenta de Refugio en Revisión'),
+          content: Text('Su cuenta de refugio entrará en revisión. Esto puede tardar de 24 a 48 horas. Se le notificará por correo electrónico si su cuenta es válida.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Aceptar'),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/inicio');
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<bool> enviarCorreoVerificacion(String email) async {
@@ -125,128 +199,234 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
     );
   }
 
+  // Sección de pasos
+  List<Step> _buildSteps() {
+    return [
+      Step(
+        title: Text('Paso 1: Información Personal'),
+        content: Column(
+          children: [
+            TextField(
+              controller: nombreController,
+              decoration: InputDecoration(
+                labelText: 'Nombre',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+            SizedBox(height: 10.0),
+            TextField(
+              controller: primerApellidoController,
+              decoration: InputDecoration(
+                labelText: 'Primer Apellido',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+            SizedBox(height: 10.0),
+            TextField(
+              controller: segundoApellidoController,
+              decoration: InputDecoration(
+                labelText: 'Segundo Apellido (Opcional)',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+          ],
+        ),
+        isActive: _currentStep == 0,
+      ),
+      Step(
+        title: Text('Paso 2: Contacto'),
+        content: Column(
+          children: [
+            TextField(
+              controller: telefonoController,
+              decoration: InputDecoration(
+                labelText: 'Teléfono',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+            SizedBox(height: 10.0),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+          ],
+        ),
+        isActive: _currentStep == 1,
+      ),
+      Step(
+        title: Text('Paso 3: Contraseña'),
+        content: Column(
+          children: [
+            TextField(
+              controller: contrasenaController,
+              obscureText: !_contrasenaVisible1,
+              decoration: InputDecoration(
+                labelText: 'Contraseña',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _contrasenaVisible1 ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.orange,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _contrasenaVisible1 = !_contrasenaVisible1;
+                    });
+                  },
+                ),
+              ),
+            ),
+            SizedBox(height: 10.0),
+            TextField(
+              controller: verificarContrasenaController,
+              obscureText: !_contrasenaVisible2,
+              decoration: InputDecoration(
+                labelText: 'Verificar Contraseña',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _contrasenaVisible2 ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.orange,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _contrasenaVisible2 = !_contrasenaVisible2;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        isActive: _currentStep == 2,
+      ),
+      Step(
+        title: Text('Paso 4: Tipo de Usuario'),
+        content: Column(
+          children: [
+            SizedBox(height: 20.0),
+            DropdownButtonFormField<String>(
+              value: tipoUsuario,
+              onChanged: (String? newValue) {
+                setState(() {
+                  tipoUsuario = newValue;
+                });
+              },
+              items: <String>['propietario', 'refugio']
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              decoration: InputDecoration(
+                labelText: 'Tipo de Usuario',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.orange.withOpacity(0.1),
+              ),
+            ),
+            if (tipoUsuario == 'refugio') ...[
+              SizedBox(height: 10.0),
+              TextField(
+                controller: nombreRefugioController,
+                decoration: InputDecoration(
+                  labelText: 'Nombre del Refugio',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.orange.withOpacity(0.1),
+                ),
+              ),
+              SizedBox(height: 10.0),
+              TextField(
+                controller: emailRefugioController,
+                decoration: InputDecoration(
+                  labelText: 'Email del Refugio',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.orange.withOpacity(0.1),
+                ),
+              ),
+              SizedBox(height: 10.0),
+              TextField(
+                controller: ubicacionRefugioController,
+                decoration: InputDecoration(
+                  labelText: 'Ubicación del Refugio',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.orange.withOpacity(0.1),
+                ),
+              ),
+              SizedBox(height: 10.0),
+              TextField(
+                controller: telefonoRefugioController,
+                decoration: InputDecoration(
+                  labelText: 'Teléfono del Refugio',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.orange.withOpacity(0.1),
+                ),
+              ),
+            ],
+            SizedBox(height: 20.0),
+            if (tipoUsuario == 'propietario' || tipoUsuario == 'refugio') 
+              ElevatedButton(
+                onPressed: crearUsuario,
+                child: Text('Crear Usuario'),
+              ),
+          ],
+        ),
+        isActive: _currentStep == 3,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Crear Usuario'),
+        backgroundColor: Colors.orange[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              TextField(
-                controller: nombreController,
-                decoration: InputDecoration(
-                  labelText: 'Nombre',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: primerApellidoController,
-                decoration: InputDecoration(
-                  labelText: 'Primer Apellido',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: segundoApellidoController,
-                decoration: InputDecoration(
-                  labelText: 'Segundo Apellido',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: telefonoController,
-                decoration: InputDecoration(
-                  labelText: 'Teléfono',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: contrasenaController,
-                obscureText: !_contrasenaVisible1,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  border: OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _contrasenaVisible1 ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _contrasenaVisible1 = !_contrasenaVisible1;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              TextField(
-                controller: verificarContrasenaController,
-                obscureText: !_contrasenaVisible2,
-                decoration: InputDecoration(
-                  labelText: 'Verificar Contraseña',
-                  border: OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _contrasenaVisible2 ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _contrasenaVisible2 = !_contrasenaVisible2;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.0),
-              DropdownButtonFormField<String>(
-                value: tipoUsuario,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    tipoUsuario = newValue;
-                  });
-                },
-                items: <String>['propietario', 'refugio']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                decoration: InputDecoration(
-                  labelText: 'Tipo de Usuario',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 20.0),
+      body: Stepper(
+        currentStep: _currentStep,
+        onStepContinue: _nextStep,
+        onStepCancel: _previousStep,
+        steps: _buildSteps(),
+        controlsBuilder: (BuildContext context, ControlsDetails details) {
+          return Row(
+            children: <Widget>[
               ElevatedButton(
-                onPressed: crearUsuario,
-                child: Text('Crear Usuario'),
+                onPressed: details.onStepContinue,
+                child: Text('Siguiente'),
               ),
-              SizedBox(height: 10.0),
-              Text(
-                mensaje,
-                style: TextStyle(fontSize: 20.0, color: Colors.red),
-              ),
+              SizedBox(width: 10),
+              if (_currentStep > 0)
+                ElevatedButton(
+                  onPressed: details.onStepCancel,
+                  child: Text('Anterior'),
+                ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

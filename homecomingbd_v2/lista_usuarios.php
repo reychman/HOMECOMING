@@ -1,29 +1,42 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
 
 require_once('config.php');
 
-// SQL query to fetch users
-$sql = "SELECT id, nombre, primerApellido, segundoApellido, telefono, email, tipo_usuario 
-        FROM Usuarios
-        WHERE estado=1";
-$result = $conexion->query($sql);
+$tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
 
-$users = array();
-if ($result->num_rows > 0) {
-    // Output data of each row
-    while($row = $result->fetch_assoc()) {
-        $users[] = $row;
-    }
-} else {
-    echo json_encode(array('message' => 'No users found'));
-    exit();
+switch ($tipo) {
+    case 'propietario':
+    case 'administrador':
+        $sql = "SELECT id, nombre, primerApellido, segundoApellido, telefono, email, tipo_usuario, estado 
+                FROM usuarios 
+                WHERE tipo_usuario = ? AND estado = 1";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("s", $tipo);
+        break;
+    case 'refugio':
+        $sql = "SELECT id, nombre, primerApellido, segundoApellido, telefono, email, tipo_usuario, 
+                        nombreRefugio, emailRefugio, ubicacionRefugio, telefonoRefugio, estado 
+                FROM usuarios 
+                WHERE tipo_usuario = 'refugio'";
+        $stmt = $conexion->prepare($sql);
+        break;
+    default:
+        echo json_encode(["error" => "Tipo de usuario no válido"]);
+        exit();
 }
 
-// Close the database conexion
-$conexion->close();
+$stmt->execute();
+$result = $stmt->get_result();
 
-// Return the JSON response
-echo json_encode($users);
+$usuarios = [];
+while ($row = $result->fetch_assoc()) {
+    $usuarios[] = $row;
+}
+
+echo json_encode($usuarios);
+
+$stmt->close();
+$conexion->close();
 ?>
