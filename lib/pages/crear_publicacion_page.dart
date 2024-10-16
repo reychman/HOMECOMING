@@ -1,9 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/menu/home_page.dart';
+import 'package:homecoming/pages/usuario.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,44 +28,41 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   final TextEditingController _lugarPerdidaController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   // Lista de razas de perros y gatos
-final List<String> _razasPerro = [
-  'Beagle',
-  'Boxer',
-  'Bulldog',
-  'Caniche',
-  'Chihuahua',
-  'Dálmata',
-  'Golden Retriever',
-  'Gran Danés',
-  'Labrador',
-  'Pastor Alemán',
-  'Pitbull',
-  'Pomerania',
-  'Rottweiler',
-  'Schnauzer',
-  'Shih Tzu',
-  'Terrier Escocés',
-  'Yorkshire Terrier',
-  'Otro'
-];
-
-final List<String> _razasGato = [
-  'Angora',
-  'Azul Ruso',
-  'Bengalí',
-  'Bombay',
-  'Británico de pelo corto',
-  'Himalayo',
-  'Maine Coon',
-  'Persa',
-  'Ragdoll',
-  'Siamés',
-  'Siberiano',
-  'Sphynx',
-  'Otro'
-];
-
-
+  final List<String> _razasPerro = [
+    'Beagle',
+    'Boxer',
+    'Bulldog',
+    'Caniche',
+    'Chihuahua',
+    'Dálmata',
+    'Golden Retriever',
+    'Gran Danés',
+    'Labrador',
+    'Pastor Alemán',
+    'Pitbull',
+    'Pomerania',
+    'Rottweiler',
+    'Schnauzer',
+    'Shih Tzu',
+    'Terrier Escocés',
+    'Yorkshire Terrier',
+    'Otro'
+  ];
+  final List<String> _razasGato = [
+    'Angora',
+    'Azul Ruso',
+    'Bengalí',
+    'Bombay',
+    'Británico de pelo corto',
+    'Himalayo',
+    'Maine Coon',
+    'Persa',
+    'Ragdoll',
+    'Siamés',
+    'Siberiano',
+    'Sphynx',
+    'Otro'
+  ];
   List<String> _razas = []; // Lista vacía de razas a mostrar
   List<Uint8List> _selectedImages = []; // Para almacenar varias imágenes
   String _especie = 'Seleccione una especie';
@@ -73,26 +70,57 @@ final List<String> _razasGato = [
   String _sexo = 'Seleccione el sexo';
   String usuarioId = '';
   LatLng? _selectedLocation;
+  bool _mostrarComboBoxEstado = false;
 
   int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadUserId();
+    _infoUsuarioVerificarTipo();
   }
 
-  Future<void> _loadUserId() async {
+  Future<void> _infoUsuarioVerificarTipo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      int? userId = prefs.getInt('usuario_id'); // Usa getInt para recuperar como int
-      usuarioId = userId != null ? userId.toString() : ''; // Convierte a String si no es null
-    });
-
-    if (usuarioId.isEmpty) {
+    int? userId = prefs.getInt('usuario_id');
+    if (userId != null) {
+      setState(() {
+        usuarioId = userId.toString();
+      });
+      
+      // Obtener el usuario completo
+      Usuario? usuario = await obtenerUsuarioPorId(userId);
+      if (usuario != null) {
+        setState(() {
+          _mostrarComboBoxEstado = usuario.tipoUsuario == 'administrador' || usuario.tipoUsuario == 'refugio';
+        });
+      }
+    } else {
       _showSnackbar('Error: No se encontró el ID del usuario');
     }
   }
+  Future<Usuario?> obtenerUsuarioPorId(int userId) async {
+  final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/get_usuario_actual.php?user_id=$userId');
+
+  try {
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final userData = json.decode(response.body);
+      if (userData.containsKey('error')) {
+        print('Error: ${userData['error']}');
+        return null;
+      }
+      return Usuario.fromJson(userData);
+    } else {
+      print('Error al obtener usuario: ${response.statusCode}');
+      return null;
+    }
+  } catch (e) {
+    print('Error al obtener usuario: $e');
+    return null;
+  }
+}
 
   Future<void> _enviarDatos() async {
     if (_formKeyStep1.currentState!.validate() && _formKeyStep2.currentState!.validate()) {
@@ -284,7 +312,7 @@ Widget build(BuildContext context) {
   return Scaffold(
     appBar: AppBar(
       title: Text(
-        'Registrar Mascota Perdida',
+        'Registrar Mascota',
         style: TextStyle(color: Colors.white), // Color del texto del AppBar
       ),
       backgroundColor: Colors.green[200], // Color de fondo del AppBar
@@ -425,6 +453,21 @@ Widget build(BuildContext context) {
                 return 'Por favor seleccione el sexo de la mascota';
               }
               return null;
+            },
+          ),
+          if (_mostrarComboBoxEstado)
+          DropdownButtonFormField<String>(
+            decoration: InputDecoration(labelText: 'Estado de la mascota'),
+            items: ['Perdido', 'Adopción'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                // Aquí guardas el valor seleccionado
+              });
             },
           ),
           const SizedBox(height: 20.0),

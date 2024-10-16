@@ -25,7 +25,7 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
   final TextEditingController _ubicacionRefugioController = TextEditingController();
   final TextEditingController _telefonoRefugioController = TextEditingController();
 
-  String _tipoUsuario = '';
+  String? _tipoUsuario;
   Usuario? usuario;
 
   @override

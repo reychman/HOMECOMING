@@ -25,9 +25,8 @@ class MenuWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final usuario = Provider.of<UsuarioProvider>(context).usuario ?? Usuario.vacio();
-    final bool usuarioLogeado = usuario.nombre.isNotEmpty && usuario.tipoUsuario.isNotEmpty;
+    final bool usuarioLogeado = usuario.nombre.isNotEmpty && usuario.tipoUsuario?.isNotEmpty == true;
     final bool esAdministrador = usuario.tipoUsuario == 'administrador';
-
 
     return Drawer(
       child: Column(
@@ -39,7 +38,7 @@ class MenuWidget extends StatelessWidget {
               children: [
                 UserAccountsDrawerHeader(
                   accountName: Text(usuarioLogeado ? usuario.nombre : 'Invitado'),
-                  accountEmail: Text(usuarioLogeado ? usuario.tipoUsuario : 'Sin rol'),
+                  accountEmail: Text(usuarioLogeado ? usuario.tipoUsuario ?? 'Sin rol' : 'Sin rol'),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
                     child: Icon(

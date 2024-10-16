@@ -20,12 +20,26 @@ try {
     $latitud = $_POST['latitud'];
     $longitud = $_POST['longitud'];
     $usuario_id = $_POST['usuario_id'];
+    $tipo_usuario = $_POST['tipo_usuario']; // Nuevo campo para el tipo de usuario
+
+    // Determinar el estado de la mascota
+    if ($tipo_usuario == 'administrador' || $tipo_usuario == 'refugio') {
+        $estado = $_POST['estado']; // 'perdido' o 'adopcion'
+    } else {
+        $estado = 'perdido'; // Por defecto para usuarios propietarios
+    }
+
+    // Validar que el estado sea uno de los permitidos
+    $estados_permitidos = ['perdido', 'encontrado', 'adopcion', 'pendiente', 'adoptado'];
+    if (!in_array($estado, $estados_permitidos)) {
+        throw new Exception("Estado de mascota no válido");
+    }
 
     // Insertar mascota en la tabla "mascotas"
-    $sql_mascota = "INSERT INTO mascotas (nombre, especie, raza, sexo, fecha_perdida, lugar_perdida, descripcion, latitud, longitud, usuario_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql_mascota = "INSERT INTO mascotas (nombre, especie, raza, sexo, fecha_perdida, lugar_perdida, descripcion, latitud, longitud, usuario_id, estado) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_mascota = $conexion->prepare($sql_mascota);
-    $stmt_mascota->bind_param('ssssssssdi', $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $usuario_id);
+    $stmt_mascota->bind_param('sssssssssis', $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $usuario_id, $estado);
 
     if (!$stmt_mascota->execute()) {
         throw new Exception("Error al insertar la mascota: " . $stmt_mascota->error);

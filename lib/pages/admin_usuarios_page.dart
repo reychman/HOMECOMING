@@ -91,7 +91,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
             DataCell(Text(usuario.segundoApellido)),
             DataCell(Text(usuario.telefono)),
             DataCell(Text(usuario.email)),
-            DataCell(Text(usuario.tipoUsuario)),
+            DataCell(Text(usuario.tipoUsuario ?? 'Sin tipo')),
             DataCell(Row(
               children: [
                 IconButton(
@@ -138,7 +138,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
             DataCell(Text(refugio.segundoApellido)),
             DataCell(Text(refugio.telefono)),
             DataCell(Text(refugio.email)),
-            DataCell(Text(refugio.tipoUsuario)),
+            DataCell(Text(refugio.tipoUsuario ?? 'Sin tipo')),
             DataCell(Text(refugio.nombreRefugio ?? '')),
             DataCell(Text(refugio.emailRefugio ?? '')),
             DataCell(Text(refugio.ubicacionRefugio ?? '')),

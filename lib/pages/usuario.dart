@@ -11,7 +11,7 @@ class Usuario {
   String telefono;
   String email;
   String contrasena;
-  String tipoUsuario;
+  String? tipoUsuario;
   String? fotoPortada;
   String? nombreRefugio;
   String? emailRefugio;
@@ -59,6 +59,7 @@ class Usuario {
         estado = null,
         fechaCreacion = null,
         fechaModificacion = null;
+
 
   // Crear usuario
 static Future<bool> createUsuario(Usuario usuario) async {

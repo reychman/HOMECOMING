@@ -2,12 +2,23 @@
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-require 'config.php'; // Asegúrate de que config.php esté en la misma carpeta o ajusta la ruta
+require 'config.php';
 
-session_start();
+// Obtener el método de la solicitud
+$method = $_SERVER['REQUEST_METHOD'];
 
-// Verificar si el usuario está autenticado
-$user_id = $_POST['user_id'] ?? null;
+// Si es una solicitud OPTIONS, terminar aquí (para manejar preflight CORS)
+if ($method === 'OPTIONS') {
+    exit(0);
+}
+
+// Obtener el ID del usuario
+$user_id = null;
+if ($method === 'GET') {
+    $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+} elseif ($method === 'POST') {
+    $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : null;
+}
 
 if (!$user_id) {
     echo json_encode(["error" => "User ID is required"]);
