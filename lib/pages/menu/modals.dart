@@ -1,385 +1,244 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/mascota.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
-  int currentImageIndex = 0; // Inicializamos el índice aquí
-
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Determinar si la pantalla es lo suficientemente grande para un diseño horizontal
-                bool isLargeScreen = constraints.maxWidth > 600;
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            bool isNarrowScreen = constraints.maxWidth < 600; // Pantallas angostas
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: isLargeScreen
-                      ? Row( // Diseño horizontal
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Imagen a la izquierda
-                            Expanded(
-                              flex: 1,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center, // Centrar verticalmente la imagen
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.arrow_back),
-                                        iconSize: 30.0,
-                                        onPressed: () {
-                                          if (mascota.fotos.isNotEmpty) {
-                                            setState(() {
-                                              if (currentImageIndex > 0) {
-                                                currentImageIndex--;
-                                              } else {
-                                                currentImageIndex = mascota.fotos.length - 1;
-                                              }
-                                            });
-                                          }
-                                        },
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 60.0), // Añade un padding para bajar la imagen
-                                          child: mascota.fotos.isNotEmpty
-                                              ? Image.network(
-                                                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
-                                                  width: 400,
-                                                  height: 400,
-                                                  fit: BoxFit.contain,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return Icon(Icons.error, size: 200, color: Colors.red);
-                                                  },
-                                                )
-                                              : Icon(Icons.pets, size: 200, color: Colors.grey),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.arrow_forward),
-                                        iconSize: 30.0,
-                                        onPressed: () {
-                                          if (mascota.fotos.isNotEmpty) {
-                                            setState(() {
-                                              if (currentImageIndex < mascota.fotos.length - 1) {
-                                                currentImageIndex++;
-                                              } else {
-                                                currentImageIndex = 0;
-                                              }
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+            return Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.8,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white, // Color de fondo del diálogo
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: isNarrowScreen
+                  ? Column( // Disposición vertical en pantallas angostas
+                      children: [
+                        // Carrusel de fotos (arriba)
+                        Expanded(
+                          flex: 1,
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              height: double.infinity,
+                              viewportFraction: 1.0,
+                              enlargeCenterPage: false,
                             ),
-                            SizedBox(width: 20), // Separador entre imagen y detalles
-                            // Detalles de la mascota y del dueño a la derecha
-                            Expanded(
-                              flex: 1,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildInfoCard('Información de la Mascota', [
-                                    _buildInfoText('Nombre', mascota.nombre),
-                                    _buildInfoText('${mascota.especie} - ${mascota.raza}', ''),
-                                    _buildInfoText('Sexo', mascota.sexo),
-                                    _buildInfoText('Fecha Perdida', mascota.fechaPerdida),
-                                    _buildInfoText('Lugar Perdida', mascota.lugarPerdida),
-                                    _buildInfoText('Estado', mascota.estado),
-                                    _buildInfoText('Descripción', mascota.descripcion),
-                                  ]),
-                                  SizedBox(height: 16),
-                                  _buildInfoCard('Información del Dueño', [
-                                    _buildInfoText('Nombre', mascota.nombreDueno),
-                                    _buildInteractiveText('Email', mascota.emailDueno, 'mailto:${mascota.emailDueno}'),
-                                    _buildPhoneRow('Teléfono', mascota.telefonoDueno),
-                                  ]),
-                                  SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop(); // Cerrar el modal
-                                    },
-                                    child: Text('Cerrar'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column( // Diseño vertical para pantallas pequeñas
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (mascota.estado == 'encontrado')
-                              Container(
+                            items: mascota.fotos.map((foto) {
+                              return Container(
                                 width: double.infinity,
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '¡Mascota reunida con su familia!',
-                                  style: TextStyle(color: Colors.white),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            if (mascota.estado == 'perdido')
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color.fromARGB(255, 206, 71, 71),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '¡Hay una familia que busca a esta mascota!',
-                                  style: TextStyle(color: Colors.white),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                child: Image.network(foto, fit: BoxFit.contain),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        // Información de la mascota y dueño (abajo)
+                        Expanded(
+                          flex: 1,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                IconButton(
-                                  icon: Icon(Icons.arrow_back),
-                                  iconSize: 30.0,
-                                  onPressed: () {
-                                    if (mascota.fotos.isNotEmpty) {
-                                      setState(() {
-                                        if (currentImageIndex > 0) {
-                                          currentImageIndex--;
-                                        } else {
-                                          currentImageIndex = mascota.fotos.length - 1;
-                                        }
-                                      });
-                                    }
-                                  },
+                                _buildSectionHeader('Información de la Mascota'),
+                                _buildInfoText('Nombre: ${mascota.nombre}'),
+                                _buildInfoText('Especie: ${mascota.especie}'),
+                                _buildInfoText('Raza: ${mascota.raza}'),
+                                _buildInfoText('Sexo: ${mascota.sexo}'),
+                                _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
+                                _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida}'),
+                                _buildInfoText('Estado: ${mascota.estado}'),
+                                _buildInfoText('Descripción: ${mascota.descripcion}'),
+                                SizedBox(height: 20),
+                                _buildSectionHeader('Información del Dueño'),
+                                _buildInfoText('Nombre Completo: ${mascota.nombreDueno} ${mascota.primerApellidoDueno} ${mascota.segundoApellidoDueno}'),
+                                SizedBox(height: 10),
+                                _buildInteractiveText(
+                                  'Email',
+                                  mascota.emailDueno,
+                                  'mailto:${mascota.emailDueno}',
                                 ),
-                                /*Expanded(//por demas
-                                  child: mascota.fotos.isNotEmpty
-                                      ? Image.network(
-                                          'http://$serverIP/homecomingassets/imagenes/fotos_mascotas/${mascota.fotos[currentImageIndex]}',
-                                          width: 400,
-                                          height: 400,
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Icon(Icons.error, size: 200, color: Colors.red);
-                                          },
-                                        )
-                                      : Icon(Icons.pets, size: 200, color: Colors.grey),
-                                ),*/
-                                IconButton(
-                                  icon: Icon(Icons.arrow_forward),
-                                  iconSize: 30.0,
-                                  onPressed: () {
-                                    if (mascota.fotos.isNotEmpty) {
-                                      setState(() {
-                                        if (currentImageIndex < mascota.fotos.length - 1) {
-                                          currentImageIndex++;
-                                        } else {
-                                          currentImageIndex = 0;
-                                        }
-                                      });
-                                    }
-                                  },
-                                ),
+                                _buildWhatsAppContact(context, mascota),
                               ],
                             ),
-                            SizedBox(height: 16),
-                            _buildInfoCard('Información de la Mascota', [
-                              _buildInfoText('Nombre', mascota.nombre),
-                              _buildInfoText('${mascota.especie} - ${mascota.raza}', ''),
-                              _buildInfoText('Sexo', mascota.sexo),
-                              _buildInfoText('Fecha Perdida', mascota.fechaPerdida),
-                              _buildInfoText('Lugar Perdida', mascota.lugarPerdida),
-                              _buildInfoText('Estado', mascota.estado),
-                              _buildInfoText('Descripción', mascota.descripcion),
-                            ]),
-                            SizedBox(height: 16),
-                            _buildInfoCard('Información del Dueño', [
-                              _buildInfoText('Nombre', mascota.nombreDueno),
-                              _buildInteractiveText('Email', mascota.emailDueno, 'mailto:${mascota.emailDueno}'),
-                              _buildPhoneRow('Teléfono', mascota.telefonoDueno),
-                            ]),
-                            SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop(); // Cerrar el modal
-                              },
-                              child: Text('Cerrar'),
-                            ),
-                          ],
+                          ),
                         ),
-                );
-              },
-            ),
-          );
-        },
+                      ],
+                    )
+                  : Row( // Disposición horizontal en pantallas anchas
+                      children: [
+                        // Carrusel de fotos (lado izquierdo)
+                        Expanded(
+                          flex: 1,
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              height: double.infinity,
+                              viewportFraction: 1.0,
+                              enlargeCenterPage: false,
+                            ),
+                            items: mascota.fotos.map((foto) {
+                              return Container(
+                                width: double.infinity,
+                                child: Image.network(foto, fit: BoxFit.contain),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        SizedBox(width: 20),
+                        // Información de la mascota y dueño (lado derecho)
+                        Expanded(
+                          flex: 1,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader('Información de la Mascota'),
+                                _buildInfoText('Nombre: ${mascota.nombre}'),
+                                _buildInfoText('Especie: ${mascota.especie}'),
+                                _buildInfoText('Raza: ${mascota.raza}'),
+                                _buildInfoText('Sexo: ${mascota.sexo}'),
+                                _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
+                                _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida}'),
+                                _buildInfoText('Estado: ${mascota.estado}'),
+                                _buildInfoText('Descripción: ${mascota.descripcion}'),
+                                SizedBox(height: 20),
+                                _buildSectionHeader('Información del Dueño'),
+                                _buildInfoText('Nombre Completo: ${mascota.nombreDueno} ${mascota.primerApellidoDueno} ${mascota.segundoApellidoDueno}'),
+                                SizedBox(height: 10),
+                                _buildInteractiveText(
+                                  'Email',
+                                  mascota.emailDueno,
+                                  'mailto:${mascota.emailDueno}',
+                                ),
+                                _buildWhatsAppContact(context, mascota),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            );
+          },
+        ),
       );
     },
   );
 }
-  Widget _buildInfoCard(String title, List<Widget> children) {
-    return Container(
-      width: 500,
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: EdgeInsets.all(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
-              ),
-              Divider(),
-              ...children,
-            ],
+
+// Función para construir encabezados de sección
+Widget _buildSectionHeader(String title) {
+  return Container(
+    margin: EdgeInsets.symmetric(vertical: 8.0),
+    child: Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.blueGrey,
+      ),
+    ),
+  );
+}
+
+// Función para construir texto de información con estilo
+Widget _buildInfoText(String text) {
+  return Container(
+    margin: EdgeInsets.symmetric(vertical: 4.0),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 16,
+        color: Colors.black, // Color del texto
+      ),
+    ),
+  );
+}
+
+Widget _buildInteractiveText(String label, String value, String url) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Row(
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoText(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.blueAccent,
-            ),
-          ),
-          Expanded(
+        Expanded(
+          child: InkWell(
+            onTap: () async {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              } else {
+                throw 'No se pudo iniciar $url';
+              }
+            },
             child: Text(
               value,
-              style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInteractiveText(String label, String value, String url) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.blueAccent,
-            ),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: () async {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  throw 'No se pudo iniciar $url';
-                }
-              },
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.blueAccent,
-                  decoration: TextDecoration.underline,
-                ),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhoneRow(String label, String phoneNumber) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.blueAccent,
-            ),
+        ),
+      ],
+    ),
+  );
+}
+Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
+  return GestureDetector(
+    onTap: () async {
+      final whatsappUri = Uri.parse(
+        'https://wa.me/${mascota.telefonoDueno}?text=Hola, estoy contactando sobre tu mascota perdida: ${mascota.nombre}'
+      );
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir WhatsApp')),
+        );
+      }
+    },
+    child: Row(
+      children: [
+        Image.network(
+          'http://$serverIP/homecoming/assets/imagenes/whatsapp.png',
+          width: 30,
+          height: 30,
+        ),
+        SizedBox(width: 10),
+        Text(
+          mascota.telefonoDueno,
+          style: TextStyle(
+            color: Colors.blue, // Color del enlace
+            decoration: TextDecoration.underline,
           ),
-          Expanded(
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () async {
-                    final telUri = Uri.parse('tel:$phoneNumber');
-                    if (await canLaunchUrl(telUri)) {
-                      await launchUrl(telUri);
-                    } else {
-                      throw 'No se pudo iniciar $telUri';
-                    }
-                  },
-                  child: Text(
-                    phoneNumber,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blueAccent,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                InkWell(
-                  onTap: () async {
-                    final whatsappUri = Uri.parse('https://wa.me/$phoneNumber');
-                    if (await canLaunchUrl(whatsappUri)) {
-                      await launchUrl(whatsappUri);
-                    } else {
-                      throw 'No se pudo iniciar $whatsappUri';
-                    }
-                  },
-                  child: Image.network(
-                    'http://$serverIP/homecoming/assets/imagenes/whatsapp.png',
-                    width: 24,
-                    height: 24,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.error, size: 24, color: Colors.red);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}

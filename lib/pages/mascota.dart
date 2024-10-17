@@ -1,3 +1,4 @@
+
 class Mascota {
   final int id;
   final String nombre;
@@ -12,6 +13,8 @@ class Mascota {
   final double? latitud;
   final double? longitud;
   final String nombreDueno;
+  final String primerApellidoDueno;
+  final String segundoApellidoDueno;
   final String emailDueno;
   final String telefonoDueno;
 
@@ -29,6 +32,8 @@ class Mascota {
     this.latitud,
     this.longitud,
     required this.nombreDueno,
+    required this.primerApellidoDueno,
+    required this.segundoApellidoDueno,
     required this.emailDueno,
     required this.telefonoDueno,
   });
@@ -48,6 +53,8 @@ class Mascota {
       latitud: json['latitud'] != null ? (json['latitud'] is double ? json['latitud'] : double.tryParse(json['latitud'].toString())) : null,
       longitud: json['longitud'] != null ? (json['longitud'] is double ? json['longitud'] : double.tryParse(json['longitud'].toString())) : null,
       nombreDueno: json['nombre_dueno'] ?? 'Desconocido',
+      primerApellidoDueno: json['primer_apellido_dueno'] ?? '',
+      segundoApellidoDueno: json['segundo_apellido_dueno'] ?? '',
       emailDueno: json['email_dueno'] ?? '',
       telefonoDueno: json['telefono_dueno'] ?? '',
     );

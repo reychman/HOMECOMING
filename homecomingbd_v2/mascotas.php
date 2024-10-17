@@ -11,8 +11,11 @@ if ($conexion->connect_error) {
     die("Conexión fallida: " . $conexion->connect_error);
 }
 
+// Define la URL base para las imágenes
+$base_url = "http://localhost/homecoming/assets/imagenes/fotos_mascotas/"; // Ajusta esto a la ruta correcta en tu servidor Laragon
+
 // Consulta para obtener todas las mascotas
-$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.primerApellido AS primer_apellido_dueno, U.segundoApellido AS segundo_apellido_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
         FROM mascotas M
         JOIN usuarios U ON M.usuario_id = U.id
         WHERE estado_registro=1
@@ -22,21 +25,17 @@ $result = $conexion->query($sql);
 $mascotas = array();
 
 if ($result->num_rows > 0) {
-    // Para cada mascota, obtenemos sus fotos
     while($row = $result->fetch_assoc()) {
-        // Consulta para obtener las fotos asociadas con la mascota
         $sql_fotos = "SELECT foto FROM fotos_mascotas WHERE mascota_id = " . $row['id'];
         $result_fotos = $conexion->query($sql_fotos);
         $fotos = array();
 
-        // Añadir todas las fotos a un array
         if ($result_fotos->num_rows > 0) {
             while($foto_row = $result_fotos->fetch_assoc()) {
-                $fotos[] = $foto_row['foto'];
+                $fotos[] = $base_url . $foto_row['foto']; // Construye la URL completa
             }
         }
 
-        // Crear la estructura de datos de la mascota con las fotos
         $mascotas[] = array(
             'id' => (int)$row['id'],
             'nombre' => $row['nombre'],
@@ -47,17 +46,17 @@ if ($result->num_rows > 0) {
             'lugar_perdida' => $row['lugar_perdida'],
             'estado' => $row['estado'],
             'descripcion' => $row['descripcion'],
-            'fotos' => $fotos,  // Array con todas las fotos
+            'fotos' => $fotos,
             'nombre_dueno' => $row['nombre_dueno'],
+            'primer_apellido_dueno' => $row['primer_apellido_dueno'],
+            'segundo_apellido_dueno' => $row['segundo_apellido_dueno'],
             'email_dueno' => $row['email_dueno'],
             'telefono_dueno' => $row['telefono_dueno']
         );
     }
 }
 
-// Cerrar conexión
 $conexion->close();
 
-// Devolver resultado en formato JSON
 echo json_encode($mascotas);
 ?>

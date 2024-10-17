@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
@@ -17,10 +18,10 @@ class PaginaPrincipal extends StatefulWidget {
 
 class _PaginaPrincipalState extends State<PaginaPrincipal> {
   late Future<List<Mascota>> futureMascotas;
+  List<Mascota> mascotasEnAdopcion = [];
   List<Mascota> _mascotas = []; // Lista de mascotas completa
   List<Mascota> _mascotasFiltradas = []; // Lista filtrada para mostrar
   TextEditingController _searchController = TextEditingController();
-
   // Mapa para manejar el índice actual de imagen para cada mascota
   Map<int, int> _currentImageIndex = {};
 
@@ -43,6 +44,57 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
   }
 
+  Widget _cardAdopciones(Mascota mascota) {
+    return Card(
+      child: Column(
+        children: [
+          Expanded(
+            child: mascota.fotos.isNotEmpty
+                ? CarouselSlider.builder(
+                    itemCount: mascota.fotos.length,
+                    itemBuilder: (BuildContext context, int index, int realIndex) {
+                      return _imagenesManejoErrores(mascota.fotos[index]);
+                    },
+                    options: CarouselOptions(
+                      viewportFraction: 1.0,
+                      autoPlay: true,
+                      autoPlayInterval: Duration(seconds: 3),
+                    ),
+                  )
+                : Center(child: Text('No hay imágenes disponibles')),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              mascota.nombre,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _imagenesManejoErrores(String imageUrl) {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('Error loading image: $imageUrl');
+        print('Error details: $error');
+        return Center(child: Icon(Icons.error));
+      },
+      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                : null,
+          ),
+        );
+      },
+    );
+  }
   String obtenerMensajeFecha(DateTime fechaPerdida) {
     final hoy = DateTime.now();
     final diferenciaDias = hoy.difference(fechaPerdida).inDays;
@@ -60,24 +112,32 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
-  Future<List<Mascota>> obtenerMascotas() async {
+Future<List<Mascota>> obtenerMascotas() async {
     print("Obteniendo las mascotas...");
     final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
-      List<Mascota> mascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
-      List<Mascota> mascotasEncontradas = mascotas.where((m) => m.estado == 'perdido').toList();
+      print("Respuesta JSON: $jsonResponse");
+      
+      List<Mascota> todasLasMascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
+      print("Total de mascotas obtenidas: ${todasLasMascotas.length}");
+      
       setState(() {
-        _mascotas = mascotasEncontradas;
-        _mascotasFiltradas = mascotasEncontradas;
-        for (var mascota in mascotasEncontradas) {
-          _currentImageIndex[mascota.id] = 0;
-        }
+        mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion').toList();
+        _mascotasFiltradas = todasLasMascotas.where((m) => m.estado == 'perdido').toList();
       });
-      return mascotasEncontradas;
+      
+      print("Mascotas en adopción: ${mascotasEnAdopcion.length}");
+      print("Mascotas perdidas: ${_mascotasFiltradas.length}");
+      
+      for (var mascota in todasLasMascotas) {
+        _currentImageIndex[mascota.id] = 0;
+      }
+
+      return todasLasMascotas;
     } else {
-      throw Exception('Error al cargar las mascotas');
+      throw Exception('Error al cargar las mascotas: ${response.statusCode}');
     }
   }
 
@@ -140,6 +200,26 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
               ),
             ),
           ),
+           // Carrusel de mascotas en adopción
+          if (mascotasEnAdopcion.isNotEmpty)
+            SizedBox(
+              height: 200,
+              child: CarouselSlider.builder(
+                itemCount: mascotasEnAdopcion.length,
+                itemBuilder: (BuildContext context, int index, int realIndex) {
+                  return _cardAdopciones(mascotasEnAdopcion[index]);
+                },
+                options: CarouselOptions(
+                  height: 200,
+                  viewportFraction: 0.8,
+                  enlargeCenterPage: true,
+                  autoPlay: true,
+                  autoPlayInterval: Duration(seconds: 3),
+                  autoPlayAnimationDuration: Duration(milliseconds: 800),
+                  autoPlayCurve: Curves.fastOutSlowIn,
+                ),
+              ),
+            ),
           Expanded(
             child: FutureBuilder<List<Mascota>>(
               future: futureMascotas,
@@ -153,18 +233,21 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                 } else {
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      int crossAxisCount = 1; // Solo un card en pantallas angostas
-                      if (constraints.maxWidth > 600) {
-                        crossAxisCount = 2; // Dos cards en pantallas anchas
+                      int crossAxisCount = 1; // 1 card por defecto para pantallas pequeñas
+
+                      if (constraints.maxWidth > 1150) {
+                        crossAxisCount = 3; // 3 cards en pantallas anchas
+                      } else if (constraints.maxWidth > 750) {
+                        crossAxisCount = 2; // 2 cards en pantallas medianas
                       }
 
                       return GridView.builder(
                         padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 16.0,
-                          mainAxisSpacing: 16.0,
-                          childAspectRatio: 0.9, // Mantener la relación de aspecto de los cards
+                          crossAxisSpacing: 20.0, // Espacio horizontal entre los cards
+                          mainAxisSpacing: 16.0,  // Espacio vertical entre los cards
+                          childAspectRatio: 1.5,  // Mantener la relación de aspecto de los cards
                         ),
                         itemCount: _mascotasFiltradas.length,
                         itemBuilder: (context, index) {
@@ -224,49 +307,40 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                                         ),
                                       ),
                                     Flexible(
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      IconButton(
-        icon: Icon(Icons.arrow_back),
-        iconSize: 30.0,
-        onPressed: () {
-          if (mascota.fotos.isNotEmpty) {
-            _cambiarImagen(mascota.id, mascota.fotos, false);
-          }
-        },
-      ),
-      // Cambiar de Expanded a Flexible o usar SizedBox
-      Flexible(
-        child: GestureDetector(
-          onTap: () {
-            mostrarModalInfoMascota(context, mascota);
-          },
-          child: mascota.fotos.isNotEmpty
-              ? Image.network(
-                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
-                  width: 400,
-                  height: 250,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.error, size: 100, color: Colors.red);
-                  },
-                )
-              : Icon(Icons.pets, size: 200, color: Colors.grey),
-        ),
-      ),
-      IconButton(
-        icon: Icon(Icons.arrow_forward),
-        iconSize: 30.0,
-        onPressed: () {
-          if (mascota.fotos.isNotEmpty) {
-            _cambiarImagen(mascota.id, mascota.fotos, true);
-          }
-        },
-      ),
-    ],
-  ),
-),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_back),
+                                            iconSize: 30.0,
+                                            onPressed: () {
+                                              if (mascota.fotos.isNotEmpty) {
+                                                _cambiarImagen(mascota.id, mascota.fotos, false);
+                                              }
+                                            },
+                                          ),
+                                          Flexible(
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                mostrarModalInfoMascota(context, mascota);
+                                              },
+                                              child: mascota.fotos.isNotEmpty
+                                                  ? _imagenesManejoErrores(mascota.fotos[_currentImageIndex[mascota.id] ?? 0])
+                                                  : Icon(Icons.pets, size: 200, color: Colors.grey),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.arrow_forward),
+                                            iconSize: 30.0,
+                                            onPressed: () {
+                                              if (mascota.fotos.isNotEmpty) {
+                                                _cambiarImagen(mascota.id, mascota.fotos, true);
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Text(
