@@ -17,7 +17,6 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
   GoogleMapController? _mapController; // Controlador del mapa
   BitmapDescriptor? _perroIcon;
   BitmapDescriptor? _gatoIcon;
-  bool _isMapReady = false;
   
   final CameraPosition _initialPosition = CameraPosition(
     target: LatLng(-17.3957147, -66.1581871),
@@ -35,7 +34,6 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
 void _onMapCreated(GoogleMapController controller) {
   _mapController = controller;
   setState(() {
-    _isMapReady = true;
     _animateToInitialPosition(); // Animar solo después de que el mapa esté listo
   });
   //print("Mapa creado y animado a la posición inicial");
