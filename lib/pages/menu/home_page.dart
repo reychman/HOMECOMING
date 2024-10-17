@@ -112,25 +112,21 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
-Future<List<Mascota>> obtenerMascotas() async {
-    print("Obteniendo las mascotas...");
+  Future<List<Mascota>> obtenerMascotas() async {
+    //print("Obteniendo las mascotas...");
     final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
-      print("Respuesta JSON: $jsonResponse");
-      
+      //print("Respuesta JSON: $jsonResponse"); 
       List<Mascota> todasLasMascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
-      print("Total de mascotas obtenidas: ${todasLasMascotas.length}");
-      
+      //print("Total de mascotas obtenidas: ${todasLasMascotas.length}");
       setState(() {
         mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion').toList();
         _mascotasFiltradas = todasLasMascotas.where((m) => m.estado == 'perdido').toList();
       });
-      
-      print("Mascotas en adopción: ${mascotasEnAdopcion.length}");
-      print("Mascotas perdidas: ${_mascotasFiltradas.length}");
-      
+      //print("Mascotas en adopción: ${mascotasEnAdopcion.length}");
+      //print("Mascotas perdidas: ${_mascotasFiltradas.length}");
       for (var mascota in todasLasMascotas) {
         _currentImageIndex[mascota.id] = 0;
       }
@@ -179,6 +175,7 @@ Future<List<Mascota>> obtenerMascotas() async {
   Widget build(BuildContext context) {
     final arguments = ModalRoute.of(context)!.settings.arguments;
     final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.green[200],
@@ -200,7 +197,19 @@ Future<List<Mascota>> obtenerMascotas() async {
               ),
             ),
           ),
-           // Carrusel de mascotas en adopción
+          // Título para mascotas en adopción
+          if (mascotasEnAdopcion.isNotEmpty) 
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Mascotas que están en adopción',
+                style: Theme.of(context).textTheme.headlineSmall ?.copyWith(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 20, 
+                ) ?? TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          // Carrusel de mascotas en adopción
           if (mascotasEnAdopcion.isNotEmpty)
             SizedBox(
               height: 200,
@@ -220,6 +229,17 @@ Future<List<Mascota>> obtenerMascotas() async {
                 ),
               ),
             ),
+          // Título para mascotas perdidas
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Mascotas que están perdidas',
+              style: Theme.of(context).textTheme.headlineSmall ?.copyWith(
+                fontWeight: FontWeight.bold, 
+                fontSize: 20, 
+              ) ?? TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+          ),
           Expanded(
             child: FutureBuilder<List<Mascota>>(
               future: futureMascotas,
@@ -404,8 +424,8 @@ Future<List<Mascota>> obtenerMascotas() async {
                 ));
               }
             },
+            backgroundColor: Colors.green[200],
             child: Icon(Icons.add),
-            backgroundColor: const Color.fromARGB(255, 33, 243, 121),
           );
         },
       ),
