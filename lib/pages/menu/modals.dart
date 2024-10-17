@@ -96,7 +96,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                               enlargeCenterPage: false,
                             ),
                             items: mascota.fotos.map((foto) {
-                              return Container(
+                              return SizedBox(
                                 width: double.infinity,
                                 child: Image.network(foto, fit: BoxFit.contain),
                               );

@@ -17,7 +17,8 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
   GoogleMapController? _mapController; // Controlador del mapa
   BitmapDescriptor? _perroIcon;
   BitmapDescriptor? _gatoIcon;
-
+  bool _isMapReady = false;
+  
   final CameraPosition _initialPosition = CameraPosition(
     target: LatLng(-17.3957147, -66.1581871),
     zoom: 10,
@@ -30,12 +31,41 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
     _fetchMascotas(); // Cargar mascotas desde la base de datos
   }
 
-  // Asegurarse de liberar el controlador cuando el widget es destruido
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
+  // Configura el controlador del mapa y anima la cámara a la posición inicial
+void _onMapCreated(GoogleMapController controller) {
+  _mapController = controller;
+  setState(() {
+    _isMapReady = true;
+    _animateToInitialPosition(); // Animar solo después de que el mapa esté listo
+  });
+  //print("Mapa creado y animado a la posición inicial");
+}
+
+  // Animar la cámara a la posición inicial
+  void _animateToInitialPosition() {
+    if (_mapController != null) {
+      //print("Animando cámara a la posición inicial");
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(-17.3957147, -66.1581871),
+            zoom: 14,
+          ),
+        ),
+      );
+    } else {
+      print("El controlador del mapa es null");
+    }
   }
+  // Asegurarse de liberar el controlador cuando el widget es destruido
+@override
+void dispose() {
+  // Asegúrate de que el controlador no sea null antes de intentar eliminarlo
+  if (_mapController != null) {
+    _mapController!.dispose();
+  }
+  super.dispose();
+}
 
   Usuario? usuario;
   List<Mascota> _mascotas = [];
@@ -52,38 +82,47 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
     setState(() {}); // Actualiza el estado con los íconos cargados
   }
 
-  Future<void> _fetchMascotas() async {
-    final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mapa_busquedas.php'));
+Future<void> _fetchMascotas() async {
+  final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mapa_busquedas.php'));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      setState(() {
-        _mascotas = data.map((json) => Mascota.fromJson(json)).toList();
-      });
-    } else {
-      print('Error al obtener los datos: ${response.statusCode}');
-    }
+  if (response.statusCode == 200) {
+    //print('Response body: ${response.body}');
+    final List<dynamic> data = json.decode(response.body);
+    setState(() {
+      _mascotas = data.map((json) {
+        // Asegúrate de que las URLs de las fotos sean absolutas y válidas
+        List<String> fotos = [];
+        if (json['fotos'] is List) {
+          fotos = (json['fotos'] as List).map((foto) {
+            if (foto is String) {
+              if (foto.startsWith('http')) {
+                return foto;
+              } else {
+                // Asegúrate de que esta es la ruta correcta a tus imágenes
+                return 'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto';
+              }
+            }
+            return ''; // En caso de que el elemento no sea un String
+          }).where((foto) => foto.isNotEmpty).toList();
+        }
+        
+        return Mascota.fromJson({
+          ...json,
+          'fotos': fotos,
+        });
+      }).toList();
+    });
+    // Imprimir información de depuración
+    //for (var mascota in _mascotas) {
+      //print('Mascota: ${mascota.nombre}');
+      //print('Fotos: ${mascota.fotos}');
+      //print('Nombre del dueño: ${mascota.nombreDueno}');
+    //}
+  } else {
+    print('Error al obtener los datos: ${response.statusCode}');
   }
+}
 
-  // Configura el controlador del mapa y anima la cámara a la posición inicial
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    _animateToInitialPosition(); // Llama a la función para animar la cámara
-  }
-
-  // Animar la cámara a la posición inicial
-  void _animateToInitialPosition() {
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(-17.3957147, -66.1581871),
-            zoom: 14,
-          ),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,14 +213,14 @@ class _MapaBusquedasPageState extends State<MapaBusquedasPage> {
                       Center(
                         child: mascota.fotos.isNotEmpty
                             ? Image.network(
-                                'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex]}', // Mostrar la imagen actual
-                                width: 150,
-                                height: 150,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(Icons.error, size: 100, color: Colors.red); // Muestra un icono de error si falla
-                                },
-                              )
+                              mascota.fotos[_currentImageIndex],  // Ya es una URL completa
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.error, size: 100, color: Colors.red);
+                              },
+                            )
                             : Icon(Icons.pets, size: 100, color: Colors.grey), // Icono si no hay fotos
                       ),
                       SizedBox(width: 10),
