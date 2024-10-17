@@ -71,8 +71,9 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   String usuarioId = '';
   LatLng? _selectedLocation;
   bool _mostrarComboBoxEstado = false;
-
+  String? _estadoSeleccionado;
   int _currentIndex = 0;
+  String? tipoUsuario;
 
   @override
   void initState() {
@@ -93,6 +94,7 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
       if (usuario != null) {
         setState(() {
           _mostrarComboBoxEstado = usuario.tipoUsuario == 'administrador' || usuario.tipoUsuario == 'refugio';
+          tipoUsuario = usuario.tipoUsuario;  // Almacena el tipo de usuario
         });
       }
     } else {
@@ -153,6 +155,8 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
         request.fields['especie'] = _especie;
         request.fields['raza'] = _selectedRaza ?? '';
         request.fields['sexo'] = _sexo;
+        request.fields['estado'] = _estadoSeleccionado ?? 'perdido';  // Valor predeterminado a 'perdido' si no se selecciona
+        request.fields['tipo_usuario'] = tipoUsuario ?? 'propietario';  // Valor predeterminado si no se obtiene
         request.fields['fecha_perdida'] = _fechaPerdidaController.text;
         request.fields['lugar_perdida'] = _lugarPerdidaController.text;
         request.fields['descripcion'] = _descripcionController.text;
@@ -164,15 +168,23 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
         final response = await http.Response.fromStream(streamedResponse);
 
         if (response.statusCode == 200) {
-          final jsonResponse = json.decode(response.body);
-          if (jsonResponse['success']) {
-            _showSnackbar('Mascota registrada con éxito');
-            // Redirigir a la página principal y actualizar la lista de mascotas
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => PaginaPrincipal())
-            );
-          } else {
-            _showSnackbar('Error: ${jsonResponse['message']}');
+          // Imprime el contenido de la respuesta para ver si es JSON o HTML
+          print('Response body: ${response.body}');
+          
+          try {
+            final jsonResponse = json.decode(response.body);
+            
+            if (jsonResponse['success']) {
+              _showSnackbar('Mascota registrada con éxito');
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => PaginaPrincipal())
+              );
+            } else {
+              _showSnackbar('Error: ${jsonResponse['message']}');
+            }
+          } catch (jsonError) {
+            _showSnackbar('Error al procesar la respuesta: $jsonError');
+            print('Error de JSON: $jsonError');
           }
         } else {
           _showSnackbar('Error al conectar con el servidor');
@@ -292,12 +304,29 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   }
 
   void _nextStep() {
-    if (_currentIndex < 3) {
+  if (_currentIndex == 0) {
+    if (_formKeyStep1.currentState!.validate()) {
+      if (!_mostrarComboBoxEstado) {
+        _estadoSeleccionado = 'perdido'; // Si es un propietario, forzamos el estado a 'perdido'
+      }
       setState(() {
-        _currentIndex++;
+        _currentIndex += 1; // Avanza al paso 2
       });
     }
+  } else if (_currentIndex == 1) {
+    if (_formKeyStep2.currentState!.validate()) {
+      setState(() {
+        _currentIndex += 1; // Avanza al paso 3
+      });
+    }
+  } else if (_currentIndex == 2) {
+    // Aquí puedes simplemente avanzar a step 4 sin necesidad de validación
+    setState(() {
+      _currentIndex += 1; // Avanza al paso 4
+    });
   }
+}
+
 
   void _previousStep() {
     if (_currentIndex > 0) {
@@ -329,6 +358,14 @@ Widget build(BuildContext context) {
     bottomNavigationBar: BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: (index) {
+        if (_currentIndex == 0 && !_formKeyStep1.currentState!.validate()) {
+          // Si estamos en el paso 1 y no se ha validado, no cambiar
+          return;
+        }
+        if (_currentIndex == 1 && !_formKeyStep2.currentState!.validate()) {
+          // Si estamos en el paso 2 y no se ha validado, no cambiar
+          return;
+        }
         setState(() {
           _currentIndex = index;
         });
@@ -457,17 +494,25 @@ Widget build(BuildContext context) {
           ),
           if (_mostrarComboBoxEstado)
           DropdownButtonFormField<String>(
+            value: _estadoSeleccionado,
             decoration: InputDecoration(labelText: 'Estado de la mascota'),
-            items: ['Perdido', 'Adopción'].map((String value) {
+            items: ['Perdido', 'adopcion'].map((String value) {
               return DropdownMenuItem<String>(
-                value: value,
+                value: value.toLowerCase(),
                 child: Text(value),
               );
             }).toList(),
             onChanged: (String? newValue) {
               setState(() {
-                // Aquí guardas el valor seleccionado
+                // guardamos el valor seleccionado
+                _estadoSeleccionado = newValue;
               });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor seleccione el estado de la mascota';
+              }
+              return null;
             },
           ),
           const SizedBox(height: 20.0),
@@ -479,13 +524,17 @@ Widget build(BuildContext context) {
       ),
     );
   }
+Widget _buildStep2() {
+  // Si el estado es "adopcion", no se deben mostrar los campos de pérdida
+  bool mostrarCamposPerdida = _estadoSeleccionado != 'adopcion';
 
-  Widget _buildStep2() {
-    return Form(
-      key: _formKeyStep2,
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
+  return Form(
+    key: _formKeyStep2,
+    child: ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        // Mostrar campos de pérdida solo si no es adopcion
+        if (mostrarCamposPerdida) ...[
           TextFormField(
             controller: _fechaPerdidaController,
             decoration: InputDecoration(
@@ -497,103 +546,115 @@ Widget build(BuildContext context) {
             ),
             readOnly: true,
             validator: (value) {
-              if (value!.isEmpty) {
+              if (value == null || value.isEmpty) {
                 return 'Por favor ingrese la fecha de pérdida';
               }
               return null;
             },
           ),
+          SizedBox(height: 16),
           TextFormField(
             controller: _lugarPerdidaController,
             decoration: InputDecoration(labelText: 'Lugar de pérdida'),
             validator: (value) {
-              if (value!.isEmpty) {
+              if (value == null || value.isEmpty) {
                 return 'Por favor ingrese el lugar de pérdida';
               }
               return null;
             },
           ),
-          TextFormField(
-            controller: _descripcionController,
-            decoration: InputDecoration(labelText: 'Descripción'),
-            validator: (value) {
-              if (value!.isEmpty) {
-                return 'Por favor ingrese una descripción';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 20.0),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: Text('Siguiente'),
-          ),
-          ElevatedButton(
-            onPressed: _previousStep,
-            child: Text('Anterior'),
-          ),
+          SizedBox(height: 16),
         ],
-      ),
-    );
-  }
+        // Campo de descripción (siempre visible)
+        TextFormField(
+          controller: _descripcionController,
+          decoration: InputDecoration(labelText: 'Descripción'),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Por favor ingrese una descripción';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 20.0),
+        ElevatedButton(
+          onPressed: _nextStep,
+          child: Text('Siguiente'),
+        ),
+        ElevatedButton(
+          onPressed: _previousStep,
+          child: Text('Anterior'),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildStep3() {
-    return Expanded(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: _pickImages,
-              child: Text('Seleccionar Imágenes'),
-            ),
-            SizedBox(height: 20),
-            if (_selectedImages.isNotEmpty)
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _selectedImages.map((image) {
-                  return Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8.0),
-                        child: Image.memory(
-                          image,
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 5,
-                        right: 5,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedImages.remove(image);  // Remover imagen si se hace clic en "Eliminar"
-                            });
-                          },
-                          child: Icon(Icons.close, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _nextStep,
-              child: Text('Siguiente'),
-            ),
-            ElevatedButton(
-              onPressed: _previousStep,
-              child: Text('Anterior'),
-            ),
-          ],
+  return SingleChildScrollView(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ElevatedButton(
+          onPressed: _pickImages,
+          child: Text('Seleccionar Imágenes'),
         ),
-      ),
-    );
-  }
+        SizedBox(height: 20),
+        if (_selectedImages.isNotEmpty)
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _selectedImages.map((image) {
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.memory(
+                      image,
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedImages.remove(image); // Remover imagen
+                        });
+                      },
+                      child: Icon(Icons.close, color: Colors.red),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () {
+            // Verificar que haya imágenes seleccionadas antes de avanzar
+            if (_selectedImages.isNotEmpty) {
+              _nextStep();
+            } else {
+              // Mostrar un mensaje si no se han seleccionado imágenes
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Debes seleccionar al menos una imagen.')),
+              );
+            }
+          },
+          child: Text('Siguiente'),
+        ),
+        ElevatedButton(
+          onPressed: _previousStep,
+          child: Text('Anterior'),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildStep4() {
     return Column(
@@ -626,6 +687,7 @@ Widget build(BuildContext context) {
           onPressed: _enviarDatos,
           child: Text('Registrar Mascota'),
         ),
+        const SizedBox(height: 10.0), // Add some spacing between buttons
         ElevatedButton(
           onPressed: _previousStep,
           child: Text('Anterior'),

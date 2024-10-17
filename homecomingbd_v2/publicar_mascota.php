@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL); 
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization');
@@ -14,13 +18,14 @@ try {
     $especie = $_POST['especie'];
     $raza = $_POST['raza'];
     $sexo = $_POST['sexo'];
-    $fecha_perdida = $_POST['fecha_perdida'];
-    $lugar_perdida = $_POST['lugar_perdida'];
+    $estado = isset($_POST['estado']) ? $_POST['estado'] : 'perdido';
+    $tipo_usuario = isset($_POST['tipo_usuario']) ? $_POST['tipo_usuario'] : 'propietario';
+    $fecha_perdida = $estado == 'adopcion' ? null : $_POST['fecha_perdida'];
+    $lugar_perdida = $estado == 'adopcion' ? null : $_POST['lugar_perdida'];
     $descripcion = $_POST['descripcion'];
     $latitud = $_POST['latitud'];
     $longitud = $_POST['longitud'];
     $usuario_id = $_POST['usuario_id'];
-    $tipo_usuario = $_POST['tipo_usuario']; // Nuevo campo para el tipo de usuario
 
     // Determinar el estado de la mascota
     if ($tipo_usuario == 'administrador' || $tipo_usuario == 'refugio') {
@@ -39,7 +44,7 @@ try {
     $sql_mascota = "INSERT INTO mascotas (nombre, especie, raza, sexo, fecha_perdida, lugar_perdida, descripcion, latitud, longitud, usuario_id, estado) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_mascota = $conexion->prepare($sql_mascota);
-    $stmt_mascota->bind_param('sssssssssis', $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $usuario_id, $estado);
+    $stmt_mascota->bind_param('ssssssssdis', $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $usuario_id, $estado);
 
     if (!$stmt_mascota->execute()) {
         throw new Exception("Error al insertar la mascota: " . $stmt_mascota->error);

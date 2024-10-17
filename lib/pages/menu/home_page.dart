@@ -223,49 +223,50 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                                           textAlign: TextAlign.center,
                                         ),
                                       ),
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_back),
-                                            iconSize: 30.0,
-                                            onPressed: () {
-                                              if (mascota.fotos.isNotEmpty) {
-                                                _cambiarImagen(mascota.id, mascota.fotos, false);
-                                              }
-                                            },
-                                          ),
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                mostrarModalInfoMascota(context, mascota);
-                                              },
-                                              child: mascota.fotos.isNotEmpty
-                                                  ? Image.network(
-                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
-                                                      width: 400,
-                                                      height: 250,
-                                                      fit: BoxFit.contain,
-                                                      errorBuilder: (context, error, stackTrace) {
-                                                        return Icon(Icons.error, size: 100, color: Colors.red);
-                                                      },
-                                                    )
-                                                  : Icon(Icons.pets, size: 200, color: Colors.grey),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.arrow_forward),
-                                            iconSize: 30.0,
-                                            onPressed: () {
-                                              if (mascota.fotos.isNotEmpty) {
-                                                _cambiarImagen(mascota.id, mascota.fotos, true);
-                                              }
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                    Flexible(
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      IconButton(
+        icon: Icon(Icons.arrow_back),
+        iconSize: 30.0,
+        onPressed: () {
+          if (mascota.fotos.isNotEmpty) {
+            _cambiarImagen(mascota.id, mascota.fotos, false);
+          }
+        },
+      ),
+      // Cambiar de Expanded a Flexible o usar SizedBox
+      Flexible(
+        child: GestureDetector(
+          onTap: () {
+            mostrarModalInfoMascota(context, mascota);
+          },
+          child: mascota.fotos.isNotEmpty
+              ? Image.network(
+                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
+                  width: 400,
+                  height: 250,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.error, size: 100, color: Colors.red);
+                  },
+                )
+              : Icon(Icons.pets, size: 200, color: Colors.grey),
+        ),
+      ),
+      IconButton(
+        icon: Icon(Icons.arrow_forward),
+        iconSize: 30.0,
+        onPressed: () {
+          if (mascota.fotos.isNotEmpty) {
+            _cambiarImagen(mascota.id, mascota.fotos, true);
+          }
+        },
+      ),
+    ],
+  ),
+),
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Text(
