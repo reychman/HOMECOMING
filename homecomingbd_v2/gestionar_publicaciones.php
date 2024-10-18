@@ -165,42 +165,64 @@
 
     function actualizarPublicacion() {
         global $conexion;
-
+    
         $id = isset($_POST['id']) ? $_POST['id'] : null;  // Recupera el ID de la publicación
-        $nombre = isset($_POST['nombre']) ? $_POST['nombre'] : null;
-        $especie = isset($_POST['especie']) ? $_POST['especie'] : null;
-        $raza = isset($_POST['raza']) ? $_POST['raza'] : null;
-        $sexo = isset($_POST['sexo']) ? $_POST['sexo'] : null;
-        $fecha_perdida = isset($_POST['fecha_perdida']) ? $_POST['fecha_perdida'] : null;
-        $lugar_perdida = isset($_POST['lugar_perdida']) ? $_POST['lugar_perdida'] : null;
-        $descripcion = isset($_POST['descripcion']) ? $_POST['descripcion'] : null;
+        $nombre = isset($_POST['nombre']) ? strtoupper($_POST['nombre']) : null; // Convertir a mayúsculas
+        $especie = isset($_POST['especie']) ? strtoupper($_POST['especie']) : null; // Convertir a mayúsculas
+        $raza = isset($_POST['raza']) ? strtoupper($_POST['raza']) : null; // Convertir a mayúsculas
+        $sexo = isset($_POST['sexo']) ? strtoupper($_POST['sexo']) : null; // Convertir a mayúsculas
+        $fecha_perdida = isset($_POST['fecha_perdida']) ? strtoupper($_POST['fecha_perdida']) : null; // Convertir a mayúsculas
+        $lugar_perdida = isset($_POST['lugar_perdida']) ? strtoupper($_POST['lugar_perdida']) : null; // Convertir a mayúsculas
+        $descripcion = isset($_POST['descripcion']) ? strtoupper($_POST['descripcion']) : null; // Convertir a mayúsculas
         $latitud = isset($_POST['latitud']) ? $_POST['latitud'] : null;
         $longitud = isset($_POST['longitud']) ? $_POST['longitud'] : null;
-
-        if ($id && $nombre && $especie && $raza && $sexo && $fecha_perdida && $lugar_perdida && $descripcion && $latitud && $longitud) {
-            $sql = "UPDATE mascotas SET 
-                        nombre = ?, 
-                        especie = ?, 
-                        raza = ?, 
-                        sexo = ?, 
-                        fecha_perdida = ?, 
-                        lugar_perdida = ?, 
-                        descripcion = ?, 
-                        latitud = ?, 
-                        longitud = ?
-                    WHERE id = ?";
-            $stmt = $conexion->prepare($sql);
-            $stmt->bind_param("sssssssddi", $nombre, $especie, $raza, $sexo, $fecha_perdida, $lugar_perdida, $descripcion, $latitud, $longitud, $id);
-
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Publicación actualizada']);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la publicacion']);
-            }
-        } else {
-            echo json_encode(['error' => 'Faltan datos para actualizar la publicacion']);
+    
+        // Crea la consulta de actualización
+        $sql = "UPDATE mascotas SET 
+                    nombre = ?, 
+                    especie = ?, 
+                    raza = ?, 
+                    sexo = ?, 
+                    descripcion = ?, 
+                    latitud = ?, 
+                    longitud = ?";
+    
+        // Agrega los campos opcionales solo si están definidos
+        if ($fecha_perdida !== null) {
+            $sql .= ", fecha_perdida = ?";
         }
-    }
+        if ($lugar_perdida !== null) {
+            $sql .= ", lugar_perdida = ?";
+        }
+    
+        $sql .= " WHERE id = ?";
+    
+        $stmt = $conexion->prepare($sql);
+        
+        // Prepara los parámetros de enlace
+        $params = [$nombre, $especie, $raza, $sexo, $descripcion, $latitud, $longitud];
+    
+        if ($fecha_perdida !== null) {
+            $params[] = $fecha_perdida;
+        }
+        if ($lugar_perdida !== null) {
+            $params[] = $lugar_perdida;
+        }
+        
+        // Agrega el ID al final
+        $params[] = $id;
+    
+        // Define el tipo de los parámetros según los que estás usando
+        $types = str_repeat('s', count($params) - 1) . 'd'; // Ajusta el tipo según corresponda (s para string, d para double)
+    
+        $stmt->bind_param($types, ...$params);
+    
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Publicación actualizada']);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la publicacion']);
+        }
+    }    
 
     function agregarFotos() {
         global $conexion;

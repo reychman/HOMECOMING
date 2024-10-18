@@ -7,8 +7,9 @@ import 'package:http/http.dart' as http;
 
 class EditarPublicacionPage extends StatefulWidget {
   final Map<String, dynamic> publicacion;
+  final String estado; // Nuevo parámetro para el estado de la publicación
 
-  EditarPublicacionPage({required this.publicacion});
+  EditarPublicacionPage({required this.publicacion, required this.estado});
 
   @override
   _EditarPublicacionPageState createState() => _EditarPublicacionPageState();
@@ -19,8 +20,8 @@ class _EditarPublicacionPageState extends State<EditarPublicacionPage> {
   final _formKeyStep2 = GlobalKey<FormState>();
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _razaController = TextEditingController();
-  final TextEditingController _fechaPerdidaController = TextEditingController();
-  final TextEditingController _lugarPerdidaController = TextEditingController();
+  TextEditingController _fechaPerdidaController = TextEditingController();
+  TextEditingController _lugarPerdidaController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
 
   String _especie = 'Seleccione una especie';
@@ -36,14 +37,16 @@ class _EditarPublicacionPageState extends State<EditarPublicacionPage> {
     // Inicializa los controladores de texto con los valores de la publicación
     _nombreController.text = widget.publicacion['nombre'] ?? '';
     _razaController.text = widget.publicacion['raza'] ?? '';
-    _fechaPerdidaController.text = widget.publicacion['fecha_perdida'] ?? '';
-    _lugarPerdidaController.text = widget.publicacion['lugar_perdida'] ?? '';
     _descripcionController.text = widget.publicacion['descripcion'] ?? '';
 
     // Inicializa las variables de Dropdown
     _especie = widget.publicacion['especie'] ?? 'Seleccione una especie';
     _sexo = widget.publicacion['sexo'] ?? 'Seleccione el sexo';
-
+    // Solo cargar estos campos si el estado es "perdido" o "encontrado"
+    if (widget.publicacion['estado'] == 'perdido' || widget.publicacion['estado'] == 'encontrado') {
+      _fechaPerdidaController.text = widget.publicacion['fecha_perdida'] ?? '';
+      _lugarPerdidaController.text = widget.publicacion['lugar_perdida'] ?? '';
+    }
     // Inicializa la ubicación seleccionada, si está disponible
     if (widget.publicacion['latitud'] != null && widget.publicacion['longitud'] != null) {
       _selectedLocation = LatLng(
@@ -53,77 +56,74 @@ class _EditarPublicacionPageState extends State<EditarPublicacionPage> {
     }
   }
 
-Future<void> _editarPublicacion() async {
-  if (_formKeyStep1.currentState!.validate() && _formKeyStep2.currentState!.validate()) {
-    if (_selectedLocation == null) {
-      _showSnackbar('Por favor seleccione una ubicación en el mapa');
-      return;
-    }
-
-    try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-      );
-
-      // Asegúrate de enviar el id de la publicación
-      request.fields['accion'] = 'actualizarPublicacion';
-      request.fields['id'] = widget.publicacion['id'].toString(); // Envía el ID
-      request.fields['nombre'] = _nombreController.text;
-      request.fields['especie'] = _especie;
-      request.fields['raza'] = _razaController.text;
-      request.fields['sexo'] = _sexo;
-      request.fields['fecha_perdida'] = _fechaPerdidaController.text;
-      request.fields['lugar_perdida'] = _lugarPerdidaController.text;
-      request.fields['descripcion'] = _descripcionController.text;
-      request.fields['latitud'] = _selectedLocation!.latitude.toString();
-      request.fields['longitud'] = _selectedLocation!.longitude.toString();
-      request.fields['usuario_id'] = usuarioId;
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        print('Response body: ${response.body}');
-        try {
-          final jsonResponse = json.decode(response.body);
-          if (jsonResponse['success']) {
-            // Mostrar mensaje de éxito
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Datos de la mascota actualizados con éxito'),
-                duration: Duration(seconds: 2), // Mostrar por 2 segundos
-              ),
-            );
-            
-            // Esperar 2 segundos y navegar de regreso a la página de perfil
-            await Future.delayed(Duration(seconds: 1));
-
-            // Recargar la página de perfil
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => PerfilUsuario(), // Reemplaza por tu página de perfil
-              ),
-            );
-          } else {
-            _showSnackbar('Error: ${jsonResponse['message']}');
-          }
-        } catch (e) {
-          _showSnackbar('Error al decodificar JSON: $e');
-          print('Error decoding JSON: $e');
-        }
-      } else {
-        _showSnackbar('Error al conectar con el servidor');
-        print('Error response status: ${response.statusCode}');
-        print('Error response body: ${response.body}');
+  Future<void> _editarPublicacion() async {
+    if (_formKeyStep1.currentState!.validate() && _formKeyStep2.currentState!.validate()) {
+      if (_selectedLocation == null) {
+        _showSnackbar('Por favor seleccione una ubicación en el mapa');
+        return;
       }
-    } catch (e) {
-      _showSnackbar('Ocurrió un error: $e');
-      print('Error sending data: $e');
+
+      try {
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+        );
+
+        request.fields['accion'] = 'actualizarPublicacion';
+        request.fields['id'] = widget.publicacion['id'].toString();
+        request.fields['nombre'] = _nombreController.text.toUpperCase();
+        request.fields['especie'] = _especie;
+        request.fields['raza'] = _razaController.text;
+        request.fields['sexo'] = _sexo;
+        request.fields['descripcion'] = _descripcionController.text.toUpperCase();
+        request.fields['latitud'] = _selectedLocation!.latitude.toString();
+        request.fields['longitud'] = _selectedLocation!.longitude.toString();
+
+        // Solo envía los campos opcionales si el estado no es 'adopcion'
+        if (widget.publicacion['estado'] == 'perdido' || widget.publicacion['estado'] == 'encontrado') {
+          request.fields['fecha_perdida'] = _fechaPerdidaController.text;
+          request.fields['lugar_perdida'] = _lugarPerdidaController.text;
+        }
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          print('Response body: ${response.body}');
+          try {
+            final jsonResponse = json.decode(response.body);
+            if (jsonResponse['success']) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Datos de la mascota actualizados con éxito'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+
+              await Future.delayed(Duration(seconds: 1));
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => PerfilUsuario(),
+                ),
+              );
+            } else {
+              _showSnackbar('Error: ${jsonResponse['message']}');
+            }
+          } catch (e) {
+            _showSnackbar('Error al decodificar JSON: $e');
+            print('Error decoding JSON: $e');
+          }
+        } else {
+          _showSnackbar('Error al conectar con el servidor');
+          print('Error response status: ${response.statusCode}');
+          print('Error response body: ${response.body}');
+        }
+      } catch (e) {
+        _showSnackbar('Ocurrió un error: $e');
+        print('Error sending data: $e');
+      }
     }
   }
-}
-
 
 
   Future<void> _selectDate(BuildContext context) async {
@@ -248,30 +248,34 @@ Future<void> _editarPublicacion() async {
       child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          ElevatedButton(
-            onPressed: () => _selectDate(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white, // Reemplaza primary por backgroundColor
-              foregroundColor: Colors.black, // Reemplaza onPrimary por foregroundColor
-              side: BorderSide(color: Colors.grey), // Bordes ligeros
+          // Mostrar el botón para seleccionar la fecha solo si el estado no es 'adopcion'
+          if (widget.estado != 'adopcion') 
+            ElevatedButton(
+              onPressed: () => _selectDate(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                side: BorderSide(color: Colors.grey),
+              ),
+              child: Text(
+                _fechaPerdidaController.text.isEmpty
+                    ? 'Seleccione la fecha de pérdida'
+                    : 'Fecha seleccionada: ${_fechaPerdidaController.text}',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
-            child: Text(
-              _fechaPerdidaController.text.isEmpty
-                  ? 'Seleccione la fecha de pérdida'
-                  : 'Fecha seleccionada: ${_fechaPerdidaController.text}',
-              style: TextStyle(color: Colors.grey),
+          // Mostrar el campo lugar de pérdida solo si el estado no es 'adopcion'
+          if (widget.estado != 'adopcion') 
+            TextFormField(
+              controller: _lugarPerdidaController,
+              decoration: InputDecoration(labelText: 'Lugar de pérdida'),
+              validator: (value) {
+                if (value!.isEmpty) {
+                  return 'Por favor ingrese el lugar de pérdida';
+                }
+                return null;
+              },
             ),
-          ),
-          TextFormField(
-            controller: _lugarPerdidaController,
-            decoration: InputDecoration(labelText: 'Lugar de pérdida'),
-            validator: (value) {
-              if (value!.isEmpty) {
-                return 'Por favor ingrese el lugar de pérdida';
-              }
-              return null;
-            },
-          ),
           TextFormField(
             controller: _descripcionController,
             decoration: InputDecoration(labelText: 'Descripción'),

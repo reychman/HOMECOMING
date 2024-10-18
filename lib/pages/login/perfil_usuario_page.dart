@@ -763,6 +763,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     String nuevoEstado,
     String titulo,
     String mensaje,
+    String estadoActual, // Agregar el estado actual como parámetro
   ) async {
     // Mostrar una ventana emergente de confirmación
     bool confirmar = await showDialog(
@@ -791,9 +792,20 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
 
     // Si el usuario aceptó, realiza el cambio de estado
     if (confirmar) {
-      _cambiarEstadoMascota(publicacionId, nuevoEstado);
+      // Lógica adicional para cambiar el estado según la transición
+      if (nuevoEstado == 'pendiente' && estadoActual == 'adopcion') {
+        _cambiarEstadoMascota(publicacionId, 'pendiente');
+      } else if (nuevoEstado == 'adoptado' && estadoActual == 'pendiente') {
+        _cambiarEstadoMascota(publicacionId, 'adoptado');
+      } else if (nuevoEstado == 'encontrado' && estadoActual == 'perdido') {
+        _cambiarEstadoMascota(publicacionId, 'encontrado');
+      } else if (nuevoEstado == 'perdido' && estadoActual == 'encontrado') {
+        _cambiarEstadoMascota(publicacionId, 'perdido');
+      }
+      // No se permite más cambios para 'adoptado'
     }
   }
+
   // Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
   Future<void> _cambiarEstadoMascota(int publicacionId, String nuevoEstado) async {
     var response = await http.post(
@@ -904,21 +916,21 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
           ),
         if (kIsWeb)
           WebUiSettings(
-                  context: context,  // Usamos el context, pero solo si el widget sigue montado
-                  size: CropperSize(width: 400, height: 400), // Tamaño fijo
-                  dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
-                  initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
-                  zoomable: true,  // Habilitar zoom
-                  rotatable: true,  // Habilitar rotación
-                  cropBoxResizable: false,
-                  translations: WebTranslations(
-                    title: 'Recortar Imagen',  // Personaliza el título aquí
-                    cropButton: 'Recortar',   // Cambia el texto del botón de recorte
-                    cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
-                    rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
-                    rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
-                  ),
-                ),
+            context: context,  // Usamos el context, pero solo si el widget sigue montado
+            size: CropperSize(width: 400, height: 400), // Tamaño fijo
+            dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
+            initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
+            zoomable: true,  // Habilitar zoom
+            rotatable: true,  // Habilitar rotación
+            cropBoxResizable: false,
+            translations: WebTranslations(
+              title: 'Recortar Imagen',  // Personaliza el título aquí
+              cropButton: 'Recortar',   // Cambia el texto del botón de recorte
+              cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
+              rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
+              rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
+            ),
+          ),
       ],
     );
 
@@ -930,9 +942,6 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
     // Si el usuario cancela el recorte o falla, devolver null
     return null;
   }
-
-
-
 
 
   @override
@@ -1068,16 +1077,14 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                 width: double.infinity,
                                                 padding: EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
-                                                  color: publicacion['estado'] == 'perdido' ? Colors.red : Colors.green,
+                                                  color: _getEstadoColor(publicacion['estado']),
                                                   borderRadius: BorderRadius.only(
                                                     topLeft: Radius.circular(10),
                                                     topRight: Radius.circular(10),
                                                   ),
                                                 ),
                                                 child: Text(
-                                                  publicacion['estado'] == 'perdido'
-                                                      ? 'Tu mascota te extraña tanto tú a él/ella'
-                                                      : 'Nos complace saber que tu mascota fue encontrada',
+                                                  _getEstadoTexto(publicacion['estado']),
                                                   style: TextStyle(color: Colors.white),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -1099,23 +1106,44 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                           publicacion['id'],
                                                           'encontrado',
                                                           'Confirmación',
-                                                          'Al aceptar estas confirmando que encontraste a tu mascota, ¿Es correcto?',
+                                                          'Al aceptar, confirmarás que encontraste a tu mascota, ¿Es correcto?',
+                                                          publicacion['estado'], // Pasar el estado actual
                                                         );
                                                       } else if (publicacion['estado'] == 'encontrado') {
                                                         _mostrarConfirmacionCambioEstado(
                                                           publicacion['id'],
                                                           'perdido',
                                                           'Confirmación',
-                                                          'Si tu mascota se volvió a perder, actualiza los datos de tu mascota y acepta este mensaje para hacer pública la desaparición de tu mascota.',
+                                                          'Si tu mascota se volvió a perder, actualiza los datos y acepta este mensaje para hacer pública la desaparición de tu mascota.',
+                                                          publicacion['estado'], // Pasar el estado actual
+                                                        );
+                                                      } else if (publicacion['estado'] == 'adopcion') {
+                                                        _mostrarConfirmacionCambioEstado(
+                                                          publicacion['id'],
+                                                          'pendiente',
+                                                          'Interés en la Mascota',
+                                                          '¿Está alguien interesado en adoptar a esta mascota? Al aceptar, cambiará el estado a pendiente.',
+                                                          publicacion['estado'], // Pasar el estado actual
+                                                        );
+                                                      } else if (publicacion['estado'] == 'pendiente') {
+                                                        _mostrarConfirmacionCambioEstado(
+                                                          publicacion['id'],
+                                                          'adoptado',
+                                                          'Confirmación de Adopción',
+                                                          '¿La mascota fue adoptada? Al aceptar, cambiará el estado a adoptado y no se podrá cambiar nuevamente.',
+                                                          publicacion['estado'], // Pasar el estado actual
                                                         );
                                                       }
                                                     } else if (result == 'editar') {
-                                                      Navigator.of(context).push(
-                                                        MaterialPageRoute(
-                                                          builder: (context) => EditarPublicacionPage(publicacion: publicacion),
-                                                        ),
-                                                      );
-                                                    } else if (result == 'eliminar') {
+                                                        Navigator.of(context).push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) => EditarPublicacionPage(
+                                                              publicacion: publicacion,
+                                                              estado: publicacion['estado'], // Pasar el estado actual
+                                                            ),
+                                                          ),
+                                                        );
+                                                      } else if (result == 'eliminar') {
                                                       _confirmarEliminacionPublicacion(publicacion['id']);
                                                     }
                                                   },
@@ -1134,7 +1162,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                     ),
                                                     PopupMenuItem<String>(
                                                       value: 'cambiarEstado',
-                                                      child: Text('Perdido/Encontrado'),
+                                                      child: Text('Perdido/Encontrado/Adopción'),
                                                     ),
                                                     PopupMenuItem<String>(
                                                       value: 'editar',
@@ -1199,15 +1227,24 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                                                 ),
                                                 SizedBox(height: 5),
-                                                Text(
-                                                  'Fecha de perdida: ${publicacion['fecha_perdida']}  -  ${obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida']))}',
-                                                  style: TextStyle(color: Colors.grey[600]),
-                                                ),
-                                                SizedBox(height: 5),
-                                                Text(
-                                                  'Se perdio en: ${publicacion['lugar_perdida']}',
-                                                  style: TextStyle(color: Colors.grey[600]),
-                                                ),
+                                                // Verificamos si el estado no es 'adopcion', 'pendiente' o 'adoptado'
+                                                if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'pendiente' || publicacion['estado'] == 'adoptado')) ...[
+                                                  Text(
+                                                    'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                  SizedBox(height: 5),
+                                                  Text(
+                                                    'Se perdió en: ${publicacion['lugar_perdida']}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                ] else ...[
+                                                  // Mostrar descripción de la mascota en lugar de las fechas
+                                                  Text(
+                                                    'Descripción: ${publicacion['descripcion'] ?? 'No disponible'}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                ],
                                               ],
                                             ),
                                           ),
@@ -1228,4 +1265,38 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
             ),
     );
   }
+  Color _getEstadoColor(String estado) {
+  switch (estado) {
+    case 'perdido':
+      return Colors.red;
+    case 'encontrado':
+      return Colors.green;
+    case 'adopcion':
+      return Colors.orange; // O el color que prefieras
+    case 'pendiente':
+      return Colors.blue; // O el color que prefieras
+    case 'adoptado':
+      return Colors.green; // O el color que prefieras
+    default:
+      return Colors.grey; // Color por defecto si no coincide con ningún estado
+  }
+}
+
+String _getEstadoTexto(String estado) {
+  switch (estado) {
+    case 'perdido':
+      return 'Tu mascota te extraña tanto tú a él/ella';
+    case 'encontrado':
+      return 'Nos complace saber que tu mascota fue encontrada';
+    case 'adopcion':
+      return 'Esta mascota está en adopción';
+    case 'pendiente':
+      return 'Mascota pendiente para la adopción';
+    case 'adoptado':
+      return 'Esta mascota ya fue adoptada';
+    default:
+      return 'Estado desconocido'; // Texto por defecto si no coincide con ningún estado
+  }
+}
+
 }
