@@ -32,6 +32,7 @@ dependencies:
   file_picker: ^8.1.2
   carousel_slider: ^5.0.0
   image_cropper: ^8.0.2
+  card_swiper: ^3.0.1
 
 dev_dependencies:
   flutter_test:

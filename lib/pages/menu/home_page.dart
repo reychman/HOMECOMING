@@ -1,9 +1,9 @@
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/crear_publicacion_page.dart';
 import 'package:homecoming/pages/mascota.dart';
+import 'package:homecoming/pages/menu/galeriaMascotasAdopcion.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/menu/modals.dart';
 import 'package:http/http.dart' as http;
@@ -44,36 +44,6 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
   }
 
-  Widget _cardAdopciones(Mascota mascota) {
-    return Card(
-      child: Column(
-        children: [
-          Expanded(
-            child: mascota.fotos.isNotEmpty
-                ? CarouselSlider.builder(
-                    itemCount: mascota.fotos.length,
-                    itemBuilder: (BuildContext context, int index, int realIndex) {
-                      return _imagenesManejoErrores(mascota.fotos[index]);
-                    },
-                    options: CarouselOptions(
-                      viewportFraction: 1.0,
-                      autoPlay: true,
-                      autoPlayInterval: Duration(seconds: 3),
-                    ),
-                  )
-                : Center(child: Text('No hay imágenes disponibles')),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              mascota.nombre,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
   Widget _imagenesManejoErrores(String imageUrl) {
     return Image.network(
       imageUrl,
@@ -113,39 +83,42 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
   }
 
   Future<List<Mascota>> obtenerMascotas() async {
-    //print("Obteniendo las mascotas...");
-    final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
+  final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
 
-    if (response.statusCode == 200) {
-      List jsonResponse = json.decode(response.body);
-      //print("Respuesta JSON: $jsonResponse"); 
-      List<Mascota> todasLasMascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
-      //print("Total de mascotas obtenidas: ${todasLasMascotas.length}");
-      setState(() {
-        mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion').toList();
-        _mascotasFiltradas = todasLasMascotas.where((m) => m.estado == 'perdido').toList();
-      });
-      //print("Mascotas en adopción: ${mascotasEnAdopcion.length}");
-      //print("Mascotas perdidas: ${_mascotasFiltradas.length}");
-      for (var mascota in todasLasMascotas) {
-        _currentImageIndex[mascota.id] = 0;
-      }
+  if (response.statusCode == 200) {
+    List jsonResponse = json.decode(response.body);
+    List<Mascota> todasLasMascotas = jsonResponse.map((data) => Mascota.fromJson(data)).toList();
 
-      return todasLasMascotas;
-    } else {
-      throw Exception('Error al cargar las mascotas: ${response.statusCode}');
+    setState(() {
+      _mascotas = todasLasMascotas; // Guardar todas las mascotas
+      mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion').toList();
+      _mascotasFiltradas = todasLasMascotas.where((m) => m.estado == 'perdido').toList();
+    });
+
+    for (var mascota in todasLasMascotas) {
+      _currentImageIndex[mascota.id] = 0;
     }
+
+    return todasLasMascotas;
+  } else {
+    throw Exception('Error al cargar las mascotas: ${response.statusCode}');
   }
+}
 
   void _buscarMascota() {
     String searchQuery = _searchController.text.toLowerCase();
 
     setState(() {
-      _mascotasFiltradas = _mascotas.where((mascota) {
-        final nombreMascota = mascota.nombre.toLowerCase();
-
-        return nombreMascota.contains(searchQuery);
-      }).toList();
+      if (searchQuery.isEmpty) {
+        // Si el campo de búsqueda está vacío, restaurar la lista original de mascotas perdidas
+        _mascotasFiltradas = _mascotas.where((m) => m.estado == 'perdido').toList();
+      } else {
+        // Si hay una búsqueda activa, filtrar solo las mascotas perdidas
+        _mascotasFiltradas = _mascotas.where((mascota) {
+          final nombreMascota = mascota.nombre.toLowerCase();
+          return nombreMascota.contains(searchQuery) && mascota.estado == 'perdido';
+        }).toList();
+      }
     });
   }
 
@@ -170,19 +143,28 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
       }
     });
   }
+  DateTime? _parseFecha(String fechaString) {
+  try {
+    return DateTime.parse(fechaString);
+  } catch (e) {
+    print('Error al parsear la fecha: $e');
+    return null; // Devolver null si no se pudo parsear
+  }
+}
 
   @override
   Widget build(BuildContext context) {
     final arguments = ModalRoute.of(context)!.settings.arguments;
     final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
-    
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.green[200],
         title: Text('Página Principal'),
       ),
       drawer: MenuWidget(usuario: usuario),
-      body: Column(
+      body: SingleChildScrollView(
+      child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -198,50 +180,43 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
             ),
           ),
           // Título para mascotas en adopción
-          if (mascotasEnAdopcion.isNotEmpty) 
+          if (mascotasEnAdopcion.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 'Mascotas que están en adopción',
-                style: Theme.of(context).textTheme.headlineSmall ?.copyWith(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 20, 
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ) ?? TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-          // Carrusel de mascotas en adopción
-          if (mascotasEnAdopcion.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: CarouselSlider.builder(
-                itemCount: mascotasEnAdopcion.length,
-                itemBuilder: (BuildContext context, int index, int realIndex) {
-                  return _cardAdopciones(mascotasEnAdopcion[index]);
-                },
-                options: CarouselOptions(
-                  height: 200,
-                  viewportFraction: 0.8,
-                  enlargeCenterPage: true,
-                  autoPlay: true,
-                  autoPlayInterval: Duration(seconds: 3),
-                  autoPlayAnimationDuration: Duration(milliseconds: 800),
-                  autoPlayCurve: Curves.fastOutSlowIn,
+            // GridView para mostrar todas las mascotas en adopción
+            if (mascotasEnAdopcion.isNotEmpty)
+              ListaHorizontalMascotasAdopcion(mascotas: mascotasEnAdopcion),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Mascotas que están perdidas',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ) ?? TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-          // Título para mascotas perdidas
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              'Mascotas que están perdidas',
-              style: Theme.of(context).textTheme.headlineSmall ?.copyWith(
-                fontWeight: FontWeight.bold, 
-                fontSize: 20, 
-              ) ?? TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Mascota>>(
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Detrás de cada mascota perdida hay un corazón roto. ¡Ayúdanos a reunir a las familias!',
+                  style: TextStyle(
+                    fontSize: 16, // Ajusta el tamaño de la fuente aquí
+                    fontWeight: FontWeight.bold,
+                    // Otros estilos que desees
+                  ),
+                ),
+              ),
+            // Sección de mascotas perdidas (sin scroll)
+            FutureBuilder<List<Mascota>>(
               future: futureMascotas,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -270,11 +245,14 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                           childAspectRatio: 1.5,  // Mantener la relación de aspecto de los cards
                         ),
                         itemCount: _mascotasFiltradas.length,
+                        shrinkWrap: true, // Permite que el GridView ajuste su tamaño
+                        physics: NeverScrollableScrollPhysics(), // Desactiva el scroll del GridView
                         itemBuilder: (context, index) {
                           final mascota = _mascotasFiltradas[index];
-                          final fechaPerdida = DateTime.parse(mascota.fechaPerdida);
-                          final mensajeFecha = obtenerMensajeFecha(fechaPerdida);
-
+                          final fechaPerdida = _parseFecha(mascota.fechaPerdida);
+                          final mensajeFecha = fechaPerdida != null
+                              ? obtenerMensajeFecha(fechaPerdida)
+                              : 'Fecha no disponible';
                           return GestureDetector(
                             onTap: () {
                               mostrarModalInfoMascota(context, mascota); // Mostrar modal en lugar de navegar
@@ -394,8 +372,8 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
                 }
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FutureBuilder<bool>(
         future: usuarioEstaLogeado(),

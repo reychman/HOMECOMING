@@ -45,7 +45,7 @@ class Mascota {
       especie: json['especie'] ?? 'Desconocida',
       raza: json['raza'] ?? 'Desconocida',
       sexo: json['sexo'] ?? 'Desconocido',
-      fechaPerdida: json['fecha_perdida'] ?? 'Desconocida',
+      fechaPerdida: json['fecha_perdida'] ?? 'Desconocido',
       lugarPerdida: json['lugar_perdida'] ?? 'Desconocido',
       estado: json['estado'] ?? 'Desconocido',
       descripcion: json['descripcion'] ?? 'Sin descripción',

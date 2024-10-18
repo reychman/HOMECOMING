@@ -151,15 +151,15 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
           ));
         }
 
-        request.fields['nombre'] = _nombreController.text;
+        request.fields['nombre'] = _nombreController.text.toUpperCase();
         request.fields['especie'] = _especie;
         request.fields['raza'] = _selectedRaza ?? '';
         request.fields['sexo'] = _sexo;
         request.fields['estado'] = _estadoSeleccionado ?? 'perdido';  // Valor predeterminado a 'perdido' si no se selecciona
         request.fields['tipo_usuario'] = tipoUsuario ?? 'propietario';  // Valor predeterminado si no se obtiene
         request.fields['fecha_perdida'] = _fechaPerdidaController.text;
-        request.fields['lugar_perdida'] = _lugarPerdidaController.text;
-        request.fields['descripcion'] = _descripcionController.text;
+        request.fields['lugar_perdida'] = _lugarPerdidaController.text.toUpperCase();
+        request.fields['descripcion'] = _descripcionController.text.toUpperCase();
         request.fields['latitud'] = _selectedLocation!.latitude.toString();
         request.fields['longitud'] = _selectedLocation!.longitude.toString();
         request.fields['usuario_id'] = usuarioId;
