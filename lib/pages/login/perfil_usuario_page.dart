@@ -112,65 +112,60 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       }
     });
   }
-  Future<void> _mostrarModalReemplazarFoto(BuildContext context, int publicacionId) async {
-    Uint8List? nuevaFoto;
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('Reemplazar Foto'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      final ImagePicker _picker = ImagePicker();
-                      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                      if (pickedFile != null) {
-                        Uint8List? croppedBytes = await _cropImage(context, pickedFile.path);
-                        if (croppedBytes != null) {
-                          setState(() {
-                            nuevaFoto = croppedBytes;
-                          });
-                        }
-                      }
-                    },
-                    child: Text('Seleccionar y Recortar Foto'),
+  Widget _buildCarousel(List<dynamic> fotos, int publicacionIndex) {
+    return CarouselSlider(
+      options: CarouselOptions(
+        height: 300.0,
+        enlargeCenterPage: true,
+        autoPlay: false,
+        aspectRatio: 16 / 9,
+        viewportFraction: 0.9,
+      ),
+      items: fotos.asMap().entries.map((entry) {
+        int fotoIndex = entry.key;
+        dynamic foto = entry.value;
+        return Builder(
+          builder: (BuildContext context) {
+            return Stack(
+              children: [
+                // Contenedor para la imagen
+                Container(
+                  width: MediaQuery.of(context).size.width,
+                  margin: EdgeInsets.symmetric(horizontal: 5.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
                   ),
-                  SizedBox(height: 10),
-                  if (nuevaFoto != null)
-                    Image.memory(nuevaFoto!, height: 100, width: 100, fit: BoxFit.contain),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Cancelar'),
+                  child: Image.network(
+                    foto['ruta'] as String, // Asegúrate de que 'ruta' es String
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      print('Error al cargar la imagen: $error');
+                      return Center(child: Text('Error al cargar la imagen'));
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(child: CircularProgressIndicator());
+                    },
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (nuevaFoto != null) {
-                      Navigator.of(context).pop();
-                      await reemplazarFoto(context, publicacionId, nuevaFoto!);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se seleccionó una nueva foto.')));
-                    }
-                  },
-                  child: Text('Reemplazar Foto'),
+                // IconButton para eliminar la foto (X en la esquina superior derecha)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: IconButton(
+                    icon: Icon(Icons.close, color: Colors.red), // Icono de la X
+                    onPressed: () => _modalEliminarFotoMascota(context, publicacionIndex, foto['id'] as int, fotoIndex),
+                  ),
                 ),
               ],
             );
           },
         );
-      },
+      }).toList(),
     );
   }
-  Future<void> _mostrarModalEliminarFoto(BuildContext context, int fotoId) async {
+
+  Future<void> _modalEliminarFotoMascota(BuildContext context, int publicacionIndex, int fotoId, int fotoIndex) async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -179,15 +174,13 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
           content: Text('¿Estás seguro de que deseas eliminar esta foto?'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancelar'),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                await eliminarFoto(context, fotoId); // Asegúrate de pasar el fotoId, no publicacionId
+                await _eliminarFotoMascota(context, publicacionIndex, fotoId, fotoIndex);
               },
               child: Text('Eliminar Foto'),
             ),
@@ -196,8 +189,38 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       },
     );
   }
+
+  Future<void> _eliminarFotoMascota(BuildContext context, int publicacionIndex, int fotoId, int fotoIndex) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+        body: {
+          'accion': 'eliminarFotoMascota',
+          'foto_id': fotoId.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          setState(() {
+            _misPublicaciones[publicacionIndex]['fotos'].removeAt(fotoIndex);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Foto eliminada con éxito')));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${data['error']}')));
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error en la conexión')));
+      }
+    } catch (e) {
+      print('Error al eliminar la foto: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar la foto')));
+    }
+  }
+
   Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
-    // Capture the ScaffoldMessenger before the async operations
+    // Capturar en el ScaffoldMessenger antes de las operaciones asincrónicas
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final request = http.MultipartRequest(
@@ -237,119 +260,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     } catch (e) {
       // Manejar los errores en la solicitud HTTP
       scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error al subir fotos: $e')));
-    }
-  }
-
-  Future<void> eliminarFoto(BuildContext context, int fotoId) async {
-    print('Eliminando foto con foto_id: $fotoId'); // Depurar foto_id
-
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    try {
-      final response = await http.post(
-        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-        body: {
-          'accion': 'eliminarFoto',
-          'foto_id': fotoId.toString(),
-        },
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-
-        if (jsonResponse != null && jsonResponse is Map && jsonResponse.containsKey('success')) {
-          if (jsonResponse['success'] == true) {
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text('Foto eliminada con éxito'),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          } else {
-            String errorMessage = jsonResponse.containsKey('error')
-                ? jsonResponse['error']
-                : 'Error desconocido al eliminar la foto.';
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text('Error: $errorMessage'),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('Error: Respuesta inesperada del servidor'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Error al conectar con el servidor. Código: ${response.statusCode}'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Error al eliminar la foto: $e'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  Future<void> reemplazarFoto(BuildContext context, int fotoId, Uint8List nuevaFoto) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);  // Extract before the async operation
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-    );
-
-    request.fields['accion'] = 'reemplazarFoto';
-    request.fields['foto_id'] = fotoId.toString();
-
-    request.files.add(http.MultipartFile.fromBytes(
-      'nueva_foto',
-      nuevaFoto,
-      filename: 'foto_reemplazo.jpg',
-      contentType: MediaType('image', 'jpeg'),
-    ));
-
-    try {
-      final response = await request.send();
-      final responseData = await response.stream.bytesToString();
-      final jsonResponse = jsonDecode(responseData);
-
-      if (jsonResponse['success']) {
-        scaffoldMessenger.showSnackBar(  // Using scaffoldMessenger directly
-          SnackBar(
-            content: Text('Foto reemplazada con éxito'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Error: ${jsonResponse['error']}'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Error al reemplazar foto: $e'),
-          duration: Duration(seconds: 3),
-        ),
-      );
     }
   }
 //fin de administrador de las fotos de las mascotas
@@ -715,37 +625,34 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   // Obtener las publicaciones del usuario
   Future<void> _publicacioPropiaUsuario() async {
     if (_usuario == null) return;
-
-    // Imprimir el usuario_id antes de enviar la solicitud
-    //print('Enviando usuario_id: ${_usuario!.id.toString()}');
-
     try {
       var response = await http.post(
         Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
         body: {
           'usuario_id': _usuario!.id.toString(),
-          'accion': 'obtenerPublicaciones', // Especifica la acción
+          'accion': 'obtenerPublicaciones',
         },
       );
-
-      // Imprimir la respuesta completa del servidor
-      //print('Response: ${response.body}');
-
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        //print('Response body: ${response.body}'); // Imprime el cuerpo de la respuesta
-        print('Se estan cargando en formatato Json'); // Imprime el cuerpo de la respuesta
-
-        // Verifica si hay un error en la respuesta
+        print('Se están cargando en formato Json');
         if (jsonResponse is List) {
           setState(() {
-            _misPublicaciones = jsonResponse;
+            _misPublicaciones = jsonResponse.map((publicacion) {
+              // Asegúrate de que 'fotos' sea una lista de mapas o cadenas
+              if (publicacion['fotos'] is List) {
+                publicacion['fotos'] = publicacion['fotos'].map((foto) {
+                  return foto is String ? foto : (foto is Map ? foto : null);
+                }).whereType<dynamic>().toList();
+              } else {
+                publicacion['fotos'] = [];
+              }
+              return publicacion;
+            }).toList();
           });
 
-          // Verifica si _misPublicaciones contiene datos
           if (_misPublicaciones.isNotEmpty) {
-            //print('Mis publicaciones: $_misPublicaciones'); // Verifica si la lista no está vacía
-            print('Se estan cargando tus publicaciones');
+            print('Se están cargando tus publicaciones');
           } else {
             print('No se encontraron publicaciones.');
           }
@@ -958,10 +865,8 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
               builder: (context, constraints) {
                 // Definir el ancho mínimo, por ejemplo 300px
                 double minWidth = 300;
-
                 // Si el ancho es menor que el mínimo, ajustarlo al mínimo
                 double effectiveWidth = constraints.maxWidth < minWidth ? minWidth : constraints.maxWidth;
-
                 return SingleChildScrollView( // Asegura que todo el contenido sea desplazable si no cabe en pantalla
                   child: Center(
                     child: ConstrainedBox(
@@ -981,7 +886,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                   _pickImage();
                                 } else if (result == 'reemplazar') {
                                   _reemplazarFotoPerfil();
-                                } else if (result == 'eliminar') {
+                                } else if (result == 'eliminarFotoPerfil') {
                                   _eliminarFotoPerfil();
                                 }
                               },
@@ -991,11 +896,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                   child: Text('Agregar Foto de Perfil'),
                                 ),
                                 PopupMenuItem<String>(
-                                  value: 'reemplazar',
-                                  child: Text('Reemplazar Foto de Perfil'),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'eliminar',
+                                  value: 'eliminarFotoPerfil',
                                   child: Text('Eliminar Foto de Perfil'),
                                 ),
                               ],
@@ -1063,9 +964,10 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                     childAspectRatio: 2 / 1.5,
                                   ),
                                   itemBuilder: (context, index) {
-                                    var publicacion = _misPublicaciones[index];
+                                    final publicacion = _misPublicaciones[index];
                                     List<String> fotos = List<String>.from(publicacion['fotos']);
                                     return Card(
+                                      margin: EdgeInsets.all(8.0),
                                       elevation: 3,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       child: Column(
@@ -1096,10 +998,6 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                   onSelected: (String result) {
                                                     if (result == 'agregarFotos') {
                                                       _mostrarModalAgregarFotos(context, publicacion['id']);
-                                                    } else if (result == 'reemplazarFoto') {
-                                                      _mostrarModalReemplazarFoto(context, publicacion['id']);
-                                                    } else if (result == 'eliminarFoto') {
-                                                      _mostrarModalEliminarFoto(context, publicacion['id']);
                                                     } else if (result == 'cambiarEstado') {
                                                       if (publicacion['estado'] == 'perdido') {
                                                         _mostrarConfirmacionCambioEstado(
@@ -1151,14 +1049,6 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                     PopupMenuItem<String>(
                                                       value: 'agregarFotos',
                                                       child: Text('Agregar Fotos'),
-                                                    ),
-                                                    PopupMenuItem<String>(
-                                                      value: 'reemplazarFoto',
-                                                      child: Text('Reemplazar Foto'),
-                                                    ),
-                                                    PopupMenuItem<String>(
-                                                      value: 'eliminarFoto',
-                                                      child: Text('Eliminar Foto'),
                                                     ),
                                                     PopupMenuItem<String>(
                                                       value: 'cambiarEstado',

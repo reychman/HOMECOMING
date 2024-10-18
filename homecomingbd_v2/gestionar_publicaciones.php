@@ -8,7 +8,7 @@
 
     // Verificar el método HTTP y el parámetro 'accion'
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $accion = isset($_POST['accion']) ? $_POST['accion'] : null;
+        $accion = isset($_POST['accion']) ? $_POST['accion'] : '';
 
         switch ($accion) {
             case 'obtenerPublicaciones':
@@ -26,16 +26,14 @@
             case 'agregarFotos':
                 agregarFotos();
                 break;
-            case 'eliminarFoto':
-                eliminarFoto();
-                break;
-            case 'reemplazarFoto':
-                reemplazarFoto();
+            case 'eliminarFotoMascota':
+                eliminarFotoMascota();
                 break;
             default:
                 echo json_encode(['error' => 'Acción no válida']);
                 break;
         }
+                
     } else {
         echo json_encode(['error' => 'Método no permitido']);
     }
@@ -292,19 +290,15 @@
     }
     
     
-    function eliminarFoto() {
+    function eliminarFotoMascota() {
         global $conexion;
-    
         $foto_id = isset($_POST['foto_id']) ? $_POST['foto_id'] : null;
-    
+        
         if (!$foto_id) {
             echo json_encode(['success' => false, 'error' => 'ID de la foto no proporcionado']);
             return;
         }
-    
-        // Depurar el valor de foto_id
-        error_log("Recibiendo foto_id: $foto_id");
-    
+        
         // Consultar la ruta de la foto
         $sql = "SELECT foto FROM fotos_mascotas WHERE id = ?";
         $stmt = $conexion->prepare($sql);
@@ -313,84 +307,26 @@
         $stmt->bind_result($foto);
         $stmt->fetch();
         $stmt->close();
-    
-        // Depurar el resultado de la consulta
+        
         if (!$foto) {
-            error_log("No se encontró la foto en la base de datos para foto_id: $foto_id");
             echo json_encode(['success' => false, 'error' => 'No se encontró la foto']);
             return;
-        } else {
-            error_log("Se encontró la foto: $foto");
         }
-    
-        // Eliminar la foto del servidor
+        
         $ruta_foto = '../assets/imagenes/fotos_mascotas/' . $foto;
         if (file_exists($ruta_foto)) {
-            unlink($ruta_foto);  // Eliminar el archivo
-            error_log("Archivo eliminado: $ruta_foto");
-        } else {
-            error_log("No se encontró el archivo en la carpeta local: $ruta_foto");
+            unlink($ruta_foto);
         }
-    
-        // Eliminar el registro de la base de datos
+        
         $sql = "DELETE FROM fotos_mascotas WHERE id = ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param('i', $foto_id);
-    
+        
         if ($stmt->execute()) {
             echo json_encode(['success' => true]);
         } else {
-            error_log("Error al eliminar la foto de la base de datos para foto_id: $foto_id");
             echo json_encode(['success' => false, 'error' => 'Error al eliminar la foto de la base de datos']);
         }
     }
     
-    
-    // Función para reemplazar una foto de una mascota
-    function reemplazarFoto() {
-        global $conexion;
-    
-        $foto_id = isset($_POST['foto_id']) ? $_POST['foto_id'] : null;
-    
-        if (!$foto_id || !isset($_FILES['nueva_foto'])) {
-            echo json_encode(['error' => 'Datos insuficientes']);
-            exit;
-        }
-    
-        // Buscar la foto actual en la base de datos
-        $sql = "SELECT foto FROM fotos_mascotas WHERE id = ?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param('i', $foto_id);
-        $stmt->execute();
-        $stmt->bind_result($foto_actual);
-        $stmt->fetch();
-        $stmt->close();
-    
-        if ($foto_actual) {
-            // Eliminar el archivo de la carpeta local
-            $ruta_foto_actual = 'assets/imagenes/fotos_mascotas/' . $foto_actual;
-            if (file_exists($ruta_foto_actual)) {
-                unlink($ruta_foto_actual); // Eliminar el archivo actual
-            }
-    
-            // Guardar la nueva imagen en la carpeta local
-            $nueva_foto_nombre = $_FILES['nueva_foto']['name'];
-            $nueva_foto_tmp = $_FILES['nueva_foto']['tmp_name'];
-            $nueva_ruta_foto = 'assets/imagenes/fotos_mascotas/' . $nueva_foto_nombre;
-    
-            if (move_uploaded_file($nueva_foto_tmp, $nueva_ruta_foto)) {
-                // Actualizar el nombre de la nueva imagen en la base de datos
-                $sql = "UPDATE fotos_mascotas SET foto = ? WHERE id = ?";
-                $stmt = $conexion->prepare($sql);
-                $stmt->bind_param('si', $nueva_foto_nombre, $foto_id);
-                $stmt->execute();
-    
-                echo json_encode(['success' => true, 'message' => 'Foto reemplazada con éxito']);
-            } else {
-                echo json_encode(['error' => 'Error al subir la nueva imagen']);
-            }
-        } else {
-            echo json_encode(['error' => 'Foto no encontrada']);
-        }
-    }
 ?>
