@@ -36,7 +36,7 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
 
   Future<List<Mascota>> obtenerMascotas() async {
     print("Obteniendo las mascotas encontradas...");
-    final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
+    final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php?ip_servidor=$serverIP'));
 
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
@@ -198,14 +198,14 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
                                               },
                                               child: mascota.fotos.isNotEmpty
                                                   ? Image.network(
-                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${mascota.fotos[_currentImageIndex[mascota.id]!]}',
-                                                      width: 400,
-                                                      height: 250,
-                                                      fit: BoxFit.contain,
-                                                      errorBuilder: (context, error, stackTrace) {
-                                                        return Icon(Icons.error, size: 100, color: Colors.red);
-                                                      },
-                                                    )
+                                                    mascota.fotos[_currentImageIndex[mascota.id]!],
+                                                    width: 400,
+                                                    height: 250,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Icon(Icons.error, size: 100, color: Colors.red);
+                                                    },
+                                                  )
                                                   : Icon(Icons.pets, size: 200, color: Colors.grey),
                                             ),
                                           ),

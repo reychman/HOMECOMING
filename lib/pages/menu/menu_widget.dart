@@ -98,6 +98,37 @@ class MenuWidget extends StatelessWidget {
                       Navigator.of(context).pushReplacementNamed('/reportes');
                     },
                   ),
+                /*if (usuarioLogeado) // Suponiendo que tienes una propiedad que verifica si el usuario está logueado
+  ListTile(
+    title: Text('Plantillas de Se Busca'),
+    onTap: () {
+      // Definimos una mascota de prueba
+      Mascota mascota = Mascota(
+        id: 1,
+        nombre: 'Firulais',
+        especie: 'Perro',
+        raza: 'Pitbull',
+        sexo: 'Macho',
+        fechaPerdida: '2023-10-15',
+        lugarPerdida: 'Parque Central',
+        estado: 'Perdido',
+        descripcion: 'Un perro amigable de color blanco y marrón.',
+        fotos: ['ruta/a/la/foto1.jpg'], // Asegúrate de que la ruta sea válida
+        nombreDueno: 'Juan',
+        primerApellidoDueno: 'Pérez',
+        segundoApellidoDueno: 'García',
+        emailDueno: 'juanperez@gmail.com',
+        telefonoDueno: '555-123456',
+      );
+
+      // Navegamos a la página pasando la mascota de prueba
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PlantillasPage(mascota: mascota),
+        ),
+      );
+    },
+  ),*/
                 if (!usuarioLogeado)
                   ListTile(
                     leading: Icon(Icons.login),

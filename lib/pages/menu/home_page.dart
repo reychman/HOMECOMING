@@ -82,8 +82,10 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
-  Future<List<Mascota>> obtenerMascotas() async {
-  final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php'));
+Future<List<Mascota>> obtenerMascotas() async {
+
+  // Modifica la URL para pasar la IP del servidor como parámetro GET
+  final response = await http.get(Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/mascotas.php?ip_servidor=$serverIP'));
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
@@ -104,6 +106,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     throw Exception('Error al cargar las mascotas: ${response.statusCode}');
   }
 }
+
 
   void _buscarMascota() {
     String searchQuery = _searchController.text.toLowerCase();

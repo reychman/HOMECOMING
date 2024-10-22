@@ -11,8 +11,12 @@ if ($conexion->connect_error) {
     die("Conexión fallida: " . $conexion->connect_error);
 }
 
-// Define la URL base para las imágenes
-$base_url = "http://192.168.100.117/homecoming/assets/imagenes/fotos_mascotas/"; // Ajusta esto a la ruta correcta en tu servidor Laragon
+// Verifica si se pasó la IP del servidor para las imágenes
+if (isset($_GET['ip_servidor'])) {
+    $base_url = "http://" . $_GET['ip_servidor'] . "/homecoming/assets/imagenes/fotos_mascotas/";
+} else {
+    die(json_encode(array('error' => 'Falta la IP del servidor.')));
+}
 
 // Consulta para obtener todas las mascotas
 $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.primerApellido AS primer_apellido_dueno, U.segundoApellido AS segundo_apellido_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
