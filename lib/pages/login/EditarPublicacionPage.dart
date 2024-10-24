@@ -249,7 +249,7 @@ class _EditarPublicacionPageState extends State<EditarPublicacionPage> {
         padding: const EdgeInsets.all(16.0),
         children: [
           // Mostrar el botón para seleccionar la fecha solo si el estado no es 'adopcion'
-          if (widget.estado != 'adopcion') 
+          if (widget.estado != 'adopcion' && widget.estado != 'pendiente' ) 
             ElevatedButton(
               onPressed: () => _selectDate(context),
               style: ElevatedButton.styleFrom(
@@ -265,7 +265,7 @@ class _EditarPublicacionPageState extends State<EditarPublicacionPage> {
               ),
             ),
           // Mostrar el campo lugar de pérdida solo si el estado no es 'adopcion'
-          if (widget.estado != 'adopcion') 
+          if (widget.estado != 'adopcion' && widget.estado != 'pendiente' ) 
             TextFormField(
               controller: _lugarPerdidaController,
               decoration: InputDecoration(labelText: 'Lugar de pérdida'),
