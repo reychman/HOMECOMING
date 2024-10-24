@@ -93,7 +93,7 @@ Future<List<Mascota>> obtenerMascotas() async {
 
     setState(() {
       _mascotas = todasLasMascotas; // Guardar todas las mascotas
-      mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion').toList();
+      mascotasEnAdopcion = todasLasMascotas.where((m) => m.estado == 'adopcion' || m.estado == 'pendiente').toList(); //filtramos para que se muestren las mascotas en adopcion o con adopcion pendiente
       _mascotasFiltradas = todasLasMascotas.where((m) => m.estado == 'perdido').toList();
     });
 

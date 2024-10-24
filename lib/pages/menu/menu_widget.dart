@@ -9,7 +9,7 @@ class MenuWidget extends StatelessWidget {
 
   const MenuWidget({required this.usuario, Key? key}) : super(key: key);
   
-    Future<void> _logout(BuildContext context) async {
+  Future<void> _logout(BuildContext context) async {
     // Elimina los datos del usuario de SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId'); // Elimina el userId almacenado

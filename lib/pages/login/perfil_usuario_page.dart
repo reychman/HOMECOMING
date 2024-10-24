@@ -10,9 +10,11 @@ import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PerfilUsuario extends StatefulWidget {
   const PerfilUsuario({Key? key}) : super(key: key);
@@ -617,11 +619,14 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     }
   }
 
-  Future<void> _logout() async {
+  Future<void> _logout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    Navigator.of(context).pushReplacementNamed('/home');
+    await prefs.remove('userId'); // Elimina el userId almacenado
+    await prefs.setBool('isLoggedIn', false); // Nueva bandera
+    Provider.of<UsuarioProvider>(context, listen: false).setUsuario(Usuario.vacio());
+    Navigator.of(context).pushReplacementNamed('/inicio');
   }
+
   // Obtener las publicaciones del usuario
   Future<void> _publicacioPropiaUsuario() async {
     if (_usuario == null) return;
@@ -700,9 +705,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     // Si el usuario aceptó, realiza el cambio de estado
     if (confirmar) {
       // Lógica adicional para cambiar el estado según la transición
-      if (nuevoEstado == 'pendiente' && estadoActual == 'adopcion') {
-        _cambiarEstadoMascota(publicacionId, 'pendiente');
-      } else if (nuevoEstado == 'adoptado' && estadoActual == 'pendiente') {
+      if (nuevoEstado == 'adoptado' && estadoActual == 'pendiente') {
         _cambiarEstadoMascota(publicacionId, 'adoptado');
       } else if (nuevoEstado == 'encontrado' && estadoActual == 'perdido') {
         _cambiarEstadoMascota(publicacionId, 'encontrado');
@@ -941,7 +944,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                             ),
                             SizedBox(height: 10),
                             ElevatedButton(
-                              onPressed: _logout,
+                              onPressed: () => _logout(context),
                               child: Text('Cerrar Sesión'),
                             ),
                             SizedBox(height: 20),
@@ -1117,30 +1120,40 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                                                 ),
                                                 SizedBox(height: 5),
-                                                // Verificamos si el estado no es 'adopcion', 'pendiente' o 'adoptado'
-                                                if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'pendiente' || publicacion['estado'] == 'adoptado')) ...[
-                                                  Text(
-                                                    'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
-                                                    style: TextStyle(color: Colors.grey[600]),
-                                                  ),
-                                                  SizedBox(height: 5),
-                                                  Text(
-                                                    'Se perdió en: ${publicacion['lugar_perdida']}',
-                                                    style: TextStyle(color: Colors.grey[600]),
-                                                  ),
-                                                ] else ...[
-                                                  // Mostrar descripción de la mascota en lugar de las fechas
-                                                  Text(
-                                                    'Descripción: ${publicacion['descripcion'] ?? 'No disponible'}',
-                                                    style: TextStyle(color: Colors.grey[600]),
-                                                  ),
+                                                  if (publicacion['estado'] == 'pendiente') ...[
+                                                    Center(
+                                                      child: ElevatedButton(
+                                                        onPressed: () {
+                                                          // Lógica para mostrar la lista de interesados
+                                                          _mostrarInteresados(publicacion['id']);
+                                                        },
+                                                        child: Text('Ver interesados'),
+                                                      ),
+                                                    ),
+                                                  ] else ...[
+                                                    if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'adoptado')) ...[
+                                                      Text(
+                                                        'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
+                                                        style: TextStyle(color: Colors.grey[600]),
+                                                      ),
+                                                      SizedBox(height: 5),
+                                                      Text(
+                                                        'Se perdió en: ${publicacion['lugar_perdida']}',
+                                                        style: TextStyle(color: Colors.grey[600]),
+                                                      ),
+                                                    ] else ...[
+                                                      Text(
+                                                        'Descripción: ${publicacion['descripcion'] ?? 'No disponible'}',
+                                                        style: TextStyle(color: Colors.grey[600]),
+                                                      ),
+                                                    ],
+                                                  ]
                                                 ],
-                                              ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
+                                          ],
+                                        ),
+                                      );
                                   },
                                 );
                               },
@@ -1155,6 +1168,116 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
             ),
     );
   }
+Future<void> _mostrarInteresados(int idMascota) async {
+  final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php?mascota_id=$idMascota');
+  
+  try {
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      
+      if (data['status'] == 'success') {
+        List interesados = data['data'];
+          // Mostramos un diálogo con la lista de interesados
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Interesados en Adoptar'),
+                content: interesados.isNotEmpty
+                    ? SizedBox(
+                        width: double.maxFinite,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: interesados.length,
+                          itemBuilder: (context, index) {
+                            final interesado = interesados[index];
+                            String nombreCompleto = interesado['nombre'];
+                            if (interesado['primerApellido'] != null) {
+                              nombreCompleto += ' ${interesado['primerApellido']}';
+                            }
+                            if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
+                              nombreCompleto += ' ${interesado['segundoApellido']}';
+                            }
+
+                            // Crear el link de WhatsApp
+                            final whatsappUri = Uri.parse(
+                              'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
+                            );
+
+                            return ListTile(
+                              leading: Icon(Icons.person),
+                              title: Text(nombreCompleto),
+                              subtitle: Text(interesado['email']),
+                              trailing: IconButton(
+                                icon: Icon(Icons.message, color: Colors.green),
+                                onPressed: () {
+                                  // Abrir WhatsApp
+                                  launchUrl(whatsappUri);
+                                },
+                              ),
+                              // Mostrar el número de teléfono con opción para contactar
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: Text('Contactar a ${interesado['nombre']}'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text('Teléfono: ${interesado['telefono']}'),
+                                          SizedBox(height: 10),
+                                          ElevatedButton.icon(
+                                            icon: Icon(Icons.message),
+                                            label: Text('Contactar por WhatsApp'),
+                                            onPressed: () {
+                                              launchUrl(whatsappUri);  // Abrir WhatsApp
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: Text('Cerrar'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      )
+                    : Text('Nadie ha mostrado interés en esta mascota.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('Cerrar'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+    } else {
+        print(data['message']);  // Mostrar error en caso de que no haya interesados
+      }
+    } else {
+      print('Error al obtener interesados');
+    }
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+
+
   Color _getEstadoColor(String estado) {
   switch (estado) {
     case 'perdido':

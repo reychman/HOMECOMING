@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/mascota.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
@@ -44,7 +48,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                               enlargeCenterPage: false,
                             ),
                             items: mascota.fotos.map((foto) {
-                              return Container(
+                              return SizedBox(
                                 width: double.infinity,
                                 child: Image.network(foto, fit: BoxFit.contain),
                               );
@@ -80,6 +84,30 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                   'mailto:${mascota.emailDueno}',
                                 ),
                                 _buildWhatsAppContact(context, mascota),
+                                // Espaciado adicional antes del botón
+                                SizedBox(height: 20),// Botón "Me interesa" para adopción
+                                if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') ...[
+                                  Center( // Centrar el botón
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Lógica para manejar la adopción
+                                        Navigator.of(context).pop();
+                                        _interesadoEnAdopcion(context, mascota);
+                                      },
+                                      child: Text('Me interesa'),
+                                    ),
+                                  ),
+                                ] else if (mascota.estado == 'perdido') ...[
+                                  Center( // Centrar el botón
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Lógica para manejar la pérdida
+                                        _interesadoEnPerdido(context, mascota);
+                                      },
+                                      child: Text('Reportar Avistamiento'),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -134,6 +162,29 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                   'mailto:${mascota.emailDueno}',
                                 ),
                                 _buildWhatsAppContact(context, mascota),
+                                // Botón "Me interesa" para adopción
+                                if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') ...[
+                                  Center( // Centrar el botón
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Lógica para manejar la adopción
+                                        Navigator.of(context).pop();
+                                        _interesadoEnAdopcion(context, mascota);
+                                      },
+                                      child: Text('Me interesa'),
+                                    ),
+                                  ),
+                                ] else if (mascota.estado == 'perdido') ...[
+                                  Center( // Centrar el botón
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Lógica para manejar la pérdida
+                                        _interesadoEnPerdido(context, mascota);
+                                      },
+                                      child: Text('Reportar Avistamiento'),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -147,6 +198,96 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
     },
   );
 }
+  void _interesadoEnAdopcion(BuildContext context, Mascota mascota) async {
+    // Obtén el ID del adoptante de forma asincrónica
+    int? adoptanteId = await obtenerIdAdoptante(); // Asegúrate de usar 'await' aquí
+    int mascotaId = mascota.id; // Suponiendo que `mascota` tiene una propiedad `id`
+
+    // Verificar si se obtuvo el ID del adoptante
+    if (adoptanteId == null) {
+      mostrarDialogo(context); // Llama al diálogo en lugar de mostrar un SnackBar
+      return;
+    }
+
+    // Crear el cuerpo de la solicitud
+    var body = {
+      'action': 'registrar_interes',
+      'mascota_id': mascotaId.toString(), // Asegúrate de que los valores sean del tipo correcto
+      'adoptante_id': adoptanteId.toString(), // Convertir a string si es necesario
+    };
+
+    // Realizar la solicitud POST
+    final response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php'),
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: body,
+    );
+    // Debug: imprime el cuerpo de la respuesta
+    //print('Response status: ${response.statusCode}');
+    //print('Response body: ${response.body}'); // Añade esta línea
+    // Manejar la respuesta
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        mostrarMensaje(context, data['message']);
+      } else {
+        mostrarMensaje(context, data['message']);
+      }
+    } else {
+      mostrarMensaje(context, 'Error al registrar el interés. Código de estado: ${response.statusCode}');
+      //print('Error: ${response.body}'); // Añade esta línea para ver el cuerpo del error
+    }
+  }
+
+  Future<int?> obtenerIdAdoptante() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('usuario_id');
+  }
+
+  // Función para mostrar mensajes en un snackbar o alerta
+  void mostrarMensaje(BuildContext context, String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje)),
+    );
+  }
+
+  void mostrarDialogo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Sesión Requerida'),
+          content: Text('Debe de iniciar sesión para continuar. ¿Qué desea hacer?'),
+          actions: [
+            TextButton(
+              child: Text('Crear una cuenta'),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/CrearUsuario');
+              },
+            ),
+            TextButton(
+              child: Text('Iniciar sesión'),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/iniciar_sesion');
+              },
+            ),
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _interesadoEnPerdido(BuildContext context, Mascota mascota) {
+    // Lógica para manejar la pérdida
+    // Por ejemplo, enviar un mensaje al dueño o registrar el interés
+    print('Quiero ayudar a encontrar: ${mascota.nombre}');
+  }
 
 // Función para construir encabezados de sección
 Widget _buildSectionHeader(String title) {
