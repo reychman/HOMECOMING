@@ -6,9 +6,12 @@ import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuWidget extends StatelessWidget {
-  final Usuario usuario;
+  final Usuario? usuario;
 
-  const MenuWidget({required this.usuario, Key? key}) : super(key: key);
+  const MenuWidget({
+    required this.usuario, 
+    Key? key
+  }) : super(key: key);
   
   Future<void> _logout(BuildContext context) async {
     // Elimina los datos del usuario de SharedPreferences
