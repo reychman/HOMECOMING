@@ -1304,9 +1304,9 @@ String _getEstadoTexto(String estado) {
     case 'adopcion':
       return 'Esta mascota está en adopción';
     case 'pendiente':
-      return 'Mascota pendiente para la adopción';
+      return 'Hay alguien interesado en la adopción';
     case 'adoptado':
-      return 'Esta mascota ya fue adoptada';
+      return 'Mascota Adoptada';
     default:
       return 'Estado desconocido'; // Texto por defecto si no coincide con ningún estado
   }

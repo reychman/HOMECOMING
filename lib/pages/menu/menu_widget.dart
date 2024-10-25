@@ -1,3 +1,4 @@
+import 'package:homecoming/ip.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/usuario.dart';
@@ -41,10 +42,19 @@ class MenuWidget extends StatelessWidget {
                   accountEmail: Text(usuarioLogeado ? usuario.tipoUsuario ?? 'Sin rol' : 'Sin rol'),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 40.0,
-                    ),
+                    backgroundImage: usuario.fotoPortada != null && usuario.fotoPortada!.isNotEmpty
+                        ? NetworkImage('http://$serverIP/homecoming/assets/imagenes/fotos_perfil/${usuario.fotoPortada}?${DateTime.now().millisecondsSinceEpoch}')
+                        : null, // Si no hay imagen, asignamos null
+                    child: usuario.fotoPortada == null || usuario.fotoPortada!.isEmpty
+                        ? Icon(
+                            Icons.person,  // Icono por defecto si no tiene foto
+                            size: 40.0,
+                            color: Colors.grey, // Color del ícono
+                          )
+                        : null, // Si hay imagen, no mostrar el ícono
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,  // Cambia el color morado por el que prefieras
                   ),
                 ),
                 if (usuarioLogeado)
@@ -98,37 +108,6 @@ class MenuWidget extends StatelessWidget {
                       Navigator.of(context).pushReplacementNamed('/reportes');
                     },
                   ),
-                /*if (usuarioLogeado) // Suponiendo que tienes una propiedad que verifica si el usuario está logueado
-  ListTile(
-    title: Text('Plantillas de Se Busca'),
-    onTap: () {
-      // Definimos una mascota de prueba
-      Mascota mascota = Mascota(
-        id: 1,
-        nombre: 'Firulais',
-        especie: 'Perro',
-        raza: 'Pitbull',
-        sexo: 'Macho',
-        fechaPerdida: '2023-10-15',
-        lugarPerdida: 'Parque Central',
-        estado: 'Perdido',
-        descripcion: 'Un perro amigable de color blanco y marrón.',
-        fotos: ['ruta/a/la/foto1.jpg'], // Asegúrate de que la ruta sea válida
-        nombreDueno: 'Juan',
-        primerApellidoDueno: 'Pérez',
-        segundoApellidoDueno: 'García',
-        emailDueno: 'juanperez@gmail.com',
-        telefonoDueno: '555-123456',
-      );
-
-      // Navegamos a la página pasando la mascota de prueba
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => PlantillasPage(mascota: mascota),
-        ),
-      );
-    },
-  ),*/
                 if (!usuarioLogeado)
                   ListTile(
                     leading: Icon(Icons.login),
