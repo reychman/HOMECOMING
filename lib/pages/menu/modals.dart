@@ -355,7 +355,7 @@ void enviarMensajeWhatsApp(BuildContext context, Mascota mascota, String estado)
   if (estado == 'perdido') {
     cargarMensaje = 'Hola, hablo con ${mascota.nombreDueno}?, me comunico por su mascota perdida: ${mascota.nombre}';
   } else if (estado == 'adopcion' || estado == 'pendiente') {
-    cargarMensaje = 'Hola, me comunico con usted porque estoy interesado en la adopción de la mascota: ${mascota.nombre}, con la siguiente descripción: ${mascota.descripcion}';
+    cargarMensaje = 'Hola, hablo con ${mascota.nombreDueno}?, me comunico con usted porque estoy interesado en la adopción de la mascota: ${mascota.nombre}, con la siguiente descripción: ${mascota.descripcion}';
   } else {
     cargarMensaje = 'Hola, estoy contactando sobre la mascota: ${mascota.nombre}';
   }
