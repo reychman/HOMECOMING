@@ -102,7 +102,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                     child: ElevatedButton(
                                       onPressed: () {
                                         // Lógica para manejar la pérdida
-                                        _interesadoEnPerdido(context, mascota);
+                                        enviarMensajeWhatsApp(context, mascota, 'perdido');
                                       },
                                       child: Text('Reportar Avistamiento'),
                                     ),
@@ -179,7 +179,7 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
                                     child: ElevatedButton(
                                       onPressed: () {
                                         // Lógica para manejar la pérdida
-                                        _interesadoEnPerdido(context, mascota);
+                                        enviarMensajeWhatsApp(context, mascota, 'perdido');
                                       },
                                       child: Text('Reportar Avistamiento'),
                                     ),
@@ -283,12 +283,6 @@ void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
     );
   }
 
-  void _interesadoEnPerdido(BuildContext context, Mascota mascota) {
-    // Lógica para manejar la pérdida
-    // Por ejemplo, enviar un mensaje al dueño o registrar el interés
-    print('Quiero ayudar a encontrar: ${mascota.nombre}');
-  }
-
 // Función para construir encabezados de sección
 Widget _buildSectionHeader(String title) {
   return Container(
@@ -355,35 +349,38 @@ Widget _buildInteractiveText(String label, String value, String url) {
   );
 }
 
+void enviarMensajeWhatsApp(BuildContext context, Mascota mascota, String estado) async {
+  // Verificar el estado de la mascota para personalizar el mensaje
+  String cargarMensaje;
+  if (estado == 'perdido') {
+    cargarMensaje = 'Hola, hablo con ${mascota.nombreDueno}?, me comunico por su mascota perdida: ${mascota.nombre}';
+  } else if (estado == 'adopcion' || estado == 'pendiente') {
+    cargarMensaje = 'Hola, me comunico con usted porque estoy interesado en la adopción de la mascota: ${mascota.nombre}, con la siguiente descripción: ${mascota.descripcion}';
+  } else {
+    cargarMensaje = 'Hola, estoy contactando sobre la mascota: ${mascota.nombre}';
+  }
+
+  // Generar la URI de WhatsApp completamente codificada
+  final whatsappUri = Uri.https(
+    'wa.me',
+    '/${mascota.telefonoDueno}',
+    {'text': cargarMensaje},
+  );
+
+  // Intentar abrir el enlace de WhatsApp
+  if (await canLaunchUrl(whatsappUri)) {
+    await launchUrl(whatsappUri);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No se pudo abrir WhatsApp')),
+    );
+  }
+}
+
+// Función para construir el widget de contacto de WhatsApp
 Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
   return GestureDetector(
-    onTap: () async {
-      // Verificar el estado de la mascota para personalizar el mensaje
-      String cargarMensaje;
-      if (mascota.estado == 'perdido') {
-        cargarMensaje = 'Hola, me comunico por su mascota perdida: ${mascota.nombre}';
-      } else if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') {
-        cargarMensaje = 'Hola, me comunico con usted porque estoy interesado en la adopción de la mascota: ${mascota.nombre}, con la siguiente descripción: ${mascota.descripcion}';
-      } else {
-        cargarMensaje = 'Hola, estoy contactando sobre la mascota: ${mascota.nombre}';
-      }
-
-      // Generar la URI de WhatsApp completamente codificada
-      final whatsappUri = Uri.https(
-        'wa.me',
-        '/${mascota.telefonoDueno}',
-        {'text': cargarMensaje},
-      );
-
-      // Intentar abrir el enlace de WhatsApp
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(whatsappUri);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo abrir WhatsApp')),
-        );
-      }
-    },
+    onTap: () => enviarMensajeWhatsApp(context, mascota, mascota.estado),
     child: Row(
       children: [
         Image.network(
@@ -395,7 +392,7 @@ Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
         Text(
           mascota.telefonoDueno,
           style: TextStyle(
-            color: Colors.blue, // Color del enlace
+            color: Colors.blue,
             decoration: TextDecoration.underline,
           ),
         ),
