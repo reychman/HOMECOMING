@@ -57,7 +57,7 @@ class MenuWidget extends StatelessWidget {
                         : null, // Si hay imagen, no mostrar el ícono
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue,  // Cambia el color morado por el que prefieras
+                    color: Colors.green.shade400,  // color del fondo donde se encuentra la foto de perfil
                   ),
                 ),
                 if (usuarioLogeado)
@@ -70,7 +70,7 @@ class MenuWidget extends StatelessWidget {
                   ),
                 ListTile(
                   leading: Icon(Icons.home),
-                  title: Text('Home'),
+                  title: Text('Inicio'),
                   onTap: () {
                     Navigator.of(context).pushReplacementNamed('/inicio');
                   },

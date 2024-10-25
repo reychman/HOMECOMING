@@ -354,12 +354,28 @@ Widget _buildInteractiveText(String label, String value, String url) {
     ),
   );
 }
+
 Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
   return GestureDetector(
     onTap: () async {
-      final whatsappUri = Uri.parse(
-        'https://wa.me/${mascota.telefonoDueno}?text=Hola, estoy contactando sobre tu mascota perdida: ${mascota.nombre}'
+      // Verificar el estado de la mascota para personalizar el mensaje
+      String cargarMensaje;
+      if (mascota.estado == 'perdido') {
+        cargarMensaje = 'Hola, me comunico por su mascota perdida: ${mascota.nombre}';
+      } else if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') {
+        cargarMensaje = 'Hola, me comunico con usted porque estoy interesado en la adopción de la mascota: ${mascota.nombre}, con la siguiente descripción: ${mascota.descripcion}';
+      } else {
+        cargarMensaje = 'Hola, estoy contactando sobre la mascota: ${mascota.nombre}';
+      }
+
+      // Generar la URI de WhatsApp completamente codificada
+      final whatsappUri = Uri.https(
+        'wa.me',
+        '/${mascota.telefonoDueno}',
+        {'text': cargarMensaje},
       );
+
+      // Intentar abrir el enlace de WhatsApp
       if (await canLaunchUrl(whatsappUri)) {
         await launchUrl(whatsappUri);
       } else {
@@ -387,3 +403,4 @@ Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
     ),
   );
 }
+
