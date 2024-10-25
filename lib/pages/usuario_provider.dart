@@ -64,6 +64,14 @@ class UsuarioProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Método para actualizar solo la foto de perfil
+  Future<void> actualizarFotoPerfil(String nuevaFotoUrl) async {
+    if (_usuario != null) {
+      _usuario = _usuario!.copyWith(fotoPortada: nuevaFotoUrl);
+      await setUsuario(_usuario); // Llama a setUsuario para actualizar en SharedPreferences y notificar
+    }
+  }
+
   // Cerrar sesión
   Future<void> logout() async {
     await setUsuario(null);

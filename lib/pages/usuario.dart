@@ -100,7 +100,43 @@ static Future<bool> createUsuario(Usuario usuario) async {
     return false;
   }
 }
-
+Usuario copyWith({
+  int? id,
+  String? nombre,
+  String? primerApellido,
+  String? segundoApellido,
+  String? telefono,
+  String? email,
+  String? contrasena,
+  String? tipoUsuario,
+  String? fotoPortada,
+  String? nombreRefugio,
+  String? emailRefugio,
+  String? ubicacionRefugio,
+  String? telefonoRefugio,
+  int? estado,
+  DateTime? fechaCreacion,
+  DateTime? fechaModificacion,
+}) {
+  return Usuario(
+    id: id ?? this.id,
+    nombre: nombre ?? this.nombre,
+    primerApellido: primerApellido ?? this.primerApellido,
+    segundoApellido: segundoApellido ?? this.segundoApellido,
+    telefono: telefono ?? this.telefono,
+    email: email ?? this.email,
+    contrasena: contrasena ?? this.contrasena,
+    tipoUsuario: tipoUsuario ?? this.tipoUsuario,
+    fotoPortada: fotoPortada ?? this.fotoPortada,
+    nombreRefugio: nombreRefugio ?? this.nombreRefugio,
+    emailRefugio: emailRefugio ?? this.emailRefugio,
+    ubicacionRefugio: ubicacionRefugio ?? this.ubicacionRefugio,
+    telefonoRefugio: telefonoRefugio ?? this.telefonoRefugio,
+    estado: estado ?? this.estado,
+    fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+    fechaModificacion: fechaModificacion ?? this.fechaModificacion,
+  );
+}
   // Método para iniciar sesión
   static Future<Usuario?> iniciarSesion(String nombre, String contrasena) async {
     final passwordHash = sha1.convert(utf8.encode(contrasena)).toString();
