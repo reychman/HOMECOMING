@@ -114,112 +114,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       }
     });
   }
-  Widget _buildCarousel(List<dynamic> fotos, int publicacionIndex) {
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: 300.0,
-        enlargeCenterPage: true,
-        autoPlay: false,
-        aspectRatio: 16 / 9,
-        viewportFraction: 0.9,
-      ),
-      items: fotos.asMap().entries.map((entry) {
-        int fotoIndex = entry.key;
-        dynamic foto = entry.value;
-        return Builder(
-          builder: (BuildContext context) {
-            return Stack(
-              children: [
-                // Contenedor para la imagen
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  margin: EdgeInsets.symmetric(horizontal: 5.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                  ),
-                  child: Image.network(
-                    foto['ruta'] as String, // Asegúrate de que 'ruta' es String
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      print('Error al cargar la imagen: $error');
-                      return Center(child: Text('Error al cargar la imagen'));
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(child: CircularProgressIndicator());
-                    },
-                  ),
-                ),
-                // IconButton para eliminar la foto (X en la esquina superior derecha)
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: IconButton(
-                    icon: Icon(Icons.close, color: Colors.red), // Icono de la X
-                    onPressed: () => _modalEliminarFotoMascota(context, publicacionIndex, foto['id'] as int, fotoIndex),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      }).toList(),
-    );
-  }
-
-  Future<void> _modalEliminarFotoMascota(BuildContext context, int publicacionIndex, int fotoId, int fotoIndex) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Eliminar Foto'),
-          content: Text('¿Estás seguro de que deseas eliminar esta foto?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _eliminarFotoMascota(context, publicacionIndex, fotoId, fotoIndex);
-              },
-              child: Text('Eliminar Foto'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _eliminarFotoMascota(BuildContext context, int publicacionIndex, int fotoId, int fotoIndex) async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
-        body: {
-          'accion': 'eliminarFotoMascota',
-          'foto_id': fotoId.toString(),
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success']) {
-          setState(() {
-            _misPublicaciones[publicacionIndex]['fotos'].removeAt(fotoIndex);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Foto eliminada con éxito')));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${data['error']}')));
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error en la conexión')));
-      }
-    } catch (e) {
-      print('Error al eliminar la foto: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar la foto')));
-    }
-  }
 
   Future<void> _agregarFotos(BuildContext context, int publicacionId, List<Uint8List> nuevasFotos) async {
     // Capturar en el ScaffoldMessenger antes de las operaciones asincrónicas
@@ -983,7 +877,9 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                   ),
                                                 ),
                                                 child: Text(
-                                                  _getEstadoTexto(publicacion['estado']),
+                                                  publicacion['estado_registro'] == 2
+                                                      ? 'Publicación Restringida'
+                                                      : _getEstadoTexto(publicacion['estado']),
                                                   style: TextStyle(color: Colors.white),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -993,132 +889,160 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                 top: 10,
                                                 child: PopupMenuButton<String>(
                                                   onSelected: (String result) {
-                                                    if (result == 'agregarFotos') {
-                                                      _mostrarModalAgregarFotos(context, publicacion['id']);
-                                                    } else if (result == 'cambiarEstado') {
-                                                      if (publicacion['estado'] == 'perdido') {
-                                                        _mostrarConfirmacionCambioEstado(
-                                                          publicacion['id'],
-                                                          'encontrado',
-                                                          'Confirmación',
-                                                          'Al aceptar, confirmarás que encontraste a tu mascota, ¿Es correcto?',
-                                                          publicacion['estado'], // Pasar el estado actual
-                                                        );
-                                                      } else if (publicacion['estado'] == 'encontrado') {
-                                                        _mostrarConfirmacionCambioEstado(
-                                                          publicacion['id'],
-                                                          'perdido',
-                                                          'Confirmación',
-                                                          'Si tu mascota se volvió a perder, actualiza los datos y acepta este mensaje para hacer pública la desaparición de tu mascota.',
-                                                          publicacion['estado'], // Pasar el estado actual
-                                                        );
-                                                      } else if (publicacion['estado'] == 'adopcion') {
-                                                        _mostrarConfirmacionCambioEstado(
-                                                          publicacion['id'],
-                                                          'pendiente',
-                                                          'Interés en la Mascota',
-                                                          '¿Está alguien interesado en adoptar a esta mascota? Al aceptar, cambiará el estado a pendiente.',
-                                                          publicacion['estado'], // Pasar el estado actual
-                                                        );
-                                                      } else if (publicacion['estado'] == 'pendiente') {
-                                                        _mostrarConfirmacionCambioEstado(
-                                                          publicacion['id'],
-                                                          'adoptado',
-                                                          'Confirmación de Adopción',
-                                                          '¿La mascota fue adoptada? Al aceptar, cambiará el estado a adoptado y no se podrá cambiar nuevamente.',
-                                                          publicacion['estado'], // Pasar el estado actual
-                                                        );
-                                                      }
-                                                    } else if (result == 'editar') {
+                                                    if (result == 'eliminar') {
+                                                      _confirmarEliminacionPublicacion(publicacion['id']);
+                                                    } else if (publicacion['estado_registro'] != 2) {
+                                                      if (result == 'agregarFotos') {
+                                                        _mostrarModalAgregarFotos(context, publicacion['id']);
+                                                      } else if (result == 'cambiarEstado') {
+                                                        // lógica para cambiar el estado
+                                                        if (publicacion['estado'] == 'perdido') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'encontrado',
+                                                            'Confirmación',
+                                                            'Al aceptar, confirmarás que encontraste a tu mascota, ¿Es correcto?',
+                                                            publicacion['estado'],
+                                                          );
+                                                        } else if (publicacion['estado'] == 'encontrado') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'perdido',
+                                                            'Confirmación',
+                                                            'Si tu mascota se volvió a perder, actualiza los datos y acepta este mensaje para hacer pública la desaparición de tu mascota.',
+                                                            publicacion['estado'],
+                                                          );
+                                                        } else if (publicacion['estado'] == 'adopcion') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'pendiente',
+                                                            'Interés en la Mascota',
+                                                            '¿Está alguien interesado en adoptar a esta mascota? Al aceptar, cambiará el estado a pendiente.',
+                                                            publicacion['estado'],
+                                                          );
+                                                        } else if (publicacion['estado'] == 'pendiente') {
+                                                          _mostrarConfirmacionCambioEstado(
+                                                            publicacion['id'],
+                                                            'adoptado',
+                                                            'Confirmación de Adopción',
+                                                            '¿La mascota fue adoptada? Al aceptar, cambiará el estado a adoptado y no se podrá cambiar nuevamente.',
+                                                            publicacion['estado'],
+                                                          );
+                                                        }
+                                                      } else if (result == 'editar') {
                                                         Navigator.of(context).push(
                                                           MaterialPageRoute(
                                                             builder: (context) => EditarPublicacionPage(
                                                               publicacion: publicacion,
-                                                              estado: publicacion['estado'], // Pasar el estado actual
+                                                              estado: publicacion['estado'],
                                                             ),
                                                           ),
                                                         );
-                                                      } else if (result == 'eliminar') {
-                                                      _confirmarEliminacionPublicacion(publicacion['id']);
+                                                      }
                                                     }
                                                   },
-                                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                                    PopupMenuItem<String>(
-                                                      value: 'agregarFotos',
-                                                      child: Text('Agregar Fotos'),
-                                                    ),
-                                                    PopupMenuItem<String>(
-                                                      value: 'cambiarEstado',
-                                                      child: Text('Perdido/Encontrado/Adopción'),
-                                                    ),
-                                                    PopupMenuItem<String>(
-                                                      value: 'editar',
-                                                      child: Text('Actualizar datos'),
-                                                    ),
-                                                    PopupMenuItem<String>(
-                                                      value: 'eliminar',
-                                                      child: Text('Eliminar publicación'),
-                                                    ),
-                                                  ],
+                                                  itemBuilder: (BuildContext context) {
+                                                    // Definir los elementos del menú según estado_registro
+                                                    if (publicacion['estado_registro'] == 2) {
+                                                      // Solo opción de eliminar si estado_registro es 2
+                                                      return <PopupMenuEntry<String>>[
+                                                        PopupMenuItem<String>(
+                                                          value: 'eliminar',
+                                                          child: Text('Eliminar publicación'),
+                                                        ),
+                                                      ];
+                                                    } else {
+                                                      // Opciones normales cuando estado_registro no es 2
+                                                      return <PopupMenuEntry<String>>[
+                                                        PopupMenuItem<String>(
+                                                          value: 'agregarFotos',
+                                                          child: Text('Agregar Fotos'),
+                                                        ),
+                                                        PopupMenuItem<String>(
+                                                          value: 'cambiarEstado',
+                                                          child: Text('Perdido/Encontrado/Adopción'),
+                                                        ),
+                                                        PopupMenuItem<String>(
+                                                          value: 'editar',
+                                                          child: Text('Actualizar datos'),
+                                                        ),
+                                                        PopupMenuItem<String>(
+                                                          value: 'eliminar',
+                                                          child: Text('Eliminar publicación'),
+                                                        ),
+                                                      ];
+                                                    }
+                                                  },
                                                   icon: Icon(Icons.more_vert),
                                                 ),
                                               ),
                                             ],
                                           ),
                                           Expanded(
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
-                                              child: fotos.isNotEmpty
-                                                  ? fotos.length > 1 
-                                                      ? CarouselSlider(
-                                                          options: CarouselOptions(
-                                                            height: MediaQuery.of(context).size.height * 0.25,
-                                                            viewportFraction: 1.0,
-                                                            enlargeCenterPage: false,
-                                                            enableInfiniteScroll: true,
-                                                            autoPlay: true,
-                                                          ),
-                                                          items: fotos.map((foto) {
-                                                            return AspectRatio(
-                                                              aspectRatio: 1.5,
-                                                              child: Image.network(
-                                                                'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
-                                                                fit: BoxFit.contain,
-                                                                errorBuilder: (context, error, stackTrace) {
-                                                                  return Icon(Icons.pets, size: 100, color: Colors.grey);
-                                                                },
-                                                              ),
-                                                            );
-                                                          }).toList(),
-                                                        )
-                                                      : AspectRatio(
-                                                          aspectRatio: 1.5,
-                                                          child: Image.network(
-                                                            'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
-                                                            fit: BoxFit.contain,
-                                                            errorBuilder: (context, error, stackTrace) {
-                                                              return Icon(Icons.pets, size: 100, color: Colors.grey);
-                                                            },
-                                                          ),
-                                                        )
-                                                  : Icon(Icons.pets, size: 100, color: Colors.grey),
-                                            ),
+                                            child: publicacion['estado_registro'] == 2
+                                                ? Padding(
+                                                    padding: const EdgeInsets.all(16.0),
+                                                    child: Center(
+                                                      child: Text(
+                                                        'Esta publicación fue eliminada por un administrador debido a contenido inapropiado.',
+                                                        style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : ClipRRect(
+                                                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+                                                    child: fotos.isNotEmpty
+                                                        ? fotos.length > 1
+                                                            ? CarouselSlider(
+                                                                options: CarouselOptions(
+                                                                  height: MediaQuery.of(context).size.height * 0.25,
+                                                                  viewportFraction: 1.0,
+                                                                  enlargeCenterPage: false,
+                                                                  enableInfiniteScroll: true,
+                                                                  autoPlay: true,
+                                                                ),
+                                                                items: fotos.map((foto) {
+                                                                  return AspectRatio(
+                                                                    aspectRatio: 1.5,
+                                                                    child: Image.network(
+                                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
+                                                                      fit: BoxFit.contain,
+                                                                      errorBuilder: (context, error, stackTrace) {
+                                                                        return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                                      },
+                                                                    ),
+                                                                  );
+                                                                }).toList(),
+                                                              )
+                                                            : AspectRatio(
+                                                                aspectRatio: 1.5,
+                                                                child: Image.network(
+                                                                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
+                                                                  fit: BoxFit.contain,
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                                  },
+                                                                ),
+                                                              )
+                                                        : Icon(Icons.pets, size: 100, color: Colors.grey),
+                                                  ),
                                           ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  publicacion['nombre'],
-                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                                ),
-                                                SizedBox(height: 5),
+                                          if (publicacion['estado_registro'] != 2)
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    publicacion['nombre'],
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                                  ),
+                                                  SizedBox(height: 5),
                                                   if (publicacion['estado'] == 'pendiente') ...[
                                                     Center(
                                                       child: ElevatedButton(
                                                         onPressed: () {
-                                                          // Lógica para mostrar la lista de interesados
                                                           _mostrarInteresados(publicacion['id']);
                                                         },
                                                         child: Text('Ver interesados'),
@@ -1145,9 +1069,9 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                 ],
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      );
+                                        ],
+                                      ),
+                                    );
                                   },
                                 );
                               },
@@ -1194,12 +1118,10 @@ Future<void> _mostrarInteresados(int idMascota) async {
                             if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
                               nombreCompleto += ' ${interesado['segundoApellido']}';
                             }
-
                             // Crear el link de WhatsApp
                             final whatsappUri = Uri.parse(
                               'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
                             );
-
                             return ListTile(
                               leading: Icon(Icons.person),
                               title: Text(nombreCompleto),
