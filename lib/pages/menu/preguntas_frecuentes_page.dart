@@ -40,6 +40,7 @@ class _PreguntasFrecuentesPageState extends State<PreguntasFrecuentesPage> {
         backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Row(

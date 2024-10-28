@@ -106,7 +106,8 @@ class _ModificarUsuarioPageState extends State<ModificarUsuarioPage> {
       appBar: AppBar(
         title: Text('Modificar Usuario'),
       ),
-      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(

@@ -3,7 +3,7 @@ import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/crear_publicacion_page.dart';
 import 'package:homecoming/pages/mascota.dart';
-import 'package:homecoming/pages/menu/galeriaMascotasAdopcion.dart';
+import 'package:homecoming/pages/menu/galeria_mascotas_adopcion.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/menu/modals.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
@@ -240,6 +240,7 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
         title: Text('Página Principal'),
       ),
       drawer: MenuWidget(usuario: usuario),
+      backgroundColor: Colors.green[50],
       body: SingleChildScrollView(
       child: Column(
         children: [

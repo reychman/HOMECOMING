@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/login/modificar_usuario_pague.dart';
+import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'usuario.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,95 +18,117 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
   List<Usuario> refugiosRechazados = [];
   String tipoVistaActual = '';
 
-  @override
+@override
   Widget build(BuildContext context) {
+    final arguments = ModalRoute.of(context)!.settings.arguments;
+    final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
     return Scaffold(
       appBar: AppBar(
-        title: Text('Administración de Usuarios'),
+        title: Text('ADMINISTRACIÓN DE USUARIOS'),
+        backgroundColor: Colors.green[200],
       ),
+      drawer: MenuWidget(usuario: usuario),
+      backgroundColor: Colors.green[50],
       body: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () => cargarUsuarios('propietario'),
-                child: Text('Ver Propietarios'),
-              ),
-              ElevatedButton(
-                onPressed: () => cargarUsuarios('administrador'),
-                child: Text('Ver Administradores'),
-              ),
-              ElevatedButton(
-                onPressed: () => cargarRefugios(),
-                child: Text('Ver Refugios'),
-              ),
-            ],
+          Container(
+            padding: EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: () => cargarUsuarios('propietario'),
+                  child: Text('VER PROPIETARIOS'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: () => cargarUsuarios('administrador'),
+                  child: Text('VER ADMINISTRADORES'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: () => cargarRefugios(),
+                  child: Text('VER REFUGIOS'),
+                ),
+              ],
+            ),
           ),
           Expanded(
-            child: tipoVistaActual == 'refugio' 
-              ? _construirVistasRefugios()
-              : _construirTablaUsuarios(),
+            child: Container(
+              padding: EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                child: tipoVistaActual == 'refugio' 
+                  ? _construirVistasRefugios()
+                  : _construirTablaUsuarios(),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
   Widget _construirVistasRefugios() {
     return SingleChildScrollView(
       child: Column(
         children: [
-          Text('Refugios Activos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          _construirTablaRefugios(refugiosActivos, true),
-          SizedBox(height: 20),
-          Text('Refugios Pendientes de Aprobación', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          _construirTablaRefugios(refugiosInactivos, false),
-          SizedBox(height: 20),
-          Text('Refugios Rechazados', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          _construirTablaRefugios(refugiosRechazados, false, esRechazado: true),
+          Container(
+            padding: EdgeInsets.all(16.0),
+            color: Colors.green[50],
+            child: Text(
+              'REFUGIOS ACTIVOS', 
+              style: TextStyle(
+                fontSize: 20, 
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: _construirTablaRefugios(refugiosActivos, true),
+          ),
+          Container(
+            padding: EdgeInsets.all(16.0),
+            color: Colors.green[50],
+            child: Text(
+              'REFUGIOS PENDIENTES DE APROBACIÓN', 
+              style: TextStyle(
+                fontSize: 20, 
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: _construirTablaRefugios(refugiosInactivos, false),
+          ),
+          Container(
+            padding: EdgeInsets.all(16.0),
+            color: Colors.green[50],
+            child: Text(
+              'REFUGIOS RECHAZADOS', 
+              style: TextStyle(
+                fontSize: 20, 
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: _construirTablaRefugios(refugiosRechazados, false, esRechazado: true),
+          ),
         ],
-      ),
-    );
-  }
-  Widget _construirTablaUsuarios() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: [
-          DataColumn(label: Text('#')),
-          DataColumn(label: Text('Nombre')),
-          DataColumn(label: Text('Primer Apellido')),
-          DataColumn(label: Text('Segundo Apellido')),
-          DataColumn(label: Text('Teléfono')),
-          DataColumn(label: Text('Email')),
-          DataColumn(label: Text('Tipo Usuario')),
-          DataColumn(label: Text('Acciones')),
-        ],
-        rows: usuarios.asMap().entries.map((entry) {
-          int idx = entry.key;
-          Usuario usuario = entry.value;
-          return DataRow(cells: [
-            DataCell(Text((idx + 1).toString())),
-            DataCell(Text(usuario.nombre)),
-            DataCell(Text(usuario.primerApellido)),
-            DataCell(Text(usuario.segundoApellido)),
-            DataCell(Text(usuario.telefono)),
-            DataCell(Text(usuario.email)),
-            DataCell(Text(usuario.tipoUsuario ?? 'Sin tipo')),
-            DataCell(Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () => _editarUsuario(usuario),
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () => _confirmarEliminacion(usuario),
-                ),
-              ],
-            )),
-          ]);
-        }).toList(),
       ),
     );
   }
@@ -114,59 +137,129 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        headingRowColor: WidgetStateProperty.all(Colors.green[100]),
         columns: [
-          DataColumn(label: Text('#')),
-          DataColumn(label: Text('Nombre')),
-          DataColumn(label: Text('Primer Apellido')),
-          DataColumn(label: Text('Segundo Apellido')),
-          DataColumn(label: Text('Teléfono')),
-          DataColumn(label: Text('Email')),
-          DataColumn(label: Text('Tipo Usuario')),
-          DataColumn(label: Text('Nombre Refugio')),
-          DataColumn(label: Text('Email Refugio')),
-          DataColumn(label: Text('Ubicación Refugio')),
-          DataColumn(label: Text('Teléfono Refugio')),
-          if (!esRechazado) DataColumn(label: Text('Acciones')),
+          DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('NOMBRE COMPLETO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('TELÉFONOS', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('EMAILS', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('TIPO USUARIO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('NOMBRE REFUGIO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('UBICACIÓN REFUGIO', style: TextStyle(fontWeight: FontWeight.bold))),
+          if (!esRechazado) DataColumn(label: Text('ACCIONES', style: TextStyle(fontWeight: FontWeight.bold))),
         ],
         rows: refugios.asMap().entries.map((entry) {
           int idx = entry.key;
           Usuario refugio = entry.value;
-          return DataRow(cells: [
-            DataCell(Text((idx + 1).toString())),
-            DataCell(Text(refugio.nombre)),
-            DataCell(Text(refugio.primerApellido)),
-            DataCell(Text(refugio.segundoApellido)),
-            DataCell(Text(refugio.telefono)),
-            DataCell(Text(refugio.email)),
-            DataCell(Text(refugio.tipoUsuario ?? 'Sin tipo')),
-            DataCell(Text(refugio.nombreRefugio ?? '')),
-            DataCell(Text(refugio.emailRefugio ?? '')),
-            DataCell(Text(refugio.ubicacionRefugio ?? '')),
-            DataCell(Text(refugio.telefonoRefugio ?? '')),
-            if (!esRechazado) DataCell(Row(
-              children: esActivo
-                ? [
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () => _editarUsuario(refugio),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _confirmarEliminacion(refugio),
-                    ),
-                  ]
-                : [
-                    IconButton(
-                      icon: Icon(Icons.check),
-                      onPressed: () => _aprobarRefugio(refugio),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.cancel),
-                      onPressed: () => _rechazarRefugio(refugio),
-                    ),
-                  ],
-            )),
-          ]);
+          // Concatenación de nombre completo
+          String nombreCompleto = '${refugio.nombre} ${refugio.primerApellido} ${refugio.segundoApellido}';
+          // Concatenación de emails con salto de línea
+          String emails = '${refugio.email}\n${refugio.emailRefugio ?? ''}';
+          String telefonos = '${refugio.telefono}\n${refugio.telefonoRefugio  ?? ''}';
+          return DataRow(
+            color: WidgetStateProperty.resolveWith<Color?>(
+              (Set<WidgetState> states) {
+                if (states.contains(WidgetState.hovered)) return Colors.green[50];
+                return null;
+              },
+            ),
+            cells: [
+              DataCell(Text((idx + 1).toString())),
+              DataCell(Text(nombreCompleto.toUpperCase())),
+              DataCell(
+                Text(
+                  telefonos,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              DataCell(
+                Text(
+                  emails,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              DataCell(Text((refugio.tipoUsuario ?? 'Sin tipo').toUpperCase())),
+              DataCell(Text((refugio.nombreRefugio ?? '').toUpperCase())),
+              DataCell(Text((refugio.ubicacionRefugio ?? '').toUpperCase())),
+              if (!esRechazado)
+                DataCell(Row(
+                  children: esActivo
+                      ? [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.green),
+                            onPressed: () => _editarUsuario(refugio),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _confirmarEliminacion(refugio),
+                          ),
+                        ]
+                      : [
+                          IconButton(
+                            icon: Icon(Icons.check, color: Colors.green),
+                            onPressed: () => _aprobarRefugio(refugio),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.cancel, color: Colors.red),
+                            onPressed: () => _rechazarRefugio(refugio),
+                          ),
+                        ],
+                )),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _construirTablaUsuarios() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowColor: WidgetStateProperty.all(Colors.green[100]),
+        columns: [
+          DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('NOMBRE COMPLETO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('TELÉFONO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('EMAIL', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('TIPO USUARIO', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('ACCIONES', style: TextStyle(fontWeight: FontWeight.bold))),
+        ],
+        rows: usuarios.asMap().entries.map((entry) {
+          Usuario usuario = entry.value;
+          String nombreCompleto = '${usuario.nombre} ${usuario.primerApellido} ${usuario.segundoApellido}';
+          int idx = entry.key;
+          return DataRow(
+            color: WidgetStateProperty.resolveWith<Color?>(
+              (Set<WidgetState> states) {
+                if (states.contains(WidgetState.hovered)) return Colors.green[50];
+                return null;
+              },
+            ),
+            cells: [
+              DataCell(Text((idx + 1).toString())),
+              DataCell(Text(nombreCompleto.toUpperCase())),
+              DataCell(Text(usuario.telefono.toUpperCase())),
+              DataCell(Text(usuario.email)),
+              DataCell(Text((usuario.tipoUsuario ?? 'Sin tipo').toUpperCase())),
+              DataCell(Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Colors.green),
+                    onPressed: () => _editarUsuario(usuario),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _confirmarEliminacion(usuario),
+                  ),
+                ],
+              )),
+            ],
+          );
         }).toList(),
       ),
     );
@@ -200,6 +293,7 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
       });
     }
   }
+
   void _editarUsuario(Usuario usuario) async {
     final result = await Navigator.push(
       context,
@@ -248,33 +342,33 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     );
   }
 
-void _aprobarRefugio(Usuario refugio) async {
-  try {
-    Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(1);
-    if (result['success'] == true) {
-      _mostrarMensaje('Refugio aprobado con éxito');
-      _actualizarListas();
-    } else {
-      _mostrarMensaje('Error al aprobar refugio: ${result['message']}', esError: true);
+  void _aprobarRefugio(Usuario refugio) async {
+    try {
+      Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(1);
+      if (result['success'] == true) {
+        _mostrarMensaje('Refugio aprobado con éxito');
+        _actualizarListas();
+      } else {
+        _mostrarMensaje('Error al aprobar refugio: ${result['message']}', esError: true);
+      }
+    } catch (e) {
+      _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
     }
-  } catch (e) {
-    _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
   }
-}
 
-void _rechazarRefugio(Usuario refugio) async {
-  try {
-    Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(2);
-    if (result['success'] == true) {
-      _mostrarMensaje('Refugio rechazado con éxito');
-      _actualizarListas();
-    } else {
-      _mostrarMensaje('Error al rechazar refugio: ${result['message']}', esError: true);
+  void _rechazarRefugio(Usuario refugio) async {
+    try {
+      Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(2);
+      if (result['success'] == true) {
+        _mostrarMensaje('Refugio rechazado con éxito');
+        _actualizarListas();
+      } else {
+        _mostrarMensaje('Error al rechazar refugio: ${result['message']}', esError: true);
+      }
+    } catch (e) {
+      _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
     }
-  } catch (e) {
-    _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
   }
-}
 
   void _mostrarMensaje(String mensaje, {bool esError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -294,4 +388,3 @@ void _rechazarRefugio(Usuario refugio) async {
     }
   }
 }
-

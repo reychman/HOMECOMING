@@ -72,7 +72,8 @@ Future<void> _updateUser() async {
       appBar: AppBar(
         title: Text('Editar Perfil'),
       ),
-      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

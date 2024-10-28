@@ -750,6 +750,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
         title: Text('Perfil'),
       ),
       drawer: MenuWidget(usuario: _usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: _usuario == null
           ? Center(child: CircularProgressIndicator())
           : LayoutBuilder(

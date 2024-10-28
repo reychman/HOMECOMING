@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/menu/api_servicio.dart';
@@ -39,6 +38,7 @@ class _ReportesPageState extends State<ReportesPage> {
         backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

@@ -100,6 +100,7 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
         backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario),
+      backgroundColor: Colors.green[50],
       body: Column(
         children: [
           Padding(

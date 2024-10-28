@@ -22,6 +22,7 @@ class QuienesSomosPage extends StatelessWidget {
         backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: SingleChildScrollView(
         child: Column(
           children: [

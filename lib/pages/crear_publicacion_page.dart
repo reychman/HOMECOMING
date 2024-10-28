@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/menu/home_page.dart';
+import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_cropper/image_cropper.dart';
@@ -338,6 +339,8 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
 
 @override
 Widget build(BuildContext context) {
+  final arguments = ModalRoute.of(context)!.settings.arguments;
+  final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
   return Scaffold(
     appBar: AppBar(
       title: Text(
@@ -346,6 +349,8 @@ Widget build(BuildContext context) {
       ),
       backgroundColor: Colors.green[200], // Color de fondo del AppBar
     ),
+    drawer: MenuWidget(usuario: usuario),
+    backgroundColor: Colors.green[50],
     body: IndexedStack(
       index: _currentIndex,
       children: [

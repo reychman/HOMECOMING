@@ -405,7 +405,8 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
         title: Text('Crear Usuario'),
         backgroundColor: Colors.orange[200],
       ),
-      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()), 
+      drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
+      backgroundColor: Colors.green[50],
       body: Stepper(
         currentStep: _currentStep,
         onStepContinue: _nextStep,
