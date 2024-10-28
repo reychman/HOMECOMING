@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/menu/api_servicio.dart';
@@ -169,74 +170,140 @@ class _ReportesPageState extends State<ReportesPage> {
     }
   }
 
-Widget _buildReporteGeneral() {
-  return Column(
-    children: [
-      Expanded(
-        child: SingleChildScrollView(
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('Métrica')),
-              DataColumn(label: Text('Cantidad')),
-            ],
-            rows: [
-              DataRow(cells: [
-                DataCell(Text('Mascotas Perdidas')),
-                DataCell(Text('${_reporteData['mascotas_perdidas'] ?? 0}')),
-              ]),
-              DataRow(cells: [
-                DataCell(Text('Mascotas Encontradas')),
-                DataCell(Text('${_reporteData['mascotas_encontradas'] ?? 0}')),
-              ]),
-              DataRow(cells: [
-                DataCell(Text('Mascotas en Adopción')),
-                DataCell(Text('${_reporteData['mascotas_adopcion'] ?? 0}')),
-              ]),
-              DataRow(cells: [
-                DataCell(Text('Usuarios Administradores')),
-                DataCell(Text('${_reporteData['usuarios_administradores'] ?? 0}')),
-              ]),
-              DataRow(cells: [
-                DataCell(Text('Usuarios Propietarios')),
-                DataCell(Text('${_reporteData['usuarios_propietarios'] ?? 0}')),
-              ]),
-              DataRow(cells: [
-                DataCell(Text('Usuarios Refugios')),
-                DataCell(Text('${_reporteData['usuarios_refugios'] ?? 0}')),
-              ]),
-            ],
+  Widget _buildReporteGeneral() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(Colors.green[100]),
+                  dataRowColor: WidgetStateProperty.all(Colors.white),
+                  columns: const [
+                    DataColumn(
+                      label: Text(
+                        'MÉTRICA',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'CANTIDAD',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                  rows: [
+                    DataRow(cells: [
+                      DataCell(Text('MASCOTAS PERDIDAS')),
+                      DataCell(Text('${_reporteData['mascotas_perdidas'] ?? 0}')),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('MASCOTAS ENCONTRADAS')),
+                      DataCell(Text('${_reporteData['mascotas_encontradas'] ?? 0}')),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('MASCOTAS EN ADOPCIÓN')),
+                      DataCell(Text('${_reporteData['mascotas_adopcion'] ?? 0}')),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('USUARIOS ADMINISTRADORES')),
+                      DataCell(Text('${_reporteData['usuarios_administradores'] ?? 0}')),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('USUARIOS PROPIETARIOS')),
+                      DataCell(Text('${_reporteData['usuarios_propietarios'] ?? 0}')),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('USUARIOS REFUGIOS')),
+                      DataCell(Text('${_reporteData['usuarios_refugios'] ?? 0}')),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-      ),
-      _buildDownloadButton(),
-    ],
-  );
-}
+        _buildDownloadButton(),
+      ],
+    );
+  }
 
   Widget _buildReporteMascotasPerdidas() {
     return Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
-            child: DataTable(
-              columns: [
-                DataColumn(label: Text('Mascota')),
-                DataColumn(label: Text('Especie')),
-                DataColumn(label: Text('Raza')),
-                DataColumn(label: Text('Fecha Pérdida')),
-                DataColumn(label: Text('Propietario')),
-                DataColumn(label: Text('Contacto')),
-              ],
-              rows: (_reporteData['mascotas'] as List).map<DataRow>((mascota) {
-                return DataRow(cells: [
-                  DataCell(Text(mascota['nombre'])),
-                  DataCell(Text(mascota['especie'])),
-                  DataCell(Text(mascota['raza'])),
-                  DataCell(Text(DateFormat('yyyy-MM-dd').format(DateTime.parse(mascota['fecha_perdida'])))),
-                  DataCell(Text('${mascota['nombre_propietario']} ${mascota['primerApellido']}')),
-                  DataCell(Text(mascota['telefono'])),
-                ]);
-              }).toList(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(Colors.green[100]),
+                        dataRowColor: WidgetStateProperty.all(Colors.white),
+                        columnSpacing: 20.0, // Reduced spacing between columns
+                        columns: const [
+                          DataColumn(
+                              label: Text('MASCOTA',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('ESPECIE',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('RAZA',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('FECHA',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('PROPIETARIO',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('CONTACTO',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                        rows: (_reporteData['mascotas'] as List).map<DataRow>((mascota) {
+                          return DataRow(cells: [
+                            DataCell(Text(toUpperCase(mascota['nombre']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['especie']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['raza']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(
+                                toUpperCase(DateFormat('yyyy-MM-dd')
+                                    .format(DateTime.parse(mascota['fecha_perdida']))),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(
+                                toUpperCase(
+                                    '${mascota['nombre_propietario']} ${mascota['primerApellido']}'),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['telefono']),
+                                style: const TextStyle(fontSize: 13))),
+                          ]);
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -250,86 +317,156 @@ Widget _buildReporteGeneral() {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            child: DataTable(
-              columns: const [
-                DataColumn(
-                  label: Text('Mascota',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Especie',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Raza',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Reportado Por',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Contacto',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-              rows: (_reporteData['mascotas'] as List? ?? []).map<DataRow>((mascota) {
-                return DataRow(
-                  cells: [
-                    DataCell(Text(mascota['nombre'] ?? '')),
-                    DataCell(Text(mascota['especie'] ?? '')),
-                    DataCell(Text(mascota['raza'] ?? '')),
-                    DataCell(Text('${mascota['nombre_encontrador'] ?? ''} ${mascota['primerApellido'] ?? ''}')),
-                    DataCell(Text(mascota['telefono'] ?? '')),
-                  ],
-                );
-              }).toList(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(Colors.green[100]),
+                        dataRowColor: WidgetStateProperty.all(Colors.white),
+                        columnSpacing: 20.0,
+                        columns: const [
+                          DataColumn(
+                              label: Text('MASCOTA',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('ESPECIE',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('RAZA',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('REPORTADO POR',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('CONTACTO',
+                                  style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                        rows: (_reporteData['mascotas'] as List? ?? [])
+                            .map<DataRow>((mascota) {
+                          return DataRow(cells: [
+                            DataCell(Text(toUpperCase(mascota['nombre']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['especie']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['raza']),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(
+                                toUpperCase(
+                                    '${mascota['nombre_encontrador']} ${mascota['primerApellido']}'),
+                                style: const TextStyle(fontSize: 13))),
+                            DataCell(Text(toUpperCase(mascota['telefono']),
+                                style: const TextStyle(fontSize: 13))),
+                          ]);
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
         _buildDownloadButton(),
       ],
     );
   }
 
   Widget _buildReporteAdopciones() {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: DataTable(
-              columns: [
-                DataColumn(label: Text('Refugio')),
-                DataColumn(label: Text('Mascota')),
-                DataColumn(label: Text('Especie')),
-                DataColumn(label: Text('Ubicación')),
-                DataColumn(label: Text('Contacto')),
-              ],
-              rows: (_reporteData['adopciones'] as List).map<DataRow>((adopcion) {
-                return DataRow(cells: [
-                  DataCell(Text(adopcion['nombreRefugio'])),
-                  DataCell(Text(adopcion['nombre_mascota'])),
-                  DataCell(Text(adopcion['especie'])),
-                  DataCell(Text(adopcion['ubicacionRefugio'])),
-                  DataCell(Text(adopcion['telefonoRefugio'])),
-                ]);
-              }).toList(),
+  return Column(
+    children: [
+      Expanded(
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                    ),
+                    child: DataTable(
+                      headingRowColor: WidgetStateProperty.all(Colors.green[100]),
+                      dataRowColor: WidgetStateProperty.all(Colors.white),
+                      columnSpacing: 20.0,
+                      columns: const [
+                        DataColumn(
+                            label: Text('REFUGIO',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('MASCOTA',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('ESPECIE',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('UBICACIÓN',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('CONTACTO',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                      rows: (_reporteData['adopciones'] as List).map<DataRow>((adopcion) {
+                        return DataRow(cells: [
+                          DataCell(Text(toUpperCase(adopcion['nombreRefugio']),
+                              style: const TextStyle(fontSize: 13))),
+                          DataCell(Text(toUpperCase(adopcion['nombre_mascota']),
+                              style: const TextStyle(fontSize: 13))),
+                          DataCell(Text(toUpperCase(adopcion['especie']),
+                              style: const TextStyle(fontSize: 13))),
+                          DataCell(Text(toUpperCase(adopcion['ubicacionRefugio']),
+                              style: const TextStyle(fontSize: 13))),
+                          DataCell(Text(toUpperCase(adopcion['telefonoRefugio']),
+                              style: const TextStyle(fontSize: 13))),
+                        ]);
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
-        _buildDownloadButton(),
-      ],
-    );
-  }
+      ),
+      _buildDownloadButton(),
+    ],
+  );
+}
 
   Widget _buildDownloadButton() {
-    return ElevatedButton(
-      onPressed: () => _generarPDF(),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.green[400],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: ElevatedButton.icon(
+        onPressed: () => _generarPDF(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green[400],
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        icon: const Icon(Icons.download),
+        label: const Text(
+          'Descargar PDF',
+          style: TextStyle(fontSize: 16),
+        ),
       ),
-      child: Text('Descargar PDF'),
     );
   }
 
@@ -605,7 +742,7 @@ Future<void> _generarPDF() async {
     ];
 
     widgets.add(
-      pw.Table.fromTextArray(
+      pw.TableHelper.fromTextArray(
         context: null,
         data: tableData,
         headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
