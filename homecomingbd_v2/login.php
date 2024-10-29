@@ -14,7 +14,8 @@ if (isset($input['nombre']) && isset($input['contrasena'])) {
     error_log("Nombre recibido: $nombre");
     error_log("Contraseña recibida: $contrasena");
 
-    $query = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ? AND estado = 1";
+    // Primero verificamos si el usuario existe y obtenemos sus datos
+    $query = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ?";
     $stmt = $conexion->prepare($query);
     $stmt->bind_param('ss', $nombre, $contrasena);
     $stmt->execute();
@@ -22,7 +23,17 @@ if (isset($input['nombre']) && isset($input['contrasena'])) {
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-        echo json_encode($user);
+        
+        // Verificamos el estado del usuario
+        if ($user['estado'] == 0) {
+            echo json_encode([
+                'error' => 'cuenta_inactiva',
+                'message' => 'Tu cuenta está inactiva. Por favor, activa tu cuenta para continuar.'
+            ]);
+        } else {
+            // Si la cuenta está activa, devolvemos los datos del usuario
+            echo json_encode($user);
+        }
     } else {
         echo json_encode(['error' => 'Nombre de usuario o contraseña incorrectos.']);
     }

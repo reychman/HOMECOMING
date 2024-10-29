@@ -43,26 +43,43 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
     }
   }
 
+  // Modifica el método login() en iniciar_sesion_page.dart
   Future<void> login() async {
-    Usuario? usuarioLogeado = await Usuario.iniciarSesion(controllerUser.text, controllerPass.text);
+    try {
+      Usuario? usuarioLogeado = await Usuario.iniciarSesion(
+          controllerUser.text, controllerPass.text);
 
-    if (usuarioLogeado != null && usuarioLogeado.id != null) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('usuario_id', usuarioLogeado.id!);
-      await prefs.setBool('isLoggedIn', true);
+      if (usuarioLogeado != null) {
+        // El usuario existe, ahora verificamos su estado
+        if (usuarioLogeado.estado == 0) {
+          setState(() {
+            mensaje = 'Tu cuenta está inactiva. Por favor, activa tu cuenta para continuar.';
+          });
+          return;
+        }
 
-      // Almacenar la foto de perfil en SharedPreferences
-      await prefs.setString('foto_perfil', usuarioLogeado.fotoPortada ?? '');
+        // Si llegamos aquí, la cuenta está activa
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('usuario_id', usuarioLogeado.id!);
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('foto_perfil', usuarioLogeado.fotoPortada ?? '');
 
-      // Configurar el usuario en el estado global usando Provider
-      Provider.of<UsuarioProvider>(context, listen: false).setUsuario(usuarioLogeado);
+        // Configurar el usuario en el estado global
+        Provider.of<UsuarioProvider>(context, listen: false)
+            .setUsuario(usuarioLogeado);
 
-      // Navegar a la página de inicio
-      Navigator.of(context).pushReplacementNamed('/inicio');
-    } else {
+        // Navegar a la página de inicio
+        Navigator.of(context).pushReplacementNamed('/inicio');
+      } else {
+        setState(() {
+          mensaje = 'Nombre de usuario o contraseña incorrectos.';
+        });
+      }
+    } catch (e) {
       setState(() {
-        mensaje = 'Nombre de usuario o contraseña incorrectos.';
+        mensaje = 'Error al intentar iniciar sesión. Por favor, intenta de nuevo.';
       });
+      print('Error durante el login: $e');
     }
   }
 
@@ -73,7 +90,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inicio de Sesión'),
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
       body: Container(
@@ -102,24 +119,24 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircleAvatar(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Colors.lightGreen,
                         radius: 50.0,
                         child: Icon(Icons.person, size: 50.0, color: Colors.white),
                       ),
                       const SizedBox(height: 20.0),
                       const Text(
                         'Inicio de Sesión',
-                        style: TextStyle(fontSize: 26.0, color: Colors.orange),
+                        style: TextStyle(fontSize: 26.0, color: Colors.lightGreen),
                       ),
                       const SizedBox(height: 20.0),
                       TextField(
                         key: const Key('usernameField'),
                         controller: controllerUser,
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.person, color: Colors.orange),
+                          prefixIcon: const Icon(Icons.person, color: Colors.lightGreen),
                           hintText: 'Nombre de usuario',
                           filled: true,
-                          fillColor: Colors.orange.withOpacity(0.1),
+                          fillColor: Colors.green.withOpacity(0.1),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(25.0),
                             borderSide: BorderSide.none,
@@ -132,10 +149,10 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                         controller: controllerPass,
                         obscureText: !_contrasenaVisible,
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.lock, color: Colors.orange),
+                          prefixIcon: const Icon(Icons.lock, color: Colors.lightGreen),
                           hintText: 'Contraseña',
                           filled: true,
-                          fillColor: Colors.orange.withOpacity(0.1),
+                          fillColor: Colors.green.withOpacity(0.1),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(25.0),
                             borderSide: BorderSide.none,
@@ -143,7 +160,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _contrasenaVisible ? Icons.visibility : Icons.visibility_off,
-                              color: Colors.orange,
+                              color: Colors.lightGreen,
                             ),
                             onPressed: () {
                               setState(() {
@@ -167,7 +184,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
+                            backgroundColor: Colors.green[200],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25.0),
                             ),
@@ -188,7 +205,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                         },
                         child: const Text(
                           '¿Olvidaste tu contraseña?',
-                          style: TextStyle(color: Colors.orange),
+                          style: TextStyle(color: Colors.green),
                         ),
                       ),
                       const SizedBox(height: 10.0),
@@ -198,7 +215,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                         },
                         child: const Text(
                           'Crear una cuenta',
-                          style: TextStyle(color: Colors.orange),
+                          style: TextStyle(color: Colors.green),
                         ),
                       ),
                     ],

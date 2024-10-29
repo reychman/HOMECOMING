@@ -65,7 +65,7 @@ if ($stmt->num_rows > 0) {
 if ($tipo_usuario == 'propietario') {
     // Si es un propietario, el estado es 1 (activo)
     $sql = "INSERT INTO Usuarios (nombre, primerApellido, segundoApellido, telefono, email, contrasena, tipo_usuario, fecha_creacion, estado) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, Now(), 1)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, Now(), 0)";
     $stmt = $conexion->prepare($sql);
 
     if (!$stmt) {

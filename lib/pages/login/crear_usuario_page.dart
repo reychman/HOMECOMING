@@ -31,14 +31,90 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
   String mensaje = "";
   Usuario? usuario;
   int _currentStep = 0;
+  bool _validateCurrentStep() {
+    setState(() {
+      mensaje = "";
+    });
+
+    switch (_currentStep) {
+      case 0: // Paso 1: Información Personal
+        if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty) {
+          setState(() {
+            mensaje = "El nombre y primer apellido son obligatorios";
+          });
+          return false;
+        }
+        break;
+
+      case 1: // Paso 2: Contacto
+        if (telefonoController.text.isEmpty || emailController.text.isEmpty) {
+          setState(() {
+            mensaje = "El teléfono y email son obligatorios";
+          });
+          return false;
+        }
+        // Validación básica de email
+        if (!emailController.text.contains('@') || !emailController.text.contains('.')) {
+          setState(() {
+            mensaje = "Por favor, ingrese un email válido";
+          });
+          return false;
+        }
+        break;
+
+      case 2: // Paso 3: Contraseña
+        if (contrasenaController.text.isEmpty || verificarContrasenaController.text.isEmpty) {
+          setState(() {
+            mensaje = "Ambas contraseñas son obligatorias";
+          });
+          return false;
+        }
+        if (contrasenaController.text.length < 6 || verificarContrasenaController.text.length < 6) {
+          setState(() {
+            mensaje = "Las contraseñas deben tener al menos 6 caracteres";
+          });
+          return false;
+        }
+        if (contrasenaController.text != verificarContrasenaController.text) {
+          setState(() {
+            mensaje = "Las contraseñas no coinciden";
+          });
+          return false;
+        }
+        break;
+
+      case 3: // Paso 4: Tipo de Usuario
+        if (tipoUsuario == null) {
+          setState(() {
+            mensaje = "Debe seleccionar un tipo de usuario";
+          });
+          return false;
+        }
+        if (tipoUsuario == 'refugio') {
+          if (nombreRefugioController.text.isEmpty || 
+              emailRefugioController.text.isEmpty || 
+              ubicacionRefugioController.text.isEmpty || 
+              telefonoRefugioController.text.isEmpty) {
+            setState(() {
+              mensaje = "Todos los campos del refugio son obligatorios";
+            });
+            return false;
+          }
+        }
+        break;
+    }
+    return true;
+  }
 
   // Método para avanzar de paso
-  void _nextStep() {
-    setState(() {
-      if (_currentStep < 3) {
-        _currentStep++;
-      }
-    });
+void _nextStep() {
+    if (_validateCurrentStep()) {
+      setState(() {
+        if (_currentStep < 3) {
+          _currentStep++;
+        }
+      });
+    }
   }
 
   // Método para retroceder de paso
@@ -52,92 +128,72 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
 
   // Método para validar y crear un usuario o refugio
   Future<void> crearUsuario() async {
-    // Validaciones de campos obligatorios
-    if (nombreController.text.isEmpty || primerApellidoController.text.isEmpty || telefonoController.text.isEmpty || emailController.text.isEmpty || contrasenaController.text.isEmpty ||
-        verificarContrasenaController.text.isEmpty || tipoUsuario == null) {
-      setState(() {
-        mensaje = "Todos los campos son obligatorios";
-      });
-      return;
-    }
-
-    // Validaciones adicionales si se selecciona refugio
-    if (tipoUsuario == 'refugio') {
-      if (nombreRefugioController.text.isEmpty || emailRefugioController.text.isEmpty || ubicacionRefugioController.text.isEmpty || telefonoRefugioController.text.isEmpty) {
-        setState(() {
-          mensaje = "Todos los campos de refugio son obligatorios";
-        });
-        return;
-      }
-    }
-
-    // Validaciones de longitud de contraseña
-    if (contrasenaController.text.length < 6 || verificarContrasenaController.text.length < 6) {
-      setState(() {
-        mensaje = "Las contraseñas deben tener al menos 6 caracteres";
-      });
-      return;
-    }
-
-    // Validaciones de coincidencia de contraseñas
-    if (contrasenaController.text != verificarContrasenaController.text) {
-      setState(() {
-        mensaje = "Verifique que ambas contraseñas sean iguales";
-      });
+    if (!_validateCurrentStep()) {
       return;
     }
 
     // Encriptar contraseña con SHA-1
     final passwordHash = sha1.convert(utf8.encode(contrasenaController.text)).toString();
 
-    if (tipoUsuario == 'propietario') {
-      // Lógica para crear un usuario propietario (estado normal)
-      Usuario nuevoUsuario = Usuario(
-        nombre: nombreController.text.toUpperCase(),
-        primerApellido: primerApellidoController.text.toUpperCase(),
-        segundoApellido: segundoApellidoController.text.toUpperCase(),
-        telefono: telefonoController.text,
-        email: emailController.text,
-        contrasena: passwordHash,
-        tipoUsuario: tipoUsuario!,
-      );
+    try {
+      if (tipoUsuario == 'propietario') {
+        Usuario nuevoUsuario = Usuario(
+          nombre: nombreController.text.toUpperCase(),
+          primerApellido: primerApellidoController.text.toUpperCase(),
+          segundoApellido: segundoApellidoController.text.toUpperCase(),
+          telefono: telefonoController.text,
+          email: emailController.text,
+          contrasena: passwordHash,
+          tipoUsuario: tipoUsuario!,
+        );
 
-      bool success = await Usuario.createUsuario(nuevoUsuario);
+        bool success = await Usuario.createUsuario(nuevoUsuario);
+        if (success) {
+          bool emailSent = await enviarCorreoVerificacion(emailController.text);
+          if (emailSent) {
+            mostrarDialogoExito();
+          } else {
+            mostrarMensajeError("Usuario creado pero hubo un problema al enviar el correo de verificación");
+          }
+        } else {
+          mostrarMensajeError("Error al crear el usuario. Por favor, intente nuevamente");
+        }
+      } else if (tipoUsuario == 'refugio') {
+        Usuario nuevoRefugio = Usuario(
+          nombre: nombreController.text.toUpperCase(),
+          primerApellido: primerApellidoController.text.toUpperCase(),
+          segundoApellido: segundoApellidoController.text.toUpperCase(),
+          telefono: telefonoController.text,
+          email: emailController.text,
+          contrasena: passwordHash,
+          tipoUsuario: tipoUsuario!,
+          estado: 0,
+          nombreRefugio: nombreRefugioController.text.toUpperCase(),
+          emailRefugio: emailRefugioController.text,
+          ubicacionRefugio: ubicacionRefugioController.text.toUpperCase(),
+          telefonoRefugio: telefonoRefugioController.text,
+        );
 
-      if (success) {
-        mostrarDialogoExito();
-      } else {
-        setState(() {
-          mensaje = "Error al crear el usuario";
-        });
+        bool success = await Usuario.createUsuario(nuevoRefugio);
+        if (success) {
+          mostrarDialogoRevision();
+        } else {
+          mostrarMensajeError("Error al crear el refugio. Por favor, intente nuevamente");
+        }
       }
-    } else if (tipoUsuario == 'refugio') {
-      // Lógica para crear un refugio con estado 0 (inactivo)
-      Usuario nuevoRefugio = Usuario(
-        nombre: nombreController.text.toUpperCase(),
-        primerApellido: primerApellidoController.text.toUpperCase(),
-        segundoApellido: segundoApellidoController.text.toUpperCase(),
-        telefono: telefonoController.text,
-        email: emailController.text,
-        contrasena: passwordHash,
-        tipoUsuario: tipoUsuario!,
-        estado: 0, // Estado inactivo
-        nombreRefugio: nombreRefugioController.text.toUpperCase(),
-        emailRefugio: emailRefugioController.text,
-        ubicacionRefugio: ubicacionRefugioController.text.toUpperCase(),
-        telefonoRefugio: telefonoRefugioController.text,
-      );
-
-      bool success = await Usuario.createUsuario(nuevoRefugio);
-
-      if (success) {
-        mostrarDialogoRevision();
-      } else {
-        setState(() {
-          mensaje = "Error al crear el refugio";
-        });
-      }
+    } catch (e) {
+      mostrarMensajeError("Ocurrió un error inesperado. Por favor, intente nuevamente");
     }
+  }
+
+  void mostrarMensajeError(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   // Mostrar el mensaje de cuenta en revisión para refugios
@@ -212,7 +268,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Nombre',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
             SizedBox(height: 10.0),
@@ -222,7 +277,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Primer Apellido',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
             SizedBox(height: 10.0),
@@ -232,7 +286,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Segundo Apellido (Opcional)',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
           ],
@@ -249,7 +302,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Teléfono',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
             SizedBox(height: 10.0),
@@ -259,7 +311,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Email',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
           ],
@@ -277,11 +328,10 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Contraseña',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _contrasenaVisible1 ? Icons.visibility : Icons.visibility_off,
-                    color: Colors.orange,
+                    color: Colors.green,
                   ),
                   onPressed: () {
                     setState(() {
@@ -299,11 +349,10 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Verificar Contraseña',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _contrasenaVisible2 ? Icons.visibility : Icons.visibility_off,
-                    color: Colors.orange,
+                    color: Colors.green,
                   ),
                   onPressed: () {
                     setState(() {
@@ -340,7 +389,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                 labelText: 'Tipo de Usuario',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.1),
               ),
             ),
             if (tipoUsuario == 'refugio') ...[
@@ -351,7 +399,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                   labelText: 'Nombre del Refugio',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.orange.withOpacity(0.1),
                 ),
               ),
               SizedBox(height: 10.0),
@@ -361,7 +408,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                   labelText: 'Email del Refugio',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.orange.withOpacity(0.1),
                 ),
               ),
               SizedBox(height: 10.0),
@@ -371,7 +417,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                   labelText: 'Ubicación del Refugio',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.orange.withOpacity(0.1),
                 ),
               ),
               SizedBox(height: 10.0),
@@ -381,7 +426,6 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
                   labelText: 'Teléfono del Refugio',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.orange.withOpacity(0.1),
                 ),
               ),
             ],
@@ -403,31 +447,48 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Crear Usuario'),
-        backgroundColor: Colors.orange[200],
+        backgroundColor: Colors.green[200],
       ),
       drawer: MenuWidget(usuario: usuario ?? Usuario.vacio()),
       backgroundColor: Colors.green[50],
-      body: Stepper(
-        currentStep: _currentStep,
-        onStepContinue: _nextStep,
-        onStepCancel: _previousStep,
-        steps: _buildSteps(),
-        controlsBuilder: (BuildContext context, ControlsDetails details) {
-          return Row(
-            children: <Widget>[
-              ElevatedButton(
-                onPressed: details.onStepContinue,
-                child: Text('Siguiente'),
+      body: Column(
+        children: [
+          if (mensaje.isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(8.0),
+              margin: EdgeInsets.all(8.0),
+              color: Colors.red[100],
+              child: Text(
+                mensaje,
+                style: TextStyle(color: Colors.red[900]),
               ),
-              SizedBox(width: 10),
-              if (_currentStep > 0)
-                ElevatedButton(
-                  onPressed: details.onStepCancel,
-                  child: Text('Anterior'),
-                ),
-            ],
-          );
-        },
+            ),
+          Expanded(
+            child: Stepper(
+              currentStep: _currentStep,
+              onStepContinue: _nextStep,
+              onStepCancel: _previousStep,
+              steps: _buildSteps(),
+              controlsBuilder: (BuildContext context, ControlsDetails details) {
+                return Row(
+                  children: <Widget>[
+                    if (_currentStep > 0)
+                      ElevatedButton(
+                        onPressed: details.onStepCancel,
+                        child: Text('Anterior'),
+                      ),
+                    SizedBox(width: 10),
+                    if (_currentStep < 3)
+                      ElevatedButton(
+                        onPressed: details.onStepContinue,
+                        child: Text('Siguiente'),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

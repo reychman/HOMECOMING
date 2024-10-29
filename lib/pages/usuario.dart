@@ -140,32 +140,39 @@ Usuario copyWith({
   // Método para iniciar sesión
   static Future<Usuario?> iniciarSesion(String nombre, String contrasena) async {
     final passwordHash = sha1.convert(utf8.encode(contrasena)).toString();
-    const url = 'http://$serverIP/homecoming/homecomingbd_v2/login.php'; 
+    const url = 'http://$serverIP/homecoming/homecomingbd_v2/login.php';
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'nombre': nombre,
-        'contrasena': passwordHash,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'nombre': nombre,
+          'contrasena': passwordHash,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data.containsKey('error')) {
-        return null;
-      } else {
-        return Usuario.fromJson(data);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data.containsKey('error')) {
+          if (data['error'] == 'cuenta_inactiva') {
+            // Creamos un usuario con estado 0 para indicar que está inactivo
+            return Usuario.fromJson({'estado': 0, ...data});
+          }
+          return null;
+        } else {
+          return Usuario.fromJson(data);
+        }
       }
-    } else {
+      return null;
+    } catch (e) {
+      print('Error en iniciarSesion: $e');
       return null;
     }
   }
-  // Mostrar usuarios
-
 
   // Actualizar usuario
   Future<Map<String, dynamic>> updateUsuario() async {
