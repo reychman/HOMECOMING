@@ -26,18 +26,25 @@ if (isset($input['nombre']) && isset($input['contrasena'])) {
         
         // Verificamos el estado del usuario
         if ($user['estado'] == 0) {
+            error_log('Cuenta inactiva');
             echo json_encode([
                 'error' => 'cuenta_inactiva',
-                'message' => 'Tu cuenta está inactiva. Por favor, activa tu cuenta para continuar.'
+                'message' => 'Tu cuenta está inactiva.'
+            ]);
+        } else if ($user['estado'] == 2) {
+            error_log('Cuenta refugio rechazada');
+            echo json_encode([
+                'error' => 'cuenta_rechazada',
+                'message' => 'Su cuenta refugio fue rechazada.'
             ]);
         } else {
-            // Si la cuenta está activa, devolvemos los datos del usuario
+            error_log('Cuenta activa');
             echo json_encode($user);
         }
     } else {
-        echo json_encode(['error' => 'Nombre de usuario o contraseña incorrectos.']);
+        echo json_encode(['error' => 'invalid_credentials', 'message' => 'Nombre de usuario o contraseña incorrectos.']);
     }
 } else {
-    echo json_encode(['error' => 'Datos incompletos.']);
+    echo json_encode(['error' => 'incomplete_data', 'message' => 'Datos incompletos.']);
 }
 ?>

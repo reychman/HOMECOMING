@@ -52,25 +52,28 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
           controllerUser.text, controllerPass.text);
 
       if (usuarioLogeado != null) {
-        // El usuario existe, ahora verificamos su estado
+        // Verificamos el estado del usuario
         if (usuarioLogeado.estado == 0) {
           setState(() {
-            mensaje = 'Tu cuenta está inactiva. Por favor, activa tu cuenta para continuar.';
+            mensaje = 'Tu cuenta está inactiva.';
+          });
+          return;
+        } else if (usuarioLogeado.estado == 2) {
+          setState(() {
+            mensaje = 'Su cuenta refugio fue rechazada.';
           });
           return;
         }
 
-        // Si llegamos aquí, la cuenta está activa
+        // Cuenta activa, continuar con el proceso de inicio de sesión
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setInt('usuario_id', usuarioLogeado.id!);
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('foto_perfil', usuarioLogeado.fotoPortada ?? '');
 
-        // Configurar el usuario en el estado global
         Provider.of<UsuarioProvider>(context, listen: false)
             .setUsuario(usuarioLogeado);
 
-        // Navegar a la página de inicio
         Navigator.of(context).pushReplacementNamed('/inicio');
       } else {
         setState(() {
@@ -86,7 +89,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
   }
 
   // Método para mostrar el modal de recuperación de contraseña
- void mostrarModalRecuperarContrasena() {
+  void mostrarModalRecuperarContrasena() {
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -291,6 +294,16 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                         onPressed: mostrarModalRecuperarContrasena,
                         child: const Text(
                           '¿Olvidaste tu contraseña?',
+                          style: TextStyle(color: Colors.green),
+                        ),
+                      ),
+                      const SizedBox(height: 10.0),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/CrearUsuario'); // Redirige a la página de creación de usuario
+                        },
+                        child: const Text(
+                          '¿No tienes una cuenta? Crea una',
                           style: TextStyle(color: Colors.green),
                         ),
                       ),

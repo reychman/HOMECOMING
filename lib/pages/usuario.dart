@@ -161,9 +161,13 @@ Usuario copyWith({
           if (data['error'] == 'cuenta_inactiva') {
             // Creamos un usuario con estado 0 para indicar que está inactivo
             return Usuario.fromJson({'estado': 0, ...data});
+          } else if (data['error'] == 'cuenta_rechazada') {
+            // Creamos un usuario con estado 2 para indicar que la cuenta fue rechazada
+            return Usuario.fromJson({'estado': 2, ...data});
           }
           return null;
         } else {
+          // Si no hay error, devolvemos el usuario normalmente
           return Usuario.fromJson(data);
         }
       }
