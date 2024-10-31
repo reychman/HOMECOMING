@@ -50,7 +50,7 @@ try {
 
                 $file = fopen("bodyemail.html", "r");
                 if ($file) {
-                    $str = fread($file, filesize("bodyemail.html"));
+                    $str = fread($file, filesize("bodyRecuperarContra.html"));
                     fclose($file);
 
                     $str = str_replace("{email}", $email, $str);

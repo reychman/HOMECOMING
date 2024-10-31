@@ -5,6 +5,8 @@ import 'package:homecoming/pages/usuario.dart';
 import 'package:homecoming/pages/menu/menu_widget.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class IniciarSesionPage extends StatefulWidget {
   const IniciarSesionPage({Key? key}) : super(key: key);
@@ -82,6 +84,93 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
       print('Error durante el login: $e');
     }
   }
+
+  // Método para mostrar el modal de recuperación de contraseña
+  void mostrarModalRecuperarContrasena() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      final TextEditingController emailController = TextEditingController();
+
+      // Declarar 'mostrarDialogoExito' antes de 'enviarCorreo'
+      void mostrarDialogoExito() {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Correo Enviado'),
+              content: Text('Correo enviado correctamente, revise su bandeja de entrada'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Aceptar'),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cierra el AlertDialog
+                    Navigator.of(context).pop(); // Cierra el modal
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+
+      Future<void> enviarCorreo(String email) async {
+        try {
+          final response = await http.post(
+            Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/recuperar_contra.php"),
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: {
+              "email": email,
+            },
+          );
+
+          final responseData = json.decode(response.body);
+          if (responseData.containsKey('success')) {
+            mostrarDialogoExito();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Error: ${responseData['error']}'),
+            ));
+          }
+        } catch (e) {
+          mostrarDialogoExito();
+        }
+      }
+
+      return AlertDialog(
+        title: Text('Recupera tu contraseña'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: 'Correo electrónico',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20.0),
+            ElevatedButton(
+              onPressed: () {
+                String email = emailController.text;
+                if (email.isNotEmpty) {
+                  enviarCorreo(email);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('El campo de correo electrónico está vacío'),
+                  ));
+                }
+              },
+              child: Text('Enviar correo'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +261,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                       ),
                       const SizedBox(height: 20.0),
                       SizedBox(
-                        width: double.infinity, // Hace que el botón ocupe el ancho máximo disponible
+                        width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
                             if (controllerUser.text.isEmpty || controllerPass.text.isEmpty) {
@@ -184,37 +273,23 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[200],
+                            backgroundColor: Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25.0),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
                           ),
-                          child: const Text('Ingresar'),
+                          child: const Text('Iniciar Sesión', style: TextStyle(fontSize: 18.0)),
                         ),
                       ),
-                      const SizedBox(height: 20.0),
                       Text(
                         mensaje,
-                        style: const TextStyle(color: Colors.red, fontSize: 16.0),
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/RecuperarContra');
-                        },
-                        child: const Text(
-                          '¿Olvidaste tu contraseña?',
-                          style: TextStyle(color: Colors.green),
-                        ),
+                        style: TextStyle(color: Colors.red),
                       ),
                       const SizedBox(height: 10.0),
                       TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/CrearUsuario');
-                        },
+                        onPressed: mostrarModalRecuperarContrasena,
                         child: const Text(
-                          'Crear una cuenta',
+                          '¿Olvidaste tu contraseña?',
                           style: TextStyle(color: Colors.green),
                         ),
                       ),

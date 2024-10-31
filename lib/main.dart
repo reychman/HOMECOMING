@@ -10,7 +10,6 @@ import 'package:homecoming/pages/menu/preguntas_frecuentes_page.dart';
 import 'package:homecoming/pages/menu/quienes_somos_page.dart';
 import 'package:homecoming/pages/login/iniciar_sesion_page.dart';
 import 'package:homecoming/pages/login/crear_usuario_page.dart';
-import 'package:homecoming/pages/login/recuperar_contra_page.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,7 +45,6 @@ class MyApp extends StatelessWidget {
         '/reportes': (BuildContext context) => ReportesPage(),
         '/iniciar_sesion': (BuildContext context) => IniciarSesionPage(),
         '/CrearUsuario': (BuildContext context) => CrearUsuarioPage(),
-        '/RecuperarContra': (BuildContext context) => RecuperarContraPage(),
         '/MascotasPerdidas': (BuildContext context) => MascotasPerdidas(),
         '/perfilUsuario': (BuildContext context) => PerfilUsuario(),
         '/admin_usuarios': (BuildContext context) => AdminUsuarios(),
