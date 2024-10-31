@@ -7,8 +7,8 @@ header('Content-Type: application/json');
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'autoload.php';  // Confirma que la ruta a autoload.php es correcta
-require '../../config.php';
+require '../autoload.php';  // Confirma que la ruta a autoload.php es correcta
+require '../../../config.php';
 
 // Mostrar errores de PHP
 ini_set('display_errors', 1);
@@ -33,8 +33,7 @@ try {
     
         if ($consulta->num_rows > 0) {
             // Enlace de recuperación
-            $enlace = "http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/formCambiarContra.html?email=" . urlencode($email);
-    
+            $enlace = "http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/restablecerContra/formCambiarContra.html?email=" . urlencode($email);
             $file = fopen("bodyRecuperarContra.html", "r");
             if ($file) {
                 $str = fread($file, filesize("bodyRecuperarContra.html"));
@@ -42,7 +41,7 @@ try {
 
                 // Reemplaza el enlace en el contenido del correo
                 $str = str_replace(
-                    "http://192.168.100.102/homecoming/homecomingbd_v2/envioEmails/vendor/formCambiarContra.html",
+                    "http://192.168.100.102/homecoming/homecomingbd_v2/envioEmails/vendor/restablecerContra/formCambiarContra.html",
                     $enlace,
                     $str
                 );

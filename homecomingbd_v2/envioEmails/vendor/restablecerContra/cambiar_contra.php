@@ -4,7 +4,7 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization');
 header('Content-Type: application/json');
 
-require '../../config.php';
+require '../../../config.php';
 
 $response = [];
 

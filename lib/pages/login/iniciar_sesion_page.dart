@@ -120,7 +120,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
       Future<void> enviarCorreo(String email) async {
         try {
           final response = await http.post(
-            Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/recuperar_contra.php"),
+            Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/restablecerContra/recuperar_contra.php"),
             headers: {
               "Content-Type": "application/x-www-form-urlencoded"
             },
