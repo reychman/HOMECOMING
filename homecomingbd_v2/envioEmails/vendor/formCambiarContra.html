@@ -14,158 +14,181 @@
             margin: 0;
             background-color: #f4f4f4;
         }
+
         .container {
-            max-width: 700px; /* Ancho máximo del contenedor */
-            width: 90%; /* Ajustar el ancho al 90% del viewport */
+            max-width: 500px;
+            width: 90%;
             padding: 20px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .container h2 {
-            margin-bottom: 20px;
             text-align: center;
         }
-        .container form {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Centrar los elementos */
+
+        .container h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
         }
-        .container form .input-group {
-            position: relative;
-            width: 100%;
-            max-width: 500px; /* Ajustar el ancho máximo del input */
+
+        .input-group {
             margin-bottom: 15px;
+            position: relative;
         }
-        .container form input {
-            width: calc(100% - 40px); /* Ajustar el ancho del input */
-            padding: 12px 40px; /* Agregar espacio a la derecha para el ícono */
-            font-size: 16px;
+
+        .input-group label {
+            display: block;
+            font-size: 1em;
+            color: #333;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: calc(100% - 40px);
+            padding: 12px;
+            font-size: 1em;
             border: 1px solid #ddd;
             border-radius: 4px;
-            margin: 5px 0; /* Separación superior e inferior uniforme */
-            box-sizing: border-box; /* Incluir padding y border en el ancho total */
+            box-sizing: border-box;
         }
-        .container form .input-group .toggle-password {
+
+        .toggle-password {
             position: absolute;
-            right: 10px; /* Ajustar para que el ícono esté dentro del campo */
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
+            transform: translateX(-80%);
             cursor: pointer;
             color: #888;
-            font-size: 18px;
+            font-size: 1.2em;
         }
-        .container form button {
+
+        button {
+            width: 100%;
             padding: 12px;
-            font-size: 16px;
+            font-size: 1em;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-top: 10px;
-            width: calc(75% - 40px); /* Ajustar el ancho del botón */
-            max-width: 500px; /* Ajustar el ancho máximo del botón */
-        }
-        .container form button:hover {
-            background-color: #45a049;
-        }
-        .container .error {
-            color: red;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .container .success {
-            color: green;
-            margin-bottom: 10px;
-            text-align: center;
         }
 
-        /* Estilos responsivos */
-        @media (max-width: 600px) {
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #mensaje {
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        /* Responsividad para dispositivos móviles */
+        @media (max-width: 400px) {
             .container h2 {
-                margin-bottom: 10px;
-                text-align: center;
-                font-size: 12px;
+                font-size: 1.3em;
             }
-            .container form input {
-                font-size: 14px; /* Reducir el tamaño de fuente en pantallas pequeñas */
-                padding: 10px 30px; /* Ajustar el padding */
+
+            .input-group label {
+                font-size: 0.9em;
             }
-            .container form .input-group .toggle-password {
-                font-size: 16px; /* Reducir el tamaño del ícono en pantallas pequeñas */
+
+            .input-group input {
+                font-size: 0.9em;
             }
-            .container form button {
-                font-size: 14px; /* Reducir el tamaño de fuente en pantallas pequeñas */
-                padding: 10px; /* Ajustar el padding */
+
+            .toggle-password {
+                font-size: 1em;
+            }
+
+            button {
+                font-size: 0.9em;
+                padding: 10px;
             }
         }
     </style>
+    <script>
+        function getParameterByName(name) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(window.location.href);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        // Al cargar, obtener el email de la URL
+        window.onload = function() {
+            var email = getParameterByName('email');
+            if (email) {
+                document.getElementById('emailHidden').value = email;
+            } else {
+                alert('No se proporcionó un correo electrónico válido');
+            }
+        }
+
+        function togglePassword(inputId) {
+            var input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function cambiarContrasena() {
+            var email = document.getElementById('emailHidden').value;
+            var nuevaContrasena = document.getElementById('contrasena').value;
+            var confirmarContrasena = document.getElementById('confirmarContrasena').value;
+            var mensaje = document.getElementById('mensaje');
+
+            if (nuevaContrasena !== confirmarContrasena) {
+                mensaje.innerHTML = 'Las contraseñas no coinciden';
+                mensaje.style.color = 'red';
+                return;
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'cambiar_contra.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        mensaje.innerHTML = 'Contraseña actualizada exitosamente';
+                        mensaje.style.color = 'green';
+
+                        // Espera un par de segundos para que el usuario vea el mensaje y luego intenta cerrar la pestaña
+                        setTimeout(function() {
+                            window.close();
+                        }, 2000);
+                    } else {
+                        mensaje.innerHTML = 'Error: ' + response.error;
+                        mensaje.style.color = 'red';
+                    }
+                }
+            };
+            xhr.send('email=' + encodeURIComponent(email) + '&nuevaContrasena=' + encodeURIComponent(nuevaContrasena));
+        }
+    </script>
 </head>
 <body>
     <div class="container">
         <h2>Cambiar Contraseña</h2>
-        <form id="cambiarContrasenaForm" method="POST">
-            <div class="input-group">
-                <input type="text" id="email" name="email" placeholder="Correo electrónico" required autocomplete="off">
-            </div>
-            <div class="input-group">
-                <input type="password" id="contrasena" name="contrasena" placeholder="Nueva Contraseña" required>
-                <span class="toggle-password" onclick="togglePassword('contrasena')">&#128065;</span>
-            </div>
-            <div class="input-group">
-                <input type="password" id="confirmarContrasena" name="confirmarContrasena" placeholder="Confirmar Nueva Contraseña" required>
-                <span class="toggle-password" onclick="togglePassword('confirmarContrasena')">&#128065;</span>
-            </div>
-            <button type="submit">Cambiar Contraseña</button>
-            <div id="mensaje"></div>
-        </form>
+        
+        <input type="hidden" id="emailHidden" name="email">
+        
+        <div class="input-group">
+            <label for="contrasena">Nueva Contraseña</label>
+            <input type="password" id="contrasena" name="contrasena" required>
+            <span class="toggle-password" onclick="togglePassword('contrasena')">👁</span>
+        </div>
+        
+        <div class="input-group">
+            <label for="confirmarContrasena">Confirmar Contraseña</label>
+            <input type="password" id="confirmarContrasena" name="confirmarContrasena" required>
+            <span class="toggle-password" onclick="togglePassword('confirmarContrasena')">👁</span>
+        </div>
+        
+        <button onclick="cambiarContrasena()">Cambiar Contraseña</button>
+        
+        <div id="mensaje"></div>
     </div>
-
-    <script>
-        // Función para alternar la visibilidad de la contraseña
-        function togglePassword(id) {
-            const input = document.getElementById(id);
-            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-            input.setAttribute('type', type);
-        }
-
-        // Validar que las contraseñas coincidan antes de enviar el formulario
-        document.getElementById('cambiarContrasenaForm').addEventListener('submit', function(event) {
-            const contrasena = document.getElementById('contrasena').value;
-            const confirmarContrasena = document.getElementById('confirmarContrasena').value;
-
-            if (contrasena !== confirmarContrasena) {
-                event.preventDefault();
-                const messageDiv = document.getElementById('mensaje');
-                messageDiv.innerHTML = '<p class="error">Las contraseñas no coinciden.</p>';
-            }
-        });
-
-        // Manejar la respuesta del servidor
-        async function handleResponse(response) {
-            const data = await response.json();
-            const messageDiv = document.getElementById('mensaje');
-
-            if (data.success) {
-                messageDiv.innerHTML = '<p class="success">Contraseña actualizada con éxito, ya puede iniciar sesión.</p>';
-            } else if (data.error) {
-                messageDiv.innerHTML = '<p class="error">Error: ' + data.error + '</p>';
-            }
-        }
-
-        // Interceptar el envío del formulario y manejar la respuesta
-        document.getElementById('cambiarContrasenaForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(this);
-            const response = await fetch('actualizar_contrasena.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            handleResponse(response);
-        });
-    </script>
 </body>
 </html>

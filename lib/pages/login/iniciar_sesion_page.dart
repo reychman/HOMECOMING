@@ -86,7 +86,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
   }
 
   // Método para mostrar el modal de recuperación de contraseña
-  void mostrarModalRecuperarContrasena() {
+ void mostrarModalRecuperarContrasena() {
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -123,6 +123,7 @@ class _IniciarSesionPageState extends State<IniciarSesionPage> {
             },
             body: {
               "email": email,
+              'serverIP': serverIP,
             },
           );
 

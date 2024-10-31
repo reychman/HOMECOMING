@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'autoload.php';
+require 'autoload.php';  // Confirma que la ruta a autoload.php es correcta
 require '../../config.php';
 
 // Mostrar errores de PHP
@@ -20,7 +20,8 @@ $response = [];
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = $_POST['email'];
-        echo $email;
+        $serverIP = $_POST['serverIP'];
+    
         // Verifica si el email existe en la base de datos
         $consulta = $conexion->prepare("SELECT id FROM usuarios WHERE email = ?");
         if (!$consulta) {
@@ -29,45 +30,53 @@ try {
         $consulta->bind_param("s", $email);
         $consulta->execute();
         $consulta->store_result();
-
+    
         if ($consulta->num_rows > 0) {
-            // Enviar email con PHPMailer
-            $mail = new PHPMailer(true);
-            try {
-                $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'apaza.reychman.124@gmail.com';
-                $mail->Password   = 'nexx ryea kwvj mmzu';
-                $mail->SMTPSecure = 'tls';
-                $mail->Port       = 587;
+            // Enlace de recuperación
+            $enlace = "http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/formCambiarContra.html?email=" . urlencode($email);
+    
+            $file = fopen("bodyRecuperarContra.html", "r");
+            if ($file) {
+                $str = fread($file, filesize("bodyRecuperarContra.html"));
+                fclose($file);
 
-                $mail->setFrom('apaza.reychman.124@gmail.com', 'Homecoming');
-                $mail->addAddress($email);
+                // Reemplaza el enlace en el contenido del correo
+                $str = str_replace(
+                    "http://192.168.100.102/homecoming/homecomingbd_v2/envioEmails/vendor/formCambiarContra.html",
+                    $enlace,
+                    $str
+                );
 
-                $mail->isHTML(true);
-                $mail->Subject = 'Restablecer Contraseña';
+                // Crear y configurar PHPMailer
+                $mail = new PHPMailer(true); // Asegúrate de que se inicializa PHPMailer aquí
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'apaza.reychman.124@gmail.com';
+                    $mail->Password   = 'nexx ryea kwvj mmzu';  // Asegúrate de usar credenciales seguras
+                    $mail->SMTPSecure = 'tls';
+                    $mail->Port       = 587;
 
-                $file = fopen("bodyemail.html", "r");
-                if ($file) {
-                    $str = fread($file, filesize("bodyRecuperarContra.html"));
-                    fclose($file);
+                    $mail->setFrom('apaza.reychman.124@gmail.com', 'Homecoming');
+                    $mail->addAddress($email);
 
-                    $str = str_replace("{email}", $email, $str);
-                    $mail->Body = $str;
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Restablecer Contraseña';
+                    $mail->Body    = $str;
 
                     $mail->send();
                     $response['success'] = "correo enviado";
-                } else {
-                    throw new Exception("No se pudo abrir el archivo HTML");
+                    $response['email'] = $email;
+                } catch (Exception $e) {
+                    throw new Exception("No se pudo enviar el correo. Error de PHPMailer: {$mail->ErrorInfo}");
                 }
-            } catch (Exception $e) {
-                throw new Exception("No se pudo enviar el correo. Error de PHPMailer: {$mail->ErrorInfo}");
+            } else {
+                throw new Exception("No se pudo abrir el archivo HTML");
             }
         } else {
             throw new Exception("correo no encontrado");
         }
-
         $consulta->close();
         $conexion->close();
     } else {
@@ -78,4 +87,5 @@ try {
 }
 
 echo json_encode($response);
+
 ?>
