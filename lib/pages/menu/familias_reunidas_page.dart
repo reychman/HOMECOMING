@@ -131,7 +131,7 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
                     builder: (context, constraints) {
                       int crossAxisCount = 1; // Solo un card en pantallas angostas
                       if (constraints.maxWidth > 600) {
-                        crossAxisCount = 2; // Dos cards en pantallas anchas
+                        crossAxisCount = 3; // Dos cards en pantallas anchas
                       }
 
                       return GridView.builder(

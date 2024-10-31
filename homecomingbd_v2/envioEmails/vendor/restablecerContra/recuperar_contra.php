@@ -56,7 +56,8 @@ try {
                     $mail->Password   = 'nexx ryea kwvj mmzu';  // Asegúrate de usar credenciales seguras
                     $mail->SMTPSecure = 'tls';
                     $mail->Port       = 587;
-
+                    $mail->CharSet = 'UTF-8';
+                    
                     $mail->setFrom('apaza.reychman.124@gmail.com', 'Homecoming');
                     $mail->addAddress($email);
 

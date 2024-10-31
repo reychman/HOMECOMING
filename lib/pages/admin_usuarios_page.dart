@@ -346,7 +346,10 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     try {
       Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(1);
       if (result['success'] == true) {
-        _mostrarMensaje('Refugio aprobado con éxito');
+        // Send approval email
+        await enviarCorreo(refugio.email, true);
+        print(refugio.email);
+        _mostrarMensaje('Refugio aprobado con éxito y notificación enviada');
         _actualizarListas();
       } else {
         _mostrarMensaje('Error al aprobar refugio: ${result['message']}', esError: true);
@@ -360,13 +363,37 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
     try {
       Map<String, dynamic> result = await refugio.cambiarEstadoRefugio(2);
       if (result['success'] == true) {
-        _mostrarMensaje('Refugio rechazado con éxito');
+        // Send rejection email
+        await enviarCorreo(refugio.email, false);
+        _mostrarMensaje('Refugio rechazado con éxito y notificación enviada');
         _actualizarListas();
       } else {
         _mostrarMensaje('Error al rechazar refugio: ${result['message']}', esError: true);
       }
     } catch (e) {
       _mostrarMensaje('Error inesperado: ${e.toString()}', esError: true);
+    }
+  }
+
+  Future<void> enviarCorreo(String email, bool esAprobado) async {
+    try {
+      final response = await http.post(
+        Uri.parse("http://$serverIP/homecoming/homecomingbd_v2/envioEmails/vendor/correoRefugio/correoRefugio.php"),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: {
+          "email": email,
+          "serverIP": serverIP,
+          "esAprobado": esAprobado.toString(),
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Error al enviar el correo');
+      }
+    } catch (e) {
+      _mostrarMensaje('Error al enviar la notificación por correo: ${e.toString()}', esError: true);
     }
   }
 

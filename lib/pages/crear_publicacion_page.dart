@@ -29,39 +29,18 @@ class _CrearPublicacionPageState extends State<CrearPublicacionPage> {
   final TextEditingController _lugarPerdidaController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   // Lista de razas de perros y gatos
-  final List<String> _razasPerro = [
-    'Beagle',
-    'Boxer',
-    'Bulldog',
-    'Caniche',
-    'Chihuahua',
-    'Dálmata',
-    'Golden Retriever',
-    'Gran Danés',
-    'Labrador',
-    'Pastor Alemán',
-    'Pitbull',
-    'Pomerania',
-    'Rottweiler',
-    'Schnauzer',
-    'Shih Tzu',
-    'Terrier Escocés',
-    'Yorkshire Terrier',
-    'Otro'
+final List<String> _razasPerro = [
+    'Akita','Alaskan Malamute','American Staffordshire Terrier','Beagle','Bichón Frisé','Border Collie',
+    'Boston Terrier','Boxer','Bulldog','Bulldog Francés','Caniche','Chihuahua','Chow Chow','Cocker Spaniel','Dálmata','Doberman','Dogo Argentino',
+    'Golden Retriever','Gran Danés','Husky Siberiano','Jack Russell Terrier', 'Labrador', 'Mastín Napolitano','Pastor Alemán','Pastor Belga','Pastor de los Pirineos',
+    'Pastor Suizo','Pekingese', 'Pitbull', 'Pinscher Miniatura','Pointer','Pomerania', 'Rottweiler','Samoyedo','San Bernardo','Schnauzer',
+    'Setter Irlandés','Shar Pei','Shih Tzu','Staffordshire Bull Terrier','Terrier Escocés','Weimaraner','Whippet','Yorkshire Terrier','Otro'
   ];
-  final List<String> _razasGato = [
-    'Angora',
-    'Azul Ruso',
-    'Bengalí',
-    'Bombay',
-    'Británico de pelo corto',
-    'Himalayo',
-    'Maine Coon',
-    'Persa',
-    'Ragdoll',
-    'Siamés',
-    'Siberiano',
-    'Sphynx',
+
+final List<String> _razasGato = [
+    'Abisinio','American Curl','Angora','Azul Ruso', 'Bengalí','Bobtail Japonés', 'Bombay','Bosque de Noruega','Británico de pelo corto','Cornish Rex',
+    'Devon Rex','Europeo de pelo corto','Gato Egipcio', 'Gato Exótico', 'Gato Hábana', 'Himalayo','Korat','Maine Coon','Manx','Ocicat','Oriental de pelo corto',
+    'Persa','Peterbald','Ragdoll','Scottish Fold','Selkirk Rex','Siamés','Siberiano','Singapura','Snowshoe','Somalí','Sphynx','Tonkinés','Van Turco',
     'Otro'
   ];
   List<String> _razas = []; // Lista vacía de razas a mostrar
