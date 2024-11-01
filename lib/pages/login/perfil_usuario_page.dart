@@ -841,9 +841,16 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                             SizedBox(height: 20),
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                int crossAxisCount = 1;
-                                if (constraints.maxWidth > 600) crossAxisCount = 2;
-                                if (constraints.maxWidth > 900) crossAxisCount = 3;
+                                int crossAxisCount;
+                                  if (constraints.maxWidth > 1200) {
+                                    crossAxisCount = 4; // Extra large screens
+                                  } else if (constraints.maxWidth > 900) {
+                                    crossAxisCount = 3; // Desktop/Tablet landscape
+                                  } else if (constraints.maxWidth > 600) {
+                                    crossAxisCount = 2; // Tablet portrait
+                                  } else {
+                                    crossAxisCount = 1; // Mobile
+                                  }
                                 return GridView.builder(
                                   physics: NeverScrollableScrollPhysics(),
                                   shrinkWrap: true, // Evita que el GridView ocupe más espacio del necesario
@@ -851,9 +858,9 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                   itemCount: _misPublicaciones.length,
                                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: crossAxisCount,
-                                    crossAxisSpacing: 20,
-                                    mainAxisSpacing: 20,
-                                    childAspectRatio: 2 / 1.5,
+                                    crossAxisSpacing: 16.0,
+                                    mainAxisSpacing: 16.0,
+                                    childAspectRatio: 0.85,
                                   ),
                                   itemBuilder: (context, index) {
                                     final publicacion = _misPublicaciones[index];
