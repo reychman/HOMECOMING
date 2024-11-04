@@ -23,8 +23,10 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
   ScrollController _scrollController = ScrollController();
   bool _showScrollToTop = false;
   int _totalReuniones = 0; // Added the _totalReuniones field
+  double _finalesFelicesPercentaje = 0.0; // Add this line
+  int _totalMascotas = 0; // Add this line
 
-   @override
+  @override
   void initState() {
     super.initState();
     futureMascotas = obtenerMascotas();
@@ -59,9 +61,11 @@ Future<List<Mascota>> obtenerMascotas() async {
         List<Mascota> mascotasEncontradas = mascotas.where((m) => m.estado == 'encontrado').toList();
 
         setState(() {
-          _mascotas = mascotasEncontradas;
+          _mascotas = mascotas;
           _mascotasFiltradas = mascotasEncontradas;
           _totalReuniones = mascotasEncontradas.length;
+          _totalMascotas = mascotas.length; // Store the total number of pets
+          _finalesFelicesPercentaje = (_totalReuniones / _totalMascotas * 100);// Calculate the percentage correctly
         });
         return mascotasEncontradas;
       } else {
@@ -118,7 +122,7 @@ Future<List<Mascota>> obtenerMascotas() async {
                   ),
                   _buildStatItem(
                     icon: Icons.favorite,
-                    value: '100%',
+                    value: '${_finalesFelicesPercentaje.toStringAsFixed(2)}%',
                     label: 'Finales\nFelices',
                   ),
                 ],
@@ -130,34 +134,34 @@ Future<List<Mascota>> obtenerMascotas() async {
     );
   }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, size: 40, color: Colors.green),
-        SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.green[800],
-          ),
+Widget _buildStatItem({
+  required IconData icon,
+  required String value,
+  required String label,
+}) {
+  return Column(
+    children: [
+      Icon(icon, size: 40, color: Colors.green),
+      SizedBox(height: 8),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.green[800],
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-          textAlign: TextAlign.center,
+      ),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey[600],
         ),
-      ],
-    );
-  }
+        textAlign: TextAlign.center,
+      ),
+    ],
+  );
+}
 
   Widget _buildSearchBar() {
     return FadeInDown(
