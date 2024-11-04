@@ -899,11 +899,13 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                   onSelected: (String result) {
                                                     if (result == 'eliminar') {
                                                       _confirmarEliminacionPublicacion(publicacion['id']);
+                                                    } else if (result == 'verAdoptante') {
+                                                      // Aquí deberías agregar la lógica para ver al adoptante
+                                                      //_mostrarInformacionAdoptante(context, publicacion['id']);
                                                     } else if (publicacion['estado_registro'] != 2) {
                                                       if (result == 'agregarFotos') {
                                                         _mostrarModalAgregarFotos(context, publicacion['id']);
                                                       } else if (result == 'cambiarEstado') {
-                                                        // lógica para cambiar el estado
                                                         if (publicacion['estado'] == 'perdido') {
                                                           _mostrarConfirmacionCambioEstado(
                                                             publicacion['id'],
@@ -918,14 +920,6 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                             'perdido',
                                                             'Confirmación',
                                                             'Si tu mascota se volvió a perder, actualiza los datos y acepta este mensaje para hacer pública la desaparición de tu mascota.',
-                                                            publicacion['estado'],
-                                                          );
-                                                        } else if (publicacion['estado'] == 'adopcion') {
-                                                          _mostrarConfirmacionCambioEstado(
-                                                            publicacion['id'],
-                                                            'pendiente',
-                                                            'Interés en la Mascota',
-                                                            '¿Está alguien interesado en adoptar a esta mascota? Al aceptar, cambiará el estado a pendiente.',
                                                             publicacion['estado'],
                                                           );
                                                         } else if (publicacion['estado'] == 'pendiente') {
@@ -950,40 +944,106 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                                     }
                                                   },
                                                   itemBuilder: (BuildContext context) {
-                                                    // Definir los elementos del menú según estado_registro
+                                                    // Lista de opciones según el estado
+                                                    List<PopupMenuEntry<String>> opciones = [];
+
+                                                    switch (publicacion['estado']) {
+                                                      case 'adoptado':
+                                                        // Solo mostrar eliminar y ver adoptante
+                                                        opciones = [
+                                              const PopupMenuItem<String>(
+                                                            value: 'eliminar',
+                                                            child: Text('Eliminar publicación'),
+                                                          ),
+                                                        ];
+                                                        break;
+
+                                                      case 'adopcion':
+                                                        // Solo mostrar 3 opciones básicas
+                                                        opciones = [
+                                                          const PopupMenuItem<String>(
+                                                            value: 'agregarFotos',
+                                                            child: Text('Agregar Fotos'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'editar',
+                                                            child: Text('Actualizar datos'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'eliminar',
+                                                            child: Text('Eliminar publicación'),
+                                                          ),
+                                                        ];
+                                                        break;
+
+                                                      case 'perdido':
+                                                      case 'encontrado':
+                                                        // Opciones completas para perdido/encontrado
+                                                        opciones = [
+                                                          const PopupMenuItem<String>(
+                                                            value: 'agregarFotos',
+                                                            child: Text('Agregar Fotos'),
+                                                          ),
+                                                          PopupMenuItem<String>(
+                                                            value: 'cambiarEstado',
+                                                            child: Text(publicacion['estado'] == 'perdido' 
+                                                              ? '¿Mascota Encontrada?' 
+                                                              : '¿Mascota Perdida?'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'editar',
+                                                            child: Text('Actualizar datos'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'eliminar',
+                                                            child: Text('Eliminar publicación'),
+                                                          ),
+                                                        ];
+                                                        break;
+
+                                                      case 'pendiente':
+                                                        // Opciones para estado pendiente
+                                                        opciones = [
+                                                          const PopupMenuItem<String>(
+                                                            value: 'agregarFotos',
+                                                            child: Text('Agregar fotos'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'editar',
+                                                            child: Text('Actualizar datos'),
+                                                          ),
+                                                          const PopupMenuItem<String>(
+                                                            value: 'eliminar',
+                                                            child: Text('Eliminar publicación'),
+                                                          ),
+                                                        ];
+                                                        break;
+
+                                                      default:
+                                                        // Opciones por defecto si hay algún estado no contemplado
+                                                        opciones = [
+                                                          const PopupMenuItem<String>(
+                                                            value: 'eliminar',
+                                                            child: Text('Eliminar publicación'),
+                                                          ),
+                                                        ];
+                                                    }
+
+                                                    // Si el estado_registro es 2, solo mostrar opción de eliminar
                                                     if (publicacion['estado_registro'] == 2) {
-                                                      // Solo opción de eliminar si estado_registro es 2
                                                       return <PopupMenuEntry<String>>[
-                                                        PopupMenuItem<String>(
-                                                          value: 'eliminar',
-                                                          child: Text('Eliminar publicación'),
-                                                        ),
-                                                      ];
-                                                    } else {
-                                                      // Opciones normales cuando estado_registro no es 2
-                                                      return <PopupMenuEntry<String>>[
-                                                        PopupMenuItem<String>(
-                                                          value: 'agregarFotos',
-                                                          child: Text('Agregar Fotos'),
-                                                        ),
-                                                        PopupMenuItem<String>(
-                                                          value: 'cambiarEstado',
-                                                          child: Text('Perdido/Encontrado/Adopción'),
-                                                        ),
-                                                        PopupMenuItem<String>(
-                                                          value: 'editar',
-                                                          child: Text('Actualizar datos'),
-                                                        ),
-                                                        PopupMenuItem<String>(
+                                                        const PopupMenuItem<String>(
                                                           value: 'eliminar',
                                                           child: Text('Eliminar publicación'),
                                                         ),
                                                       ];
                                                     }
+
+                                                    return opciones;
                                                   },
                                                   icon: Icon(Icons.more_vert),
                                                 ),
-                                              ),
+                                              )
                                             ],
                                           ),
                                           Expanded(
@@ -1094,6 +1154,7 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
             ),
     );
   }
+  
 Future<void> _mostrarInteresados(int idMascota) async {
   final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php?mascota_id=$idMascota');
   
@@ -1105,93 +1166,140 @@ Future<void> _mostrarInteresados(int idMascota) async {
       
       if (data['status'] == 'success') {
         List interesados = data['data'];
-          // Mostramos un diálogo con la lista de interesados
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Interesados en Adoptar'),
-                content: interesados.isNotEmpty
-                    ? SizedBox(
-                        width: double.maxFinite,
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: interesados.length,
-                          itemBuilder: (context, index) {
-                            final interesado = interesados[index];
-                            String nombreCompleto = interesado['nombre'];
-                            if (interesado['primerApellido'] != null) {
-                              nombreCompleto += ' ${interesado['primerApellido']}';
-                            }
-                            if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
-                              nombreCompleto += ' ${interesado['segundoApellido']}';
-                            }
-                            // Crear el link de WhatsApp
-                            final whatsappUri = Uri.parse(
-                              'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
-                            );
-                            return ListTile(
-                              leading: Icon(Icons.person),
-                              title: Text(nombreCompleto),
-                              subtitle: Text(interesado['email']),
-                              trailing: IconButton(
-                                icon: Icon(Icons.message, color: Colors.green),
-                                onPressed: () {
-                                  // Abrir WhatsApp
-                                  launchUrl(whatsappUri);
-                                },
-                              ),
-                              // Mostrar el número de teléfono con opción para contactar
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text('Contactar a ${interesado['nombre']}'),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text('Teléfono: ${interesado['telefono']}'),
-                                          SizedBox(height: 10),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.message),
-                                            label: Text('Contactar por WhatsApp'),
-                                            onPressed: () {
-                                              launchUrl(whatsappUri);  // Abrir WhatsApp
-                                            },
-                                          ),
-                                        ],
+        Map<String, dynamic>? selectedInteresado;
+        
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Text('Interesados en Adoptar'),
+                  content: interesados.isNotEmpty
+                      ? SizedBox(
+                          width: double.maxFinite,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: interesados.length,
+                                  itemBuilder: (context, index) {
+                                    final interesado = interesados[index];
+                                    String nombreCompleto = interesado['nombre'];
+                                    if (interesado['primerApellido'] != null) {
+                                      nombreCompleto += ' ${interesado['primerApellido']}';
+                                    }
+                                    if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
+                                      nombreCompleto += ' ${interesado['segundoApellido']}';
+                                    }
+                                    
+                                    return ListTile(
+                                      leading: Radio<Map<String, dynamic>>(
+                                        value: interesado,
+                                        groupValue: selectedInteresado,
+                                        onChanged: (Map<String, dynamic>? value) {
+                                          setState(() {
+                                            selectedInteresado = value;
+                                          });
+                                        },
                                       ),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          child: Text('Cerrar'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
+                                      title: Text(nombreCompleto),
+                                      subtitle: Text(interesado['email']),
+                                      trailing: IconButton(
+                                        icon: Icon(Icons.message, color: Colors.green),
+                                        onPressed: () {
+                                          final whatsappUri = Uri.parse(
+                                            'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
+                                          );
+                                          launchUrl(whatsappUri);
+                                        },
+                                      ),
                                     );
                                   },
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      )
-                    : Text('Nadie ha mostrado interés en esta mascota.'),
-                actions: <Widget>[
-                  TextButton(
-                    child: Text('Cerrar'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-    } else {
-        print(data['message']);  // Mostrar error en caso de que no haya interesados
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: selectedInteresado == null ? null : () async {
+                                  bool? confirmar = await showDialog<bool>(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text('Confirmar Adopción'),
+                                        content: Text(
+                                          'Al continuar estás confirmando que ${selectedInteresado!['nombre']} adoptó a la mascota. ¿Deseas continuar?'
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            child: Text('Cancelar'),
+                                            onPressed: () => Navigator.of(context).pop(false),
+                                          ),
+                                          ElevatedButton(
+                                            child: Text('Confirmar'),
+                                            onPressed: () => Navigator.of(context).pop(true),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+
+                                  if (confirmar == true) {
+                                    final confirmarUrl = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php');
+                                    try {
+                                      final confirmarResponse = await http.post(
+                                        confirmarUrl,
+                                        body: {
+                                          'action': 'confirmar_adopcion',
+                                          'mascota_id': idMascota.toString(),
+                                          'adoptante_id': selectedInteresado!['id'].toString(),
+                                        },
+                                      );
+
+                                      final responseData = json.decode(confirmarResponse.body);
+                                      if (responseData['status'] == 'success') {
+                                        Navigator.of(context).pop(); // Cerrar diálogo de confirmación                                        
+                                        _publicacioPropiaUsuario();
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Adopción confirmada exitosamente')),
+                                        );
+                                        
+                                        // Aquí puedes actualizar tu UI si es necesario
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error: ${responseData['message']}')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error al confirmar la adopción: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Text('Confirmar Adopción'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Text('Nadie ha mostrado interés en esta mascota.'),
+                  actions: <Widget>[
+                    TextButton(
+                      child: Text('Cerrar'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      } else {
+        print(data['message']);
       }
     } else {
       print('Error al obtener interesados');
@@ -1200,7 +1308,6 @@ Future<void> _mostrarInteresados(int idMascota) async {
     print('Error: $e');
   }
 }
-
 
   Color _getEstadoColor(String estado) {
   switch (estado) {
@@ -1222,7 +1329,7 @@ Future<void> _mostrarInteresados(int idMascota) async {
 String _getEstadoTexto(String estado) {
   switch (estado) {
     case 'perdido':
-      return 'Tu mascota te extraña tanto tú a él/ella';
+      return 'Tu mascota te extraña tanto como tú a él/ella';
     case 'encontrado':
       return 'Nos complace saber que tu mascota fue encontrada';
     case 'adopcion':

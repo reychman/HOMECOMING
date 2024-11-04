@@ -95,7 +95,8 @@ function obtenerInteresados($conexion) {
         return jsonResponse('error', 'ID de mascota no proporcionado');
     }
     
-    $sql = "SELECT u.nombre, u.primerApellido, u.segundoApellido, u.telefono, u.email 
+    // Añadimos u.id a la selección
+    $sql = "SELECT u.id, u.nombre, u.primerApellido, u.segundoApellido, u.telefono, u.email, a.estado 
             FROM adopciones a 
             JOIN usuarios u ON a.adoptante_id = u.id 
             WHERE a.mascota_id = ? AND a.estado = 'interesado'
@@ -106,60 +107,78 @@ function obtenerInteresados($conexion) {
         $stmt->execute();
         $resultado = $stmt->get_result();
 
-        // Verificar si hay interesados
         if ($resultado->num_rows > 0) {
             $interesados = [];
-
             while ($fila = $resultado->fetch_assoc()) {
                 $interesados[] = $fila;
             }
-
             return jsonResponse('success', 'Interesados encontrados', $interesados);
         } else {
             return jsonResponse('error', 'No hay interesados para esta mascota');
         }
-    } else {
-        return jsonResponse('error', 'Error en la consulta');
     }
+    return jsonResponse('error', 'Error en la consulta');
 }
 
-// Función para confirmar una adopción
 function confirmarAdopcion($conexion) {
-    $adopcion_id = $_POST['adopcion_id'] ?? null;
+    $mascota_id = $_POST['mascota_id'] ?? null;
+    $adoptante_id = $_POST['adoptante_id'] ?? null;
     
-    if (!$adopcion_id) {
-        return jsonResponse('error', 'ID de adopción no proporcionado');
+    if (!$mascota_id || !$adoptante_id) {
+        return jsonResponse('error', 'Faltan datos requeridos');
     }
     
     $conexion->begin_transaction();
     
     try {
-        // Actualizar estado de la adopción
-        $sql = "UPDATE adopciones SET estado = 'adoptado' WHERE id = ?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("i", $adopcion_id);
-        $stmt->execute();
+        // Verificar que exista el registro de adopción y esté en estado 'interesado'
+        $sqlGetAdopcion = "SELECT id FROM adopciones 
+                          WHERE mascota_id = ? 
+                          AND adoptante_id = ? 
+                          AND estado = 'interesado'";
+        $stmtGetAdopcion = $conexion->prepare($sqlGetAdopcion);
+        $stmtGetAdopcion->bind_param("ii", $mascota_id, $adoptante_id);
+        $stmtGetAdopcion->execute();
+        $result = $stmtGetAdopcion->get_result();
         
-        // Obtener el mascota_id
-        $sqlMascota = "SELECT mascota_id FROM adopciones WHERE id = ?";
-        $stmtMascota = $conexion->prepare($sqlMascota);
-        $stmtMascota->bind_param("i", $adopcion_id);
-        $stmtMascota->execute();
-        $result = $stmtMascota->get_result();
-        $mascota = $result->fetch_assoc();
+        if (!$result->num_rows) {
+            $conexion->rollback();
+            return jsonResponse('error', 'No se encontró el registro de adopción o ya no está en estado interesado');
+        }
         
-        // Actualizar estado de la mascota
+        $adopcion = $result->fetch_assoc();
+        $adopcion_id = $adopcion['id'];
+        
+        // Actualizar estado de la adopción seleccionada a 'adoptado'
+        $sqlUpdate = "UPDATE adopciones 
+                     SET estado = 'adoptado', 
+                         fecha_adopcion = CURRENT_TIMESTAMP 
+                     WHERE id = ?";
+        $stmtUpdate = $conexion->prepare($sqlUpdate);
+        $stmtUpdate->bind_param("i", $adopcion_id);
+        if (!$stmtUpdate->execute()) {
+            throw new Exception("Error al actualizar el estado de la adopción");
+        }
+        
+        // Actualizar estado de la mascota a 'adoptado'
         $sqlUpdateMascota = "UPDATE mascotas SET estado = 'adoptado' WHERE id = ?";
         $stmtUpdateMascota = $conexion->prepare($sqlUpdateMascota);
-        $stmtUpdateMascota->bind_param("i", $mascota['mascota_id']);
-        $stmtUpdateMascota->execute();
+        $stmtUpdateMascota->bind_param("i", $mascota_id);
+        if (!$stmtUpdateMascota->execute()) {
+            throw new Exception("Error al actualizar el estado de la mascota");
+        }
         
-        // Rechazar otros interesados
-        $sqlRechazar = "UPDATE adopciones SET estado = 'rechazado' 
-                        WHERE mascota_id = ? AND id != ? AND estado = 'interesado'";
+        // Rechazar otras solicitudes de adopción para esta mascota
+        $sqlRechazar = "UPDATE adopciones 
+                       SET estado = 'rechazado' 
+                       WHERE mascota_id = ? 
+                       AND id != ? 
+                       AND estado = 'interesado'";
         $stmtRechazar = $conexion->prepare($sqlRechazar);
-        $stmtRechazar->bind_param("ii", $mascota['mascota_id'], $adopcion_id);
-        $stmtRechazar->execute();
+        $stmtRechazar->bind_param("ii", $mascota_id, $adopcion_id);
+        if (!$stmtRechazar->execute()) {
+            throw new Exception("Error al rechazar otras solicitudes");
+        }
         
         $conexion->commit();
         return jsonResponse('success', 'Adopción confirmada exitosamente');
