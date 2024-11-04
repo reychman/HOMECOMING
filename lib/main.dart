@@ -13,6 +13,7 @@ import 'package:homecoming/pages/login/crear_usuario_page.dart';
 import 'package:homecoming/pages/usuario_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,19 @@ class MyApp extends StatelessWidget {
           headlineLarge: TextStyle(fontSize: 96.0, fontWeight: FontWeight.bold),
         ),
       ),
+      // Agregamos soporte para localización
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // Definimos los idiomas soportados
+      supportedLocales: const [
+        Locale('es', 'ES'), // Español
+        Locale('en', 'US'), // Inglés
+      ],
+      // Establecemos el idioma por defecto
+      locale: const Locale('es', 'ES'),
       home: CheckLoginStatus(),
       routes: <String, WidgetBuilder>{
         '/inicio': (BuildContext context) => PaginaPrincipal(),

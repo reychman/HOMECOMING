@@ -497,14 +497,14 @@ Widget build(BuildContext context) {
                                                       Padding(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                                         child: Text(
-                                                          '${mascota.fechaPerdida}  -  $mensajeFecha',
+                                                          'Fecha perdida: ${mascota.fechaPerdida}\n$mensajeFecha',
                                                           style: TextStyle(color: Color.fromARGB(255, 53, 53, 53), fontSize: 14),
                                                         ),
                                                       ),
                                                       Padding(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                                                         child: Text(
-                                                          mascota.lugarPerdida,
+                                                          'Se perdió en: ${mascota.lugarPerdida}',
                                                           style: TextStyle(color: const Color.fromARGB(255, 53, 53, 53), fontSize: 14),
                                                         ),
                                                       ),

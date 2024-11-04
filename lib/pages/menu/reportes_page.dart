@@ -64,52 +64,110 @@ class _ReportesPageState extends State<ReportesPage> {
             Row(
               children: [
                 Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final selectedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (selectedDate != null) {
-                        setState(() {
-                          _startDate = selectedDate;
-                          _actualizarTitulo();
-                          _obtenerReporte();
-                        });
-                      }
-                    },
-                    child: Text(
-                      _startDate == null
-                          ? 'Seleccionar Fecha de Inicio'
-                          : DateFormat('yyyy-MM-dd').format(_startDate!),
-                      style: TextStyle(color: Colors.black),
+                  child: SizedBox(
+                    height: 48, // Altura fija para evitar el desbordamiento
+                    child: TextButton(
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                          locale: const Locale('es', 'ES'), // Agregar esta línea para español
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                textTheme: TextTheme(
+                                  bodyLarge: TextStyle(fontSize: 14.0),
+                                  bodyMedium: TextStyle(fontSize: 14.0),
+                                  titleMedium: TextStyle(fontSize: 14.0),
+                                ),
+                                dialogTheme: DialogTheme(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                              child: MediaQuery(
+                                data: MediaQuery.of(context).copyWith(textScaleFactor: 0.85),
+                                child: child!,
+                              ),
+                            );
+                          },
+                        );
+                        if (selectedDate != null) {
+                          // Validar que la fecha de inicio no sea posterior a la fecha final
+                          if (_endDate != null && selectedDate.isAfter(_endDate!)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('La fecha de inicio no puede ser posterior a la fecha final'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _startDate = selectedDate;
+                            _actualizarTitulo();
+                            _obtenerReporte();
+                          });
+                        }
+                      },
+                      child: Text(
+                        _startDate == null
+                            ? 'Fecha de Inicio'
+                            : DateFormat('yyyy-MM-dd').format(_startDate!),
+                        style: TextStyle(color: Colors.black),
+                      ),
                     ),
                   ),
                 ),
                 Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final selectedDate = await showDatePicker(
+                  child: SizedBox(
+                    height: 48, // Altura fija para evitar el desbordamiento
+                    child: TextButton(
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime(2000),
                         lastDate: DateTime.now(),
+                        locale: const Locale('es', 'ES'), // Agregar esta línea para español
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              textTheme: TextTheme(
+                                bodyLarge: TextStyle(fontSize: 14.0),
+                                bodyMedium: TextStyle(fontSize: 14.0),
+                                titleMedium: TextStyle(fontSize: 14.0),
+                              ),
+                              dialogTheme: DialogTheme(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                            child: MediaQuery(
+                              data: MediaQuery.of(context).copyWith(textScaleFactor: 0.85),
+                              child: child!,
+                            ),
+                          );
+                        },
                       );
-                      if (selectedDate != null) {
-                        setState(() {
-                          _endDate = selectedDate;
-                          _actualizarTitulo();
-                          _obtenerReporte();
-                        });
-                      }
-                    },
-                    child: Text(
-                      _endDate == null
-                          ? 'Seleccionar Fecha Final'
-                          : DateFormat('yyyy-MM-dd').format(_endDate!),
-                      style: TextStyle(color: Colors.black),
+                        if (selectedDate != null) {
+                          setState(() {
+                            _endDate = selectedDate;
+                            _actualizarTitulo();
+                            _obtenerReporte();
+                          });
+                        }
+                      },
+                      child: Text(
+                        _endDate == null
+                            ? 'Fecha Final'
+                            : DateFormat('yyyy-MM-dd').format(_endDate!),
+                        style: TextStyle(color: Colors.black),
+                      ),
                     ),
                   ),
                 ),
@@ -450,6 +508,12 @@ class _ReportesPageState extends State<ReportesPage> {
 }
 
   Widget _buildDownloadButton() {
+    // Si no es web, retornamos un contenedor vacío
+    if (!kIsWeb) {
+      return const SizedBox.shrink(); // No muestra nada en móvil
+    }
+
+    // Solo mostramos el botón en web
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: ElevatedButton.icon(
