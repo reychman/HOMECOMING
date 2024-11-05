@@ -234,7 +234,7 @@ Widget _buildEnhancedSectionHeader(String title, IconData icon) {
         Text(
           title,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.blue[700],
           ),
@@ -370,7 +370,7 @@ Widget _buildActionButton(
   Color color,
   VoidCallback onPressed,
 ) {
-  return Container(
+  return SizedBox(
     width: double.infinity,
     child: ElevatedButton.icon(
       icon: Icon(icon, color: Colors.white),
@@ -489,21 +489,6 @@ Future<void> _launchEmail(String email) async {
     );
   }
 
-// Función para construir encabezados de sección
-Widget _buildSectionHeader(String title) {
-  return Container(
-    margin: EdgeInsets.symmetric(vertical: 8.0),
-    child: Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.blueGrey,
-      ),
-    ),
-  );
-}
-
 // Función para construir texto de información con estilo
 Widget _buildInfoText(String text) {
   return Container(
@@ -514,43 +499,6 @@ Widget _buildInfoText(String text) {
         fontSize: 16,
         color: Colors.black, // Color del texto
       ),
-    ),
-  );
-}
-
-Widget _buildInteractiveText(String label, String value, String url) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4.0),
-    child: Row(
-      children: [
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-          ),
-        ),
-        Expanded(
-          child: InkWell(
-            onTap: () async {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              } else {
-                throw 'No se pudo iniciar $url';
-              }
-            },
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
-        ),
-      ],
     ),
   );
 }
@@ -581,29 +529,5 @@ void enviarMensajeWhatsApp(BuildContext context, Mascota mascota, String estado)
       SnackBar(content: Text('No se pudo abrir WhatsApp')),
     );
   }
-}
-
-// Función para construir el widget de contacto de WhatsApp
-Widget _buildWhatsAppContact(BuildContext context, Mascota mascota) {
-  return GestureDetector(
-    onTap: () => enviarMensajeWhatsApp(context, mascota, mascota.estado),
-    child: Row(
-      children: [
-        Image.network(
-          'http://$serverIP/homecoming/assets/imagenes/whatsapp.png',
-          width: 30,
-          height: 30,
-        ),
-        SizedBox(width: 10),
-        Text(
-          mascota.telefonoDueno,
-          style: TextStyle(
-            color: Colors.blue,
-            decoration: TextDecoration.underline,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 

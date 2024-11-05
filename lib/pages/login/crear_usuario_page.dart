@@ -31,6 +31,7 @@ class _CrearUsuarioPageState extends State<CrearUsuarioPage> {
   String mensaje = "";
   Usuario? usuario;
   int _currentStep = 0;
+  bool _aceptaTerminos = false;
   bool _validateCurrentStep() {
     setState(() {
       mensaje = "";
@@ -125,9 +126,103 @@ void _nextStep() {
       }
     });
   }
+void _mostrarTerminosCondiciones() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Términos y Condiciones'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 300,
+                  width: double.maxFinite,
+                  child: SingleChildScrollView(
+                    child: Text(
+                      '''
+1. Aceptación de los Términos
 
+Al acceder y utilizar esta aplicación, usted acepta estar sujeto a estos Términos y Condiciones de uso. Si no está de acuerdo con alguno de estos términos, no podrá utilizar nuestros servicios.
+
+2. Uso del Servicio
+
+2.1 Usted se compromete a proporcionar información precisa y actualizada durante el registro.
+2.2 Es responsable de mantener la confidencialidad de su cuenta.
+2.3 No debe usar el servicio para fines ilegales o no autorizados.
+
+3. Contenido del Usuario
+
+3.1 Al publicar contenido en la aplicación, usted mantiene sus derechos de propiedad.
+3.2 Otorga a la aplicación una licencia mundial para usar, modificar y mostrar el contenido.
+
+4. Privacidad
+
+4.1 Su uso de la aplicación está también sujeto a nuestra Política de Privacidad.
+4.2 Nos comprometemos a proteger su información personal según lo establecido en nuestra política.
+
+5. Modificaciones
+
+5.1 Nos reservamos el derecho de modificar estos términos en cualquier momento.
+5.2 Los cambios entrarán en vigor inmediatamente después de su publicación.
+
+6. Limitación de Responsabilidad
+
+6.1 La aplicación se proporciona "tal cual" sin garantías de ningún tipo.
+6.2 No seremos responsables por daños indirectos, incidentales o consecuentes.
+                      ''',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _aceptaTerminos = false;
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Cancelar'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _aceptaTerminos = true;
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Aceptar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
   // Método para validar y crear un usuario o refugio
   Future<void> crearUsuario() async {
+    if (!_aceptaTerminos) {
+      setState(() {
+        mensaje = "Debe aceptar los términos y condiciones para continuar";
+      });
+      return;
+    }
+
     if (!_validateCurrentStep()) {
       return;
     }
@@ -430,7 +525,36 @@ void _nextStep() {
               ),
             ],
             SizedBox(height: 20.0),
-            if (tipoUsuario == 'propietario' || tipoUsuario == 'refugio') 
+            Row(
+              children: [
+                Checkbox(
+                  value: _aceptaTerminos,
+                  onChanged: (bool? value) {
+                    if (value == true) {
+                      _mostrarTerminosCondiciones();
+                    } else {
+                      setState(() {
+                        _aceptaTerminos = false;
+                      });
+                    }
+                  },
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _mostrarTerminosCondiciones,
+                    child: Text(
+                      'He leído y acepto los términos y condiciones',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.0),
+            if (tipoUsuario != null && _aceptaTerminos)
               ElevatedButton(
                 onPressed: crearUsuario,
                 child: Text('Crear Usuario'),

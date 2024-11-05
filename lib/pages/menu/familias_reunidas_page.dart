@@ -84,10 +84,10 @@ Future<List<Mascota>> obtenerMascotas() async {
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+          crossAxisCount: 3,
           crossAxisSpacing: 16.0,
           mainAxisSpacing: 16.0,
-          childAspectRatio: 0.95,
+          childAspectRatio: 0.85,
         ),
         itemCount: 6,
         itemBuilder: (context, index) {

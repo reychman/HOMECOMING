@@ -697,50 +697,48 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
 }
 
 Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
-    CroppedFile? croppedFile;
+  CroppedFile? croppedFile;
 
-    // Configuración para Web y Android/iOS
-    croppedFile = await ImageCropper().cropImage(
-      sourcePath: imagePath,
-      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),  // Relación de aspecto cuadrada
-      uiSettings: [
-        if (!kIsWeb)
-          AndroidUiSettings(
-            toolbarTitle: 'Recortar Imagen',
-            toolbarColor: Colors.green,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
+  // Configuración para Web y Android/iOS
+  croppedFile = await ImageCropper().cropImage(
+    sourcePath: imagePath,
+    aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1), // Relación de aspecto cuadrada
+    uiSettings: [
+      IOSUiSettings(
+        title: 'Recortar Imagen',
+        cancelButtonTitle: 'Cancelar',
+        doneButtonTitle: 'Recortar',
+        aspectRatioPickerButtonHidden: true,
+        rotateButtonsHidden: false,
+      ),
+      if (kIsWeb)
+        WebUiSettings(
+          context: context, // Usamos el context, pero solo si el widget sigue montado
+          size: CropperSize(width: 400, height: 400), // Tamaño fijo
+          dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
+          initialAspectRatio: 1.0, // Relación de aspecto fija (cuadrada) para Web
+          zoomable: true, // Habilitar zoom
+          rotatable: true, // Habilitar rotación
+          cropBoxResizable: false,
+          translations: WebTranslations(
+            title: 'Recortar Imagen',
+            cropButton: 'Recortar',
+            cancelButton: 'Cancelar',
+            rotateLeftTooltip: 'Girar a la izquierda',
+            rotateRightTooltip: 'Girar a la derecha',
           ),
-        if (kIsWeb)
-          WebUiSettings(
-            context: context,  // Usamos el context, pero solo si el widget sigue montado
-            size: CropperSize(width: 400, height: 400), // Tamaño fijo
-            dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
-            initialAspectRatio: 1.0,  // Relación de aspecto fija (cuadrada) para Web
-            zoomable: true,  // Habilitar zoom
-            rotatable: true,  // Habilitar rotación
-            cropBoxResizable: false,
-            translations: WebTranslations(
-              title: 'Recortar Imagen',  // Personaliza el título aquí
-              cropButton: 'Recortar',   // Cambia el texto del botón de recorte
-              cancelButton: 'Cancelar', // Cambia el texto del botón de cancelar
-              rotateLeftTooltip: 'Girar a la izquierda',  // Tooltip para girar a la izquierda
-              rotateRightTooltip: 'Girar a la derecha',  // Tooltip para girar a la derecha
-            ),
-          ),
-      ],
-    );
+        ),
+    ],
+  );
 
-    // Si se ha recortado correctamente la imagen, devolver los bytes
-    if (croppedFile != null) {
-      return await croppedFile.readAsBytes();
-    }
-
-    // Si el usuario cancela el recorte o falla, devolver null
-    return null;
+  // Si se ha recortado correctamente la imagen, devolver los bytes
+  if (croppedFile != null) {
+    return await croppedFile.readAsBytes();
   }
 
+  // Si el usuario cancela el recorte o falla, devolver null
+  return null;
+}
 
   @override
   Widget build(BuildContext context) {

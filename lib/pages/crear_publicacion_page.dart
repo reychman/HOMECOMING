@@ -10,8 +10,6 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-//import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart'; // Asegúrate de tener este import
 
@@ -202,15 +200,16 @@ final List<String> _razasGato = [
                 toolbarTitle: 'Recortar Imagen',
                 toolbarColor: Colors.green,
                 toolbarWidgetColor: Colors.white,
-                lockAspectRatio: true, // Bloquear la relación de aspecto fija
+                lockAspectRatio: true, // Bloquear la relación de aspecto
                 aspectRatioPresets: [
-                  CropAspectRatioPreset.square,  // Forzar la relación de aspecto cuadrada
+                  CropAspectRatioPreset.square, // Mantener cuadrado
                 ],
-                hideBottomControls: true,  // Ocultar controles inferiores para evitar cambios
+                hideBottomControls: true, // Ocultar controles inferiores
+                showCropGrid: true, // Opcional: mostrar la cuadrícula
+                initAspectRatio: CropAspectRatioPreset.square, // Inicialización como cuadrado
               ),
             ],
           );
-
           if (croppedFile != null) {
             imageBytes = await croppedFile.readAsBytes();
           }
@@ -271,11 +270,32 @@ final List<String> _razasGato = [
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now(),
+        locale: const Locale('es', 'ES'), // Agregar esta línea para español
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              textTheme: TextTheme(
+                bodyLarge: TextStyle(fontSize: 14.0),
+                bodyMedium: TextStyle(fontSize: 14.0),
+                titleMedium: TextStyle(fontSize: 14.0),
+              ),
+              dialogTheme: DialogTheme(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaleFactor: 0.85),
+              child: child!,
+            ),
+          );
+        },
+      );
     if (picked != null && picked != DateTime.now()) {
       setState(() {
         _fechaPerdidaController.text = DateFormat('yyyy-MM-dd').format(picked);
@@ -519,22 +539,17 @@ Widget _buildStep2() {
       children: [
         // Mostrar campos de pérdida solo si no es adopcion
         if (mostrarCamposPerdida) ...[
-          TextFormField(
-            controller: _fechaPerdidaController,
-            decoration: InputDecoration(
-              labelText: 'Fecha de pérdida (YYYY-MM-DD)',
-              suffixIcon: IconButton(
-                icon: Icon(Icons.calendar_today),
-                onPressed: () => _selectDate(context),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _selectDate(context),
+                  child: Text(_fechaPerdidaController.text.isNotEmpty
+                      ? _fechaPerdidaController.text
+                      : 'Seleccionar fecha'),
+                ),
               ),
-            ),
-            readOnly: true,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor ingrese la fecha de pérdida';
-              }
-              return null;
-            },
+            ],
           ),
           SizedBox(height: 16),
           TextFormField(
