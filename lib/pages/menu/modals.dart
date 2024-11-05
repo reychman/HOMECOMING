@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:homecoming/ip.dart';
@@ -11,192 +10,399 @@ import 'package:url_launcher/url_launcher.dart';
 void mostrarModalInfoMascota(BuildContext context, Mascota mascota) {
   showDialog(
     context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.black87,
     builder: (BuildContext context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            bool isNarrowScreen = constraints.maxWidth < 600; // Pantallas angostas
-
-            return Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              height: MediaQuery.of(context).size.height * 0.8,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white, // Color de fondo del diálogo
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+      return TweenAnimationBuilder(
+        duration: Duration(milliseconds: 300),
+        tween: Tween<double>(begin: 0.0, end: 1.0),
+        builder: (context, double value, child) {
+          return Transform.scale(
+            scale: value,
+            child: Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
               ),
-              child: isNarrowScreen
-                  ? Column( // Disposición vertical en pantallas angostas
-                      children: [
-                        // Carrusel de fotos (arriba)
-                        Expanded(
-                          flex: 1,
-                          child: CarouselSlider(
-                            options: CarouselOptions(
-                              height: double.infinity,
-                              viewportFraction: 1.0,
-                              enlargeCenterPage: false,
-                            ),
-                            items: mascota.fotos.map((foto) {
-                              return SizedBox(
-                                width: double.infinity,
-                                child: Image.network(foto, fit: BoxFit.contain),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        // Información de la mascota y dueño (abajo)
-                        Expanded(
-                          flex: 1,
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader('Información de la Mascota'),
-                                _buildInfoText('Nombre: ${mascota.nombre.toUpperCase()}'),
-                                _buildInfoText('Especie: ${mascota.especie.toUpperCase()}'),
-                                _buildInfoText('Raza: ${mascota.raza.toUpperCase()}'),
-                                _buildInfoText('Sexo: ${mascota.sexo.toUpperCase()}'),
-                                if (mascota.estado != 'adopcion') ...[
-                                  _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
-                                  _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida.toUpperCase()}'),
-                                ],
-                                _buildInfoText('Estado: ${mascota.estado.toUpperCase()}'),
-                                _buildInfoText('Descripción: ${mascota.descripcion.toUpperCase()}'),
-                                SizedBox(height: 20),
-                                _buildSectionHeader('Información del Dueño'),
-                                _buildInfoText('Nombre Completo: ${mascota.nombreDueno.toUpperCase()} ${mascota.primerApellidoDueno.toUpperCase()} ${mascota.segundoApellidoDueno.toUpperCase()}'),
-                                SizedBox(height: 10),
-                                _buildInteractiveText(
-                                  'Email',
-                                  mascota.emailDueno,
-                                  'mailto:${mascota.emailDueno}',
-                                ),
-                                _buildWhatsAppContact(context, mascota),
-                                // Espaciado adicional antes del botón
-                                SizedBox(height: 20),// Botón "Me interesa" para adopción
-                                if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') ...[
-                                  Center( // Centrar el botón
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        // Lógica para manejar la adopción
-                                        Navigator.of(context).pop();
-                                        _interesadoEnAdopcion(context, mascota);
-                                      },
-                                      child: Text('Me interesa'),
-                                    ),
-                                  ),
-                                ] else if (mascota.estado == 'perdido') ...[
-                                  Center( // Centrar el botón
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        // Lógica para manejar la pérdida
-                                        enviarMensajeWhatsApp(context, mascota, 'perdido');
-                                      },
-                                      child: Text('Reportar Avistamiento'),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row( // Disposición horizontal en pantallas anchas
-                      children: [
-                        // Carrusel de fotos (lado izquierdo)
-                        Expanded(
-                          flex: 1,
-                          child: CarouselSlider(
-                            options: CarouselOptions(
-                              height: double.infinity,
-                              viewportFraction: 1.0,
-                              enlargeCenterPage: false,
-                            ),
-                            items: mascota.fotos.map((foto) {
-                              return SizedBox(
-                                width: double.infinity,
-                                child: Image.network(foto, fit: BoxFit.contain),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        // Información de la mascota y dueño (lado derecho)
-                        Expanded(
-                          flex: 1,
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader('Información de la Mascota'),
-                                _buildInfoText('Nombre: ${mascota.nombre.toUpperCase()}'),
-                                _buildInfoText('Especie: ${mascota.especie.toUpperCase()}'),
-                                _buildInfoText('Raza: ${mascota.raza.toUpperCase()}'),
-                                _buildInfoText('Sexo: ${mascota.sexo.toUpperCase()}'),
-                                if (mascota.estado != 'adopcion') ...[
-                                  _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
-                                  _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida.toUpperCase()}'),
-                                ],
-                                _buildInfoText('Estado: ${mascota.estado.toUpperCase()}'),
-                                _buildInfoText('Descripción: ${mascota.descripcion.toUpperCase()}'),
-                                SizedBox(height: 20),
-                                _buildSectionHeader('Información del Dueño'),
-                                _buildInfoText('Nombre Completo: ${mascota.nombreDueno.toUpperCase()} ${mascota.primerApellidoDueno.toUpperCase()} ${mascota.segundoApellidoDueno.toUpperCase()}'),
-                                SizedBox(height: 10),
-                                _buildInteractiveText(
-                                  'Email',
-                                  mascota.emailDueno,
-                                  'mailto:${mascota.emailDueno}',
-                                ),
-                                _buildWhatsAppContact(context, mascota),
-                                // Botón "Me interesa" para adopción
-                                if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente') ...[
-                                  Center( // Centrar el botón
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        // Lógica para manejar la adopción
-                                        Navigator.of(context).pop();
-                                        _interesadoEnAdopcion(context, mascota);
-                                      },
-                                      child: Text('Me interesa'),
-                                    ),
-                                  ),
-                                ] else if (mascota.estado == 'perdido') ...[
-                                  Center( // Centrar el botón
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        // Lógica para manejar la pérdida
-                                        enviarMensajeWhatsApp(context, mascota, 'perdido');
-                                      },
-                                      child: Text('Reportar Avistamiento'),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+              elevation: 15,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isNarrowScreen = constraints.maxWidth < 600;
+
+                  return Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 15,
+                          offset: Offset(0, 5),
                         ),
                       ],
                     ),
-            );
-          },
-        ),
+                    child: Column(
+                      children: [
+                        // Close button
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            icon: Icon(Icons.close, color: Colors.grey[600]),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                        Expanded(
+                          child: isNarrowScreen
+                              ? _buildVerticalLayout(context, mascota)
+                              : _buildHorizontalLayout(context, mascota),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
       );
     },
   );
+}
+
+Widget _buildVerticalLayout(BuildContext context, Mascota mascota) {
+  return Column(
+    children: [
+      // Carrusel mejorado
+      Expanded(
+        flex: 1,
+        child: _buildEnhancedCarousel(mascota),
+      ),
+      SizedBox(height: 20),
+      // Información
+      Expanded(
+        flex: 1,
+        child: _buildInfoSection(context, mascota),
+      ),
+    ],
+  );
+}
+
+Widget _buildHorizontalLayout(BuildContext context, Mascota mascota) {
+  return Row(
+    children: [
+      Expanded(
+        flex: 1,
+        child: _buildEnhancedCarousel(mascota),
+      ),
+      SizedBox(width: 20),
+      Expanded(
+        flex: 1,
+        child: _buildInfoSection(context, mascota),
+      ),
+    ],
+  );
+}
+
+Widget _buildEnhancedCarousel(Mascota mascota) {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 10,
+          offset: Offset(0, 5),
+        ),
+      ],
+    ),
+    child: CarouselSlider(
+      options: CarouselOptions(
+        height: double.infinity,
+        viewportFraction: 1.0,
+        enlargeCenterPage: true,
+        autoPlay: true,
+        autoPlayInterval: Duration(seconds: 5),
+        autoPlayAnimationDuration: Duration(milliseconds: 800),
+        autoPlayCurve: Curves.fastOutSlowIn,
+      ),
+      items: mascota.fotos.map((foto) {
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.network(
+              foto,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Widget _buildInfoSection(BuildContext context, Mascota mascota) {
+  return Container(
+    padding: EdgeInsets.all(15),
+    decoration: BoxDecoration(
+      color: Colors.grey[50],
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEnhancedSectionHeader('Información de la Mascota', Icons.pets),
+          _buildEnhancedInfoCard([
+            _buildInfoText('Nombre: ${mascota.nombre.toUpperCase()}'),
+            _buildInfoText('Especie: ${mascota.especie.toUpperCase()}'),
+            _buildInfoText('Raza: ${mascota.raza.toUpperCase()}'),
+            _buildInfoText('Sexo: ${mascota.sexo.toUpperCase()}'),
+            if (mascota.estado != 'adopcion') ...[
+              _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
+              _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida.toUpperCase()}'),
+            ],
+            _buildStatusChip(mascota.estado),
+            _buildInfoText('Descripción: ${mascota.descripcion.toUpperCase()}'),
+          ]),
+          
+          SizedBox(height: 20),
+          _buildEnhancedSectionHeader('Información del Dueño', Icons.person),
+          _buildEnhancedInfoCard([
+            _buildInfoText('Nombre Completo: ${mascota.nombreDueno.toUpperCase()} ${mascota.primerApellidoDueno.toUpperCase()} ${mascota.segundoApellidoDueno.toUpperCase()}'),
+            SizedBox(height: 10),
+            _buildContactButton(
+              icon: Icons.email,
+              text: mascota.emailDueno,
+              onTap: () => _launchEmail(mascota.emailDueno),
+            ),
+            SizedBox(height: 10),
+            _buildWhatsAppButton(context, mascota),
+          ]),
+          
+          SizedBox(height: 20),
+          if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente')
+            _buildActionButton(
+              'Me interesa',
+              Icons.favorite,
+              Colors.pink,
+              () {
+                Navigator.of(context).pop();
+                _interesadoEnAdopcion(context, mascota);
+              },
+            )
+          else if (mascota.estado == 'perdido')
+            _buildActionButton(
+              'Reportar Avistamiento',
+              Icons.visibility,
+              Colors.blue,
+              () => enviarMensajeWhatsApp(context, mascota, 'perdido'),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildEnhancedSectionHeader(String title, IconData icon) {
+  return Container(
+    margin: EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      children: [
+        Icon(icon, color: Colors.blue[700], size: 24),
+        SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[700],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildEnhancedInfoCard(List<Widget> children) {
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: Padding(
+      padding: EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    ),
+  );
+}
+
+Widget _buildStatusChip(String estado) {
+  Color chipColor;
+  IconData chipIcon;
+  switch (estado.toLowerCase()) {
+    case 'adopcion':
+      chipColor = Colors.green;
+      chipIcon = Icons.pets;
+      break;
+    case 'perdido':
+      chipColor = Colors.red;
+      chipIcon = Icons.search;
+      break;
+    case 'pendiente':
+      chipColor = Colors.orange;
+      chipIcon = Icons.pending;
+      break;
+    default:
+      chipColor = Colors.blue;
+      chipIcon = Icons.info;
+  }
+
+  return Container(
+    margin: EdgeInsets.symmetric(vertical: 8),
+    child: Chip(
+      avatar: Icon(chipIcon, color: Colors.white, size: 18),
+      label: Text(
+        estado.toUpperCase(),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: chipColor,
+    ),
+  );
+}
+
+Widget _buildContactButton({
+  required IconData icon,
+  required String text,
+  required VoidCallback onTap,
+}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blue[300]!),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue[700], size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.blue[700],
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildWhatsAppButton(BuildContext context, Mascota mascota) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => enviarMensajeWhatsApp(context, mascota, mascota.estado),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.green[300]!),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Image.network(
+              'http://$serverIP/homecoming/assets/imagenes/whatsapp.png',
+              width: 24,
+              height: 24,
+            ),
+            SizedBox(width: 10),
+            Text(
+              mascota.telefonoDueno,
+              style: TextStyle(
+                color: Colors.green[700],
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildActionButton(
+  String text,
+  IconData icon,
+  Color color,
+  VoidCallback onPressed,
+) {
+  return Container(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      icon: Icon(icon, color: Colors.white),
+      label: Text(
+        text,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: EdgeInsets.symmetric(vertical: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 4,
+      ),
+      onPressed: onPressed,
+    ),
+  );
+}
+
+Future<void> _launchEmail(String email) async {
+  final Uri emailUri = Uri(
+    scheme: 'mailto',
+    path: email,
+  );
+  if (await canLaunchUrl(emailUri)) {
+    await launchUrl(emailUri);
+  }
 }
   void _interesadoEnAdopcion(BuildContext context, Mascota mascota) async {
     // Obtén el ID del adoptante de forma asincrónica

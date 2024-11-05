@@ -87,7 +87,7 @@ Future<List<Mascota>> obtenerMascotas() async {
           crossAxisCount: 2,
           crossAxisSpacing: 16.0,
           mainAxisSpacing: 16.0,
-          childAspectRatio: 0.85,
+          childAspectRatio: 0.95,
         ),
         itemCount: 6,
         itemBuilder: (context, index) {
