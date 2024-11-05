@@ -247,7 +247,7 @@ class _ReportesPageState extends State<ReportesPage> {
                   columns: const [
                     DataColumn(
                       label: Text(
-                        'MÉTRICA',
+                        'DESCRIPCIÓN',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
