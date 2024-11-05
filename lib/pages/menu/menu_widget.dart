@@ -14,15 +14,10 @@ class MenuWidget extends StatelessWidget {
   }) : super(key: key);
   
   Future<void> _logout(BuildContext context) async {
-    // Elimina los datos del usuario de SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('userId'); // Elimina el userId almacenado
-    await prefs.setBool('isLoggedIn', false); // Nueva bandera
-
-    // Actualiza el estado del usuario en el UsuarioProvider
+    await prefs.remove('userId');
+    await prefs.setBool('isLoggedIn', false);
     Provider.of<UsuarioProvider>(context, listen: false).setUsuario(Usuario.vacio());
-
-    // Redirige al usuario a la página principal
     Navigator.of(context).pushReplacementNamed('/inicio');
   }
 
@@ -32,112 +27,264 @@ class MenuWidget extends StatelessWidget {
     final bool usuarioLogeado = usuario.nombre.isNotEmpty && usuario.tipoUsuario?.isNotEmpty == true;
     final bool esAdministrador = usuario.tipoUsuario == 'administrador';
 
+    // Definimos una paleta de colores personalizada
+    final colorScheme = {
+      'primary': Colors.green[800],
+      'secondary': Colors.green[600],
+      'background': Colors.green[50],
+      'menuItem': Colors.green[700],
+      'cardBackground': Colors.white,
+      'headerGradientStart': Colors.green[500],
+      'headerGradientEnd': Colors.green[700],
+    };
+
+    Widget buildMenuItem({
+      required IconData icon,
+      required String title,
+      required VoidCallback onTap,
+      Color? iconColor,
+      Widget? trailing,
+    }) {
+      return Container(
+        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: colorScheme['cardBackground'],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: iconColor ?? colorScheme['menuItem'],
+            size: 24,
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+            ),
+          ),
+          trailing: trailing,
+          onTap: onTap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
     return Drawer(
+      backgroundColor: colorScheme['background'],
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Container(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme['headerGradientStart']!,
+                  colorScheme['headerGradientEnd']!,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              spreadRadius: 2,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: usuario.fotoPortada != null && usuario.fotoPortada!.isNotEmpty
+                              ? Image.network(
+                                  'http://$serverIP/homecoming/assets/imagenes/fotos_perfil/${usuario.fotoPortada}?${DateTime.now().millisecondsSinceEpoch}',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.white,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    usuarioLogeado ? usuario.nombre : 'Invitado',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0),
+                  child: Text(
+                    usuarioLogeado ? usuario.tipoUsuario ?? 'Sin rol' : 'Sin rol',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.symmetric(vertical: 12),
               children: [
-                UserAccountsDrawerHeader(
-                  accountName: Text(usuarioLogeado ? usuario.nombre : 'Invitado'),
-                  accountEmail: Text(usuarioLogeado ? usuario.tipoUsuario ?? 'Sin rol' : 'Sin rol'),
-                  currentAccountPicture: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    backgroundImage: usuario.fotoPortada != null && usuario.fotoPortada!.isNotEmpty
-                        ? NetworkImage('http://$serverIP/homecoming/assets/imagenes/fotos_perfil/${usuario.fotoPortada}?${DateTime.now().millisecondsSinceEpoch}')
-                        : null, // Si no hay imagen, asignamos null
-                    child: usuario.fotoPortada == null || usuario.fotoPortada!.isEmpty
-                        ? Icon(
-                            Icons.person,  // Icono por defecto si no tiene foto
-                            size: 40.0,
-                            color: Colors.grey, // Color del ícono
-                          )
-                        : null, // Si hay imagen, no mostrar el ícono
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade400,  // color del fondo donde se encuentra la foto de perfil
-                  ),
-                ),
                 if (usuarioLogeado)
-                  ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text('Perfil'),
-                    onTap: () {
-                      Navigator.of(context).pushReplacementNamed('/perfilUsuario');
-                    },
+                  buildMenuItem(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Perfil',
+                    onTap: () => Navigator.of(context).pushReplacementNamed('/perfilUsuario'),
                   ),
-                ListTile(
-                  leading: Icon(Icons.home),
-                  title: Text('Inicio'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/inicio');
-                  },
+                buildMenuItem(
+                  icon: Icons.home_rounded,
+                  title: 'Inicio',
+                  onTap: () => Navigator.of(context).pushReplacementNamed('/inicio'),
                 ),
-                ListTile(
-                  leading: Icon(Icons.info),
-                  title: Text('¿Quiénes somos?'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/quienes_somos');
-                  },
+                buildMenuItem(
+                  icon: Icons.info_outline_rounded,
+                  title: '¿Quiénes somos?',
+                  onTap: () => Navigator.of(context).pushReplacementNamed('/quienes_somos'),
                 ),
-                ListTile(
-                  leading: Icon(Icons.question_answer),
-                  title: Text('Preguntas Frecuentes'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/preguntas_frecuentes');
-                  },
+                buildMenuItem(
+                  icon: Icons.question_answer_rounded,
+                  title: 'Preguntas Frecuentes',
+                  onTap: () => Navigator.of(context).pushReplacementNamed('/preguntas_frecuentes'),
                 ),
-                ListTile(
-                  leading: Icon(Icons.map),
-                  title: Text('Mapa de búsquedas'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/mapa_busquedas');
-                  },
+                buildMenuItem(
+                  icon: Icons.map_rounded,
+                  title: 'Mapa de búsquedas',
+                  onTap: () => Navigator.of(context).pushReplacementNamed('/mapa_busquedas'),
                 ),
-                ListTile(
-                  leading: Icon(Icons.family_restroom),
-                  title: Text('Familias reunidas'),
-                  onTap: () {
-                    Navigator.of(context).pushReplacementNamed('/familias_reunidas');
-                  },
+                buildMenuItem(
+                  icon: Icons.family_restroom_rounded,
+                  title: 'Familias reunidas',
+                  onTap: () => Navigator.of(context).pushReplacementNamed('/familias_reunidas'),
                 ),
                 if (usuarioLogeado && esAdministrador)
-                  ListTile(
-                    leading: Icon(Icons.picture_as_pdf),
-                    title: Text('Reportes'),
-                    onTap: () {
-                      Navigator.of(context).pushReplacementNamed('/reportes');
-                    },
+                  buildMenuItem(
+                    icon: Icons.assessment_rounded,
+                    title: 'Reportes',
+                    onTap: () => Navigator.of(context).pushReplacementNamed('/reportes'),
                   ),
                 if (!usuarioLogeado)
-                  ListTile(
-                    leading: Icon(Icons.login),
-                    title: Text('Iniciar Sesión'),
-                    onTap: () {
-                      Navigator.of(context).pushReplacementNamed('/iniciar_sesion');
-                    },
+                  buildMenuItem(
+                    icon: Icons.login_rounded,
+                    title: 'Iniciar Sesión',
+                    onTap: () => Navigator.of(context).pushReplacementNamed('/iniciar_sesion'),
                   ),
                 if (usuarioLogeado && esAdministrador)
-                  ListTile(
-                    leading: Icon(Icons.person_search),
-                    title: Text('Administrar Usuarios'),
-                    onTap: () {
-                      Navigator.of(context).pushReplacementNamed('/admin_usuarios');
-                    },
+                  buildMenuItem(
+                    icon: Icons.admin_panel_settings_rounded,
+                    title: 'Administrar Usuarios',
+                    onTap: () => Navigator.of(context).pushReplacementNamed('/admin_usuarios'),
+                    iconColor: colorScheme['primary'],
                   ),
               ],
             ),
           ),
-          if (usuario.id != null) // Verifica si el usuario está logueado
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: IconButton(
-                  icon: Icon(Icons.power_settings_new_sharp, color: Colors.red),
-                  onPressed: () => _logout(context), // Llama a la función de logout
+          if (usuarioLogeado)
+            Container(
+              margin: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.red[400]!,
+                    Colors.red[600]!,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _logout(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Cerrar Sesión',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
