@@ -41,7 +41,7 @@ try {
 
                 // Reemplaza el enlace en el contenido del correo
                 $str = str_replace(
-                    "http://192.168.100.102/homecoming/homecomingbd_v2/envioEmails/vendor/restablecerContra/formCambiarContra.html",
+                    "http://192.168.222.132/homecoming/homecomingbd_v2/envioEmails/vendor/restablecerContra/formCambiarContra.html",
                     $enlace,
                     $str
                 );
