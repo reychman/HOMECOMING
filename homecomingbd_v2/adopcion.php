@@ -26,6 +26,9 @@ function manejarSolicitud($conexion) {
                 return jsonResponse('error', 'Acción no válida');
         }
     } elseif ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        if (isset($_GET['verificar_interes'])) {
+            return verificarInteres($conexion);
+        }
         return obtenerInteresados($conexion);
     }
     
@@ -33,60 +36,77 @@ function manejarSolicitud($conexion) {
 }
 
 // Función para registrar interés en una mascota
-    function registrarInteres($conexion) {
-        $mascota_id = $_POST['mascota_id'] ?? null;
-        $adoptante_id = $_POST['adoptante_id'] ?? null;
-        
-        if (!$mascota_id || !$adoptante_id) {
-            return jsonResponse('error', 'Faltan datos requeridos');
-        }
-
-        // Iniciar transacción para asegurar que ambas operaciones se completen
-        $conexion->begin_transaction();
-
-        try {
-            // Verificar si ya existe un registro
-            $checkSql = "SELECT id, estado FROM adopciones 
-                        WHERE mascota_id = ? AND adoptante_id = ?";
-            
-            $stmt = $conexion->prepare($checkSql);
-            $stmt->bind_param("ii", $mascota_id, $adoptante_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                $registro = $result->fetch_assoc();
-                if ($registro['estado'] == 'interesado') {
-                    $conexion->rollback();
-                    return jsonResponse('error', 'Ya has registrado tu interés en esta mascota');
-                }
-            }
-            
-            // Insertar nuevo registro en adopciones
-            $sql = "INSERT INTO adopciones (mascota_id, adoptante_id, estado, fecha_adopcion) 
-                    VALUES (?, ?, 'interesado', CURRENT_TIMESTAMP)";
-            
-            $stmt = $conexion->prepare($sql);
-            $stmt->bind_param("ii", $mascota_id, $adoptante_id);
-            $stmt->execute();
-
-            // Actualizar el estado de la mascota a 'pendiente'
-            $updateSql = "UPDATE mascotas SET estado = 'pendiente' WHERE id = ?";
-            $updateStmt = $conexion->prepare($updateSql);
-            $updateStmt->bind_param("i", $mascota_id);
-            $updateStmt->execute();
-
-            // Si todo salió bien, confirmar la transacción
-            $conexion->commit();
-            return jsonResponse('success', 'Has registrado tu interés en la adopción');
-
-        } catch (Exception $e) {
-            // Si algo salió mal, deshacer los cambios
-            $conexion->rollback();
-            return jsonResponse('error', 'Error al registrar el interés: ' . $e->getMessage());
-        }
+function registrarInteres($conexion) {
+    $mascota_id = $_POST['mascota_id'] ?? null;
+    $adoptante_id = $_POST['adoptante_id'] ?? null;
+    
+    if (!$mascota_id || !$adoptante_id) {
+        return jsonResponse('error', 'Faltan datos requeridos');
     }
 
+    // Iniciar transacción
+    $conexion->begin_transaction();
+
+    try {
+        // Verificar si ya existe un registro
+        $checkSql = "SELECT id, estado FROM adopciones 
+                    WHERE mascota_id = ? AND adoptante_id = ?";
+        
+        $stmt = $conexion->prepare($checkSql);
+        $stmt->bind_param("ii", $mascota_id, $adoptante_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $conexion->rollback();
+            return jsonResponse('error', 'INTERES_EXISTENTE');
+        }
+        
+        // Insertar nuevo registro en adopciones
+        $sql = "INSERT INTO adopciones (mascota_id, adoptante_id, estado, fecha_adopcion) 
+                VALUES (?, ?, 'interesado', CURRENT_TIMESTAMP)";
+        
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("ii", $mascota_id, $adoptante_id);
+        $stmt->execute();
+
+        // Actualizar el estado de la mascota a 'pendiente'
+        $updateSql = "UPDATE mascotas SET estado = 'pendiente' WHERE id = ?";
+        $updateStmt = $conexion->prepare($updateSql);
+        $updateStmt->bind_param("i", $mascota_id);
+        $updateStmt->execute();
+
+        $conexion->commit();
+        return jsonResponse('success', 'Has registrado tu interés en la adopción');
+
+    } catch (Exception $e) {
+        $conexion->rollback();
+        return jsonResponse('error', 'Error al registrar el interés: ' . $e->getMessage());
+    }
+}
+function verificarInteres($conexion) {
+    $mascota_id = $_GET['mascota_id'] ?? null;
+    $adoptante_id = $_GET['adoptante_id'] ?? null;
+    
+    if (!$mascota_id || !$adoptante_id) {
+        return jsonResponse('error', 'Faltan datos requeridos');
+    }
+    
+    $sql = "SELECT id FROM adopciones 
+            WHERE mascota_id = ? AND adoptante_id = ? 
+            AND estado = 'interesado'";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("ii", $mascota_id, $adoptante_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    return jsonResponse(
+        'success',
+        'Verificación completada',
+        ['existe_interes' => $result->num_rows > 0]
+    );
+}
 // Función para obtener lista de interesados en una mascota
 function obtenerInteresados($conexion) {
     $mascota_id = isset($_GET['mascota_id']) ? $_GET['mascota_id'] : null;

@@ -202,28 +202,41 @@ Widget _buildInfoSection(BuildContext context, Mascota mascota) {
           
           SizedBox(height: 20),
           if (mascota.estado == 'adopcion' || mascota.estado == 'pendiente')
-            _buildActionButton(
-              'Me interesa',
-              Icons.favorite,
-              Colors.pink,
-              () {
-                Navigator.of(context).pop();
-                _interesadoEnAdopcion(context, mascota);
-              },
-            )
-          else if (mascota.estado == 'perdido')
-            _buildActionButton(
-              'Reportar Avistamiento',
-              Icons.visibility,
-              Colors.blue,
-              () => enviarMensajeWhatsApp(context, mascota, 'perdido'),
-            ),
+          FutureBuilder<bool>(
+            future: verificarInteresExistente(mascota.id),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && !snapshot.data!) {
+                return _buildActionButton(
+                  'Me interesa',
+                  Icons.favorite,
+                  Colors.pink,
+                  () => _mostrarDialogoConfirmacion(context, mascota),
+                );
+              }
+              return SizedBox.shrink();
+            },
+          )
         ],
       ),
     ),
   );
 }
+Future<bool> verificarInteresExistente(int mascotaId) async {
+  final adoptanteId = await obtenerIdAdoptante();
+  if (adoptanteId == null) return false;
 
+  final response = await http.get(
+    Uri.parse(
+      'http://$serverIP/homecoming/homecomingbd_v2/adopcion.php?verificar_interes=true&mascota_id=$mascotaId&adoptante_id=$adoptanteId'
+    ),
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data['data']['existe_interes'] ?? false;
+  }
+  return false;
+}
 Widget _buildEnhancedSectionHeader(String title, IconData icon) {
   return Container(
     margin: EdgeInsets.symmetric(vertical: 10),
@@ -404,46 +417,186 @@ Future<void> _launchEmail(String email) async {
     await launchUrl(emailUri);
   }
 }
-  void _interesadoEnAdopcion(BuildContext context, Mascota mascota) async {
-    // Obtén el ID del adoptante de forma asincrónica
-    int? adoptanteId = await obtenerIdAdoptante(); // Asegúrate de usar 'await' aquí
-    int mascotaId = mascota.id; // Suponiendo que `mascota` tiene una propiedad `id`
+void _mostrarDialogoConfirmacion(BuildContext context, Mascota mascota) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pets,
+              color: Colors.green[700],
+              size: 30,
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Confirmar Interés',
+              style: TextStyle(
+                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Container(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro que deseas mostrar interés en adoptar a ${mascota.nombre}?',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Al confirmar, el dueño de la mascota podrá ver tu información de contacto para el proceso de adopción.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[300],
+                      foregroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(
+                      'Cancelar',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Cierra el modal de confirmación
+                      _registrarInteresConfirmado(context, mascota); // Realiza la acción
+                      Navigator.of(context).pop(); // Cierra el modal principal
+                      Navigator.pushReplacementNamed(context, '/inicio'); // Redirige a la página principal
+                    },
+                    child: Text(
+                      'Confirmar',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    },
+  ).then((confirmado) {
+    if (confirmado == true) {
+      Navigator.of(context).pop(); // Cerrar el modal principal
+      _registrarInteresConfirmado(context, mascota);
+    }
+  });
+}
 
-    // Verificar si se obtuvo el ID del adoptante
+// Nueva función para manejar el registro de interés después de la confirmación
+  void _registrarInteresConfirmado(BuildContext context, Mascota mascota) async {
+    int? adoptanteId = await obtenerIdAdoptante();
+    
     if (adoptanteId == null) {
-      mostrarDialogo(context); // Llama al diálogo en lugar de mostrar un SnackBar
+      mostrarDialogo(context);
       return;
     }
 
-    // Crear el cuerpo de la solicitud
     var body = {
       'action': 'registrar_interes',
-      'mascota_id': mascotaId.toString(), // Asegúrate de que los valores sean del tipo correcto
-      'adoptante_id': adoptanteId.toString(), // Convertir a string si es necesario
+      'mascota_id': mascota.id.toString(),
+      'adoptante_id': adoptanteId.toString(),
     };
 
-    // Realizar la solicitud POST
     final response = await http.post(
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: body,
     );
-    // Debug: imprime el cuerpo de la respuesta
-    //print('Response status: ${response.statusCode}');
-    //print('Response body: ${response.body}'); // Añade esta línea
-    // Manejar la respuesta
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['status'] == 'success') {
         mostrarMensaje(context, data['message']);
-      } else {
+        // Volver a abrir el modal actualizado
+        mostrarModalInfoMascota(context, mascota);
+      } else if (data['message'] != 'INTERES_EXISTENTE') {
         mostrarMensaje(context, data['message']);
       }
     } else {
-      mostrarMensaje(context, 'Error al registrar el interés. Código de estado: ${response.statusCode}');
-      //print('Error: ${response.body}'); // Añade esta línea para ver el cuerpo del error
+      mostrarMensaje(context, 'Error al registrar el interés');
     }
   }
+
+  void _interesadoEnAdopcion(BuildContext context, Mascota mascota) async {
+  int? adoptanteId = await obtenerIdAdoptante();
+  
+  if (adoptanteId == null) {
+    mostrarDialogo(context);
+    return;
+  }
+
+  var body = {
+    'action': 'registrar_interes',
+    'mascota_id': mascota.id.toString(),
+    'adoptante_id': adoptanteId.toString(),
+  };
+
+  final response = await http.post(
+    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php'),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body,
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['status'] == 'success') {
+      mostrarMensaje(context, data['message']);
+      Navigator.of(context).pop(); // Cerrar el modal actual
+      // Volver a abrir el modal actualizado
+      mostrarModalInfoMascota(context, mascota);
+    } else if (data['message'] != 'INTERES_EXISTENTE') {
+      // Solo mostrar mensajes de error que no sean por interés existente
+      mostrarMensaje(context, data['message']);
+    }
+  } else {
+    mostrarMensaje(context, 'Error al registrar el interés');
+  }
+}
 
   Future<int?> obtenerIdAdoptante() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
