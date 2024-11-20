@@ -106,16 +106,18 @@
     // Función para actualizar el estado de una mascota (perdido/encontrado)
     function actualizarEstado() {
         global $conexion;
-
+    
         $id = isset($_POST['id']) ? $_POST['id'] : null;
         $nuevoEstado = isset($_POST['estado']) ? $_POST['estado'] : null;
         error_log("ID recibido: " . $id);
         error_log("Estado recibido: " . $nuevoEstado);
-
+    
         if ($id && $nuevoEstado) {
-            $sql = "UPDATE mascotas SET estado = ? WHERE id = ?";
+            $fechaActual = ($nuevoEstado == 'encontrado') ? date('Y-m-d H:i:s') : null;
+            $sql = "UPDATE mascotas SET estado = ?, fechaEncontrado = ? WHERE id = ?";
             $stmt = $conexion->prepare($sql);
-            $stmt->bind_param("si", $nuevoEstado, $id);
+            $stmt->bind_param("ssi", $nuevoEstado, $fechaActual, $id);
+    
             if ($stmt->execute()) {
                 echo json_encode(['success' => true, 'message' => 'Estado actualizado']);
             } else {
@@ -125,6 +127,7 @@
             echo json_encode(['error' => 'Faltan datos']);
         }
     }
+    
 
     function actualizarPublicacion() {
         global $conexion;

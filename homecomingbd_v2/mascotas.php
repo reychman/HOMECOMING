@@ -19,7 +19,7 @@ if (isset($_GET['ip_servidor'])) {
 }
 
 // Consulta para obtener todas las mascotas
-$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.primerApellido AS primer_apellido_dueno, U.segundoApellido AS segundo_apellido_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
+$sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, M.fecha_perdida, M.lugar_perdida, M.fechaEncontrado, M.estado, M.descripcion, M.fecha_creacion, U.nombre AS nombre_dueno, U.primerApellido AS primer_apellido_dueno, U.segundoApellido AS segundo_apellido_dueno, U.email AS email_dueno, U.telefono AS telefono_dueno
         FROM mascotas M
         JOIN usuarios U ON M.usuario_id = U.id
         WHERE estado_registro=1
@@ -48,6 +48,7 @@ if ($result->num_rows > 0) {
             'sexo' => $row['sexo'],
             'fecha_perdida' => $row['fecha_perdida'],
             'lugar_perdida' => $row['lugar_perdida'],
+            'fechaEncontrado' => $row['fechaEncontrado'],
             'estado' => $row['estado'],
             'descripcion' => $row['descripcion'],
             'fotos' => $fotos,

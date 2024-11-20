@@ -25,6 +25,49 @@ class _FamiliasReunidasPageState extends State<FamiliasReunidasPage> {
   int _totalReuniones = 0; // Added the _totalReuniones field
   double _finalesFelicesPercentaje = 0.0; // Add this line
   int _totalMascotas = 0; // Add this line
+  String _selectedDateRange = 'Todos'; // Default value
+  final List<String> _dateRanges = ['Todos', 'Últimos 7 días', 'Últimos 30 días', 'Últimos 90 días'];
+  void _filtrarPorFecha(String range) {
+    setState(() {
+      _selectedDateRange = range;
+      
+      if (range == 'Todos') {
+        _mascotasFiltradas = _mascotas.where((m) => m.estado == 'encontrado').toList();
+        return;
+      }
+
+      int days;
+      switch (range) {
+        case 'Últimos 7 días':
+          days = 7;
+          break;
+        case 'Últimos 30 días':
+          days = 30;
+          break;
+        case 'Últimos 90 días':
+          days = 90;
+          break;
+        default:
+          days = 0;
+      }
+
+      DateTime cutoffDate = DateTime.now().subtract(Duration(days: days));
+      
+      _mascotasFiltradas = _mascotas.where((mascota) {
+        if (mascota.estado != 'encontrado' || mascota.fechaEncontrado == 'Desconocido') {
+          return false;
+        }
+
+        try {
+          DateTime fechaEncontrado = DateTime.parse(mascota.fechaEncontrado);
+          return fechaEncontrado.isAfter(cutoffDate);
+        } catch (e) {
+          return false;
+        }
+      }).toList();
+    });
+  }
+
 
   @override
   void initState() {
@@ -362,14 +405,84 @@ Widget _buildStatItem({
 
   void _buscarMascota() {
     String searchQuery = _searchController.text.toLowerCase();
-    setState(() {
-      _mascotasFiltradas = _mascotas.where((mascota) {
-        final nombreMascota = mascota.nombre.toLowerCase();
-        final lugarPerdida = mascota.lugarPerdida.toLowerCase();
-        return nombreMascota.contains(searchQuery) ||
-              lugarPerdida.contains(searchQuery);
+    List<Mascota> mascotasFiltradas = _mascotas.where((mascota) {
+      final nombreMascota = mascota.nombre.toLowerCase();
+      final lugarPerdida = mascota.lugarPerdida.toLowerCase();
+      return (nombreMascota.contains(searchQuery) ||
+          lugarPerdida.contains(searchQuery)) &&
+          mascota.estado == 'encontrado';
+    }).toList();
+
+    // Apply date filter if not 'Todos'
+    if (_selectedDateRange != 'Todos') {
+      int days;
+      switch (_selectedDateRange) {
+        case 'Últimos 7 días':
+          days = 7;
+          break;
+        case 'Últimos 30 días':
+          days = 30;
+          break;
+        case 'Últimos 90 días':
+          days = 90;
+          break;
+        default:
+          days = 0;
+      }
+
+      DateTime cutoffDate = DateTime.now().subtract(Duration(days: days));
+      mascotasFiltradas = mascotasFiltradas.where((mascota) {
+        DateTime fechaEncontrado  = DateTime.parse(mascota.fechaEncontrado );
+        return fechaEncontrado.isAfter(cutoffDate);
       }).toList();
+    }
+
+    setState(() {
+      _mascotasFiltradas = mascotasFiltradas;
     });
+  }
+  Widget _buildDateFilter() {
+    return FadeInDown(
+      delay: Duration(milliseconds: 300),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: DropdownButtonFormField<String>(
+          value: _selectedDateRange,
+          decoration: InputDecoration(
+            prefixIcon: Icon(Icons.calendar_today, color: Colors.green),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+          items: _dateRanges.map((String range) {
+            return DropdownMenuItem<String>(
+              value: range,
+              child: Text(range),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              _filtrarPorFecha(newValue);
+            }
+          },
+        ),
+      ),
+    );
   }
   
   @override
@@ -442,10 +555,8 @@ Widget _buildStatItem({
                 children: [
                   // Barra de búsqueda
                   _buildSearchBar(),
-
                   // Tarjeta de estadísticas
                   _buildStatsCard(),
-
                   // Sección de encabezado
                   Container(
                     margin: EdgeInsets.all(16),
@@ -514,7 +625,7 @@ Widget _buildStatItem({
                       ],
                     ),
                   ),
-
+                  _buildDateFilter(), // Add this line
                   // Grid de mascotas
                   Padding(
                     padding: const EdgeInsets.all(16.0),

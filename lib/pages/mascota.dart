@@ -7,6 +7,7 @@ class Mascota {
   final String sexo;
   final String fechaPerdida;
   final String lugarPerdida;
+  final String fechaEncontrado;
   final String estado;
   final String descripcion;
   final List<String> fotos; // Cambiamos foto por una lista de fotos
@@ -28,6 +29,7 @@ class Mascota {
     required this.sexo,
     required this.fechaPerdida,
     required this.lugarPerdida,
+    required this.fechaEncontrado,
     required this.estado,
     required this.descripcion,
     required this.fotos, // Lista de fotos
@@ -50,6 +52,7 @@ class Mascota {
       sexo: json['sexo'] ?? 'Desconocido',
       fechaPerdida: json['fecha_perdida'] ?? 'Desconocido',
       lugarPerdida: json['lugar_perdida'] ?? 'Desconocido',
+      fechaEncontrado: json['fechaEncontrado'] ?? 'Desconocido',
       estado: json['estado'] ?? 'Desconocido',
       descripcion: json['descripcion'] ?? 'Sin descripción',
       fotos: json['fotos'] != null ? List<String>.from(json['fotos']) : [], // Convertir fotos en una lista

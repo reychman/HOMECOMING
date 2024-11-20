@@ -47,28 +47,6 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool('isLoggedIn') ?? false; // Verifica la bandera
   }
-
-  Widget _imagenesManejoErrores(String imageUrl) {
-    return Image.network(
-      imageUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        print('Error loading image: $imageUrl');
-        print('Error details: $error');
-        return Center(child: Icon(Icons.error));
-      },
-      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: CircularProgressIndicator(
-            value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                : null,
-          ),
-        );
-      },
-    );
-  }
   String obtenerMensajeFecha(DateTime fechaPerdida) {
     final hoy = DateTime.now();
     final diferenciaDias = hoy.difference(fechaPerdida).inDays;
@@ -307,7 +285,7 @@ Widget _buildMascotaCard(Mascota mascota, bool esAdministrador, String mensajeFe
               flex: 3, // Damos más espacio al carrusel
               child: GestureDetector(
                 onTap: () => mostrarModalInfoMascota(context, mascota),
-                child: Container(
+                child: SizedBox(
                   width: double.infinity,
                   child: mascota.fotos.isNotEmpty
                     ? CarouselSlider(
@@ -399,7 +377,7 @@ Widget _buildMascotaCard(Mascota mascota, bool esAdministrador, String mensajeFe
       ),
     );
   }
-  @override
+@override
 Widget build(BuildContext context) {
   final arguments = ModalRoute.of(context)!.settings.arguments;
   final Usuario usuario = arguments is Usuario ? arguments : Usuario.vacio();
@@ -514,32 +492,32 @@ Widget build(BuildContext context) {
                                   crossAxisCount = 1;
                                 }
                                 return GridView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 16.0,
-        mainAxisSpacing: 16.0,
-        childAspectRatio: 0.85, // Ajustamos para dar más espacio vertical
-      ),
-      itemCount: _mascotasFiltradas.length,
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        final mascota = _mascotasFiltradas[index];
-        final fechaPerdida = _parseFecha(mascota.fechaPerdida);
-        final mensajeFecha = fechaPerdida != null
-            ? obtenerMensajeFecha(fechaPerdida)
-            : 'Fecha no disponible';
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 16.0,
+                                    mainAxisSpacing: 16.0,
+                                    childAspectRatio: 0.85, // Ajustamos para dar más espacio vertical
+                                  ),
+                                  itemCount: _mascotasFiltradas.length,
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemBuilder: (context, index) {
+                                    final mascota = _mascotasFiltradas[index];
+                                    final fechaPerdida = _parseFecha(mascota.fechaPerdida);
+                                    final mensajeFecha = fechaPerdida != null
+                                        ? obtenerMensajeFecha(fechaPerdida)
+                                        : 'Fecha no disponible';
 
-        return Consumer<UsuarioProvider>(
-          builder: (context, usuarioProvider, _) {
-            final usuario = usuarioProvider.usuario ?? Usuario.vacio();
-            final bool esAdministrador = usuario.tipoUsuario == 'administrador';
-            return _buildMascotaCard(mascota, esAdministrador, mensajeFecha);
-          },
-        );
-      },
-    );
+                                    return Consumer<UsuarioProvider>(
+                                      builder: (context, usuarioProvider, _) {
+                                        final usuario = usuarioProvider.usuario ?? Usuario.vacio();
+                                        final bool esAdministrador = usuario.tipoUsuario == 'administrador';
+                                        return _buildMascotaCard(mascota, esAdministrador, mensajeFecha);
+                                      },
+                                    );
+                                  },
+                                );
                               },
                             );
                           }
