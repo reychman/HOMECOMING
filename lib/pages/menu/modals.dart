@@ -216,6 +216,13 @@ Widget _buildInfoSection(BuildContext context, Mascota mascota) {
               return SizedBox.shrink();
             },
           )
+          else if (mascota.estado == 'perdido')
+            _buildActionButton(
+              'Reportar Avistamiento',
+              Icons.visibility,
+              Colors.blue,
+              () => enviarMensajeWhatsApp(context, mascota, 'perdido'),
+            ),
         ],
       ),
     ),
@@ -443,7 +450,7 @@ void _mostrarDialogoConfirmacion(BuildContext context, Mascota mascota) {
             ),
           ],
         ),
-        content: Container(
+        content: SizedBox(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -562,41 +569,6 @@ void _mostrarDialogoConfirmacion(BuildContext context, Mascota mascota) {
     }
   }
 
-  void _interesadoEnAdopcion(BuildContext context, Mascota mascota) async {
-  int? adoptanteId = await obtenerIdAdoptante();
-  
-  if (adoptanteId == null) {
-    mostrarDialogo(context);
-    return;
-  }
-
-  var body = {
-    'action': 'registrar_interes',
-    'mascota_id': mascota.id.toString(),
-    'adoptante_id': adoptanteId.toString(),
-  };
-
-  final response = await http.post(
-    Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php'),
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: body,
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['status'] == 'success') {
-      mostrarMensaje(context, data['message']);
-      Navigator.of(context).pop(); // Cerrar el modal actual
-      // Volver a abrir el modal actualizado
-      mostrarModalInfoMascota(context, mascota);
-    } else if (data['message'] != 'INTERES_EXISTENTE') {
-      // Solo mostrar mensajes de error que no sean por interés existente
-      mostrarMensaje(context, data['message']);
-    }
-  } else {
-    mostrarMensaje(context, 'Error al registrar el interés');
-  }
-}
 
   Future<int?> obtenerIdAdoptante() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
