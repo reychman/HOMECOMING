@@ -27,14 +27,19 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   Uint8List? _imageBytes;
   Usuario? _usuario;
   List<dynamic> _misPublicaciones = []; // Lista de publicaciones del usuario
+  List<dynamic> _mascotasAdoptadas = [];
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _publicacioPropiaUsuario(); // Cargar publicaciones del usuario
+  _cargarDatos();
   }
-  //inicio donde se administra las fotos de las mascotas
+  Future<void> _cargarDatos() async {
+  await _loadUserData();  // Asumiendo que este método carga los datos del usuario
+  await _publicacioPropiaUsuario();  // Tus publicaciones
+  await _obtenerMascotasAdoptadas();  // Mascotas adoptadas
+}
+//inicio donde se administra las fotos de las mascotas
   Future<void> _mostrarModalAgregarFotos(BuildContext context, int publicacionId) async {
     List<Uint8List> nuevasFotos = [];
 
@@ -176,7 +181,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     print('No se encontró un usuario_id en SharedPreferences');
   }
 }
-  //inicio de la administrador de la foto de perfil
+//inicio de la administrador de la foto de perfil
   Future<void> _subirFotoPerfil(Uint8List imageBytes) async {
   if (_usuario == null || _usuario!.id == null) return;
 
@@ -394,6 +399,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       return 'Hace más de una semana';
     }
   }
+
   Future<void> _updatePassword() async {
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
@@ -515,7 +521,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     Navigator.of(context).pushReplacementNamed('/inicio');
   }
 
-  // Obtener las publicaciones del usuario
+// Obtener las publicaciones del usuario
   Future<void> _publicacioPropiaUsuario() async {
     if (_usuario == null) return;
     try {
@@ -604,7 +610,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     }
   }
 
-  // Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
+// Cambiar el estado de la publicación (por ejemplo, de perdido a encontrado)
   Future<void> _cambiarEstadoMascota(int publicacionId, String nuevoEstado) async {
     var response = await http.post(
       Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
@@ -696,48 +702,287 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   }
 }
 
-Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
-  CroppedFile? croppedFile;
+  Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
+    CroppedFile? croppedFile;
 
-  // Configuración para Web y Android/iOS
-  croppedFile = await ImageCropper().cropImage(
-    sourcePath: imagePath,
-    aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1), // Relación de aspecto cuadrada
-    uiSettings: [
-      IOSUiSettings(
-        title: 'Recortar Imagen',
-        cancelButtonTitle: 'Cancelar',
-        doneButtonTitle: 'Recortar',
-        aspectRatioPickerButtonHidden: true,
-        rotateButtonsHidden: false,
-      ),
-      if (kIsWeb)
-        WebUiSettings(
-          context: context, // Usamos el context, pero solo si el widget sigue montado
-          size: CropperSize(width: 400, height: 400), // Tamaño fijo
-          dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
-          initialAspectRatio: 1.0, // Relación de aspecto fija (cuadrada) para Web
-          zoomable: true, // Habilitar zoom
-          rotatable: true, // Habilitar rotación
-          cropBoxResizable: false,
-          translations: WebTranslations(
-            title: 'Recortar Imagen',
-            cropButton: 'Recortar',
-            cancelButton: 'Cancelar',
-            rotateLeftTooltip: 'Girar a la izquierda',
-            rotateRightTooltip: 'Girar a la derecha',
-          ),
+    // Configuración para Web y Android/iOS
+    croppedFile = await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1), // Relación de aspecto cuadrada
+      uiSettings: [
+        IOSUiSettings(
+          title: 'Recortar Imagen',
+          cancelButtonTitle: 'Cancelar',
+          doneButtonTitle: 'Recortar',
+          aspectRatioPickerButtonHidden: true,
+          rotateButtonsHidden: false,
         ),
-    ],
-  );
+        if (kIsWeb)
+          WebUiSettings(
+            context: context, // Usamos el context, pero solo si el widget sigue montado
+            size: CropperSize(width: 400, height: 400), // Tamaño fijo
+            dragMode: WebDragMode.crop, // Modo de arrastre solo para recortar
+            initialAspectRatio: 1.0, // Relación de aspecto fija (cuadrada) para Web
+            zoomable: true, // Habilitar zoom
+            rotatable: true, // Habilitar rotación
+            cropBoxResizable: false,
+            translations: WebTranslations(
+              title: 'Recortar Imagen',
+              cropButton: 'Recortar',
+              cancelButton: 'Cancelar',
+              rotateLeftTooltip: 'Girar a la izquierda',
+              rotateRightTooltip: 'Girar a la derecha',
+            ),
+          ),
+      ],
+    );
 
-  // Si se ha recortado correctamente la imagen, devolver los bytes
-  if (croppedFile != null) {
-    return await croppedFile.readAsBytes();
+    // Si se ha recortado correctamente la imagen, devolver los bytes
+    if (croppedFile != null) {
+      return await croppedFile.readAsBytes();
+    }
+
+    // Si el usuario cancela el recorte o falla, devolver null
+    return null;
   }
 
-  // Si el usuario cancela el recorte o falla, devolver null
-  return null;
+  Future<void> _mostrarInteresados(int idMascota) async {
+    final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php?mascota_id=$idMascota');
+    
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['status'] == 'success') {
+          List interesados = data['data'];
+          Map<String, dynamic>? selectedInteresado;
+          
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return StatefulBuilder(
+                builder: (context, setState) {
+                  return AlertDialog(
+                    title: Text('Interesados en Adoptar'),
+                    content: interesados.isNotEmpty
+                        ? SizedBox(
+                            width: double.maxFinite,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: interesados.length,
+                                    itemBuilder: (context, index) {
+                                      final interesado = interesados[index];
+                                      String nombreCompleto = interesado['nombre'];
+                                      if (interesado['primerApellido'] != null) {
+                                        nombreCompleto += ' ${interesado['primerApellido']}';
+                                      }
+                                      if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
+                                        nombreCompleto += ' ${interesado['segundoApellido']}';
+                                      }
+                                      
+                                      return ListTile(
+                                        leading: Radio<Map<String, dynamic>>(
+                                          value: interesado,
+                                          groupValue: selectedInteresado,
+                                          onChanged: (Map<String, dynamic>? value) {
+                                            setState(() {
+                                              selectedInteresado = value;
+                                            });
+                                          },
+                                        ),
+                                        title: Text(nombreCompleto),
+                                        subtitle: Text(interesado['email']),
+                                        trailing: IconButton(
+                                          icon: Icon(Icons.message, color: Colors.green),
+                                          onPressed: () {
+                                            final whatsappUri = Uri.parse(
+                                              'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
+                                            );
+                                            launchUrl(whatsappUri);
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: selectedInteresado == null ? null : () async {
+                                    bool? confirmar = await showDialog<bool>(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text('Confirmar Adopción'),
+                                          content: Text(
+                                            'Al continuar estás confirmando que ${selectedInteresado!['nombre']} adoptó a la mascota. ¿Deseas continuar?'
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              child: Text('Cancelar'),
+                                              onPressed: () => Navigator.of(context).pop(false),
+                                            ),
+                                            ElevatedButton(
+                                              child: Text('Confirmar'),
+                                              onPressed: () => Navigator.of(context).pop(true),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+
+                                    if (confirmar == true) {
+                                      final confirmarUrl = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php');
+                                      try {
+                                        final confirmarResponse = await http.post(
+                                          confirmarUrl,
+                                          body: {
+                                            'action': 'confirmar_adopcion',
+                                            'mascota_id': idMascota.toString(),
+                                            'adoptante_id': selectedInteresado!['id'].toString(),
+                                          },
+                                        );
+
+                                        final responseData = json.decode(confirmarResponse.body);
+                                        if (responseData['status'] == 'success') {
+                                          Navigator.of(context).pop(); // Cerrar diálogo de confirmación                                        
+                                          _publicacioPropiaUsuario();
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Adopción confirmada exitosamente')),
+                                          );
+                                          
+                                          // Aquí puedes actualizar tu UI si es necesario
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: ${responseData['message']}')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error al confirmar la adopción: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Text('Confirmar Adopción'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Text('Nadie ha mostrado interés en esta mascota.'),
+                    actions: <Widget>[
+                      TextButton(
+                        child: Text('Cerrar'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        } else {
+          print(data['message']);
+        }
+      } else {
+        print('Error al obtener interesados');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  Color _getEstadoColor(String estado) {
+    switch (estado) {
+      case 'perdido':
+        return Colors.red;
+      case 'encontrado':
+        return Colors.green;
+      case 'adopcion':
+        return Colors.orange; // O el color que prefieras
+      case 'pendiente':
+        return Colors.blue; // O el color que prefieras
+      case 'adoptado':
+        return Colors.green; // O el color que prefieras
+      default:
+        return Colors.grey; // Color por defecto si no coincide con ningún estado
+    }
+  }
+
+  String _getEstadoTexto(String estado) {
+    switch (estado) {
+      case 'perdido':
+        return 'Tu mascota te extraña tanto como tú a él/ella';
+      case 'encontrado':
+        return 'Nos complace saber que tu mascota fue encontrada';
+      case 'adopcion':
+        return 'Esta mascota está en adopción';
+      case 'pendiente':
+        return 'Hay alguien interesado en la adopción';
+      case 'adoptado':
+        return 'Mascota Adoptada';
+      default:
+        return 'Estado desconocido'; // Texto por defecto si no coincide con ningún estado
+    }
+  }
+
+Future<void> _obtenerMascotasAdoptadas() async {
+  if (_usuario == null) return;
+  try {
+    var response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/gestionar_publicaciones.php'),
+      body: {
+        'usuario_id': _usuario!.id.toString(),
+        'accion': 'obtenerMascotasAdoptadas',
+      },
+    );
+    if (response.statusCode == 200) {
+      var jsonResponse = json.decode(response.body);
+      print('Se están cargando las mascotas adoptadas en formato Json');
+      
+      // Verificar si es una lista o tiene un error
+      if (jsonResponse is List) {
+        setState(() {
+          _mascotasAdoptadas = jsonResponse.map((mascota) {
+            // Asegúrate de que 'fotos' sea una lista de mapas o cadenas
+            if (mascota['fotos'] is List) {
+              mascota['fotos'] = mascota['fotos'].map((foto) {
+                return foto is String ? foto : (foto is Map ? foto : null);
+              }).whereType<dynamic>().toList();
+            } else {
+              mascota['fotos'] = [];
+            }
+            return mascota;
+          }).toList();
+        });
+
+        if (_mascotasAdoptadas.isNotEmpty) {
+          print('Se están cargando tus mascotas adoptadas');
+        } else {
+          print('No se encontraron mascotas adoptadas.');
+        }
+      } else if (jsonResponse is Map && jsonResponse.containsKey('error')) {
+        // Manejar el caso de error
+        print('Error: ${jsonResponse['error']}');
+        setState(() {
+          _mascotasAdoptadas = [];
+        });
+      }
+    }
+  } catch (e) {
+    print('Error en la solicitud: $e');
+    setState(() {
+      _mascotasAdoptadas = [];
+    });
+  }
 }
 
   @override
@@ -1142,6 +1387,164 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
                                 );
                               },
                             ),
+                            SizedBox(height: 40), // Espaciado entre secciones
+                            Text('Mis Mascotas Adoptadas', 
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 20),
+                            
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                int crossAxisCount;
+                                if (constraints.maxWidth > 1200) {
+                                  crossAxisCount = 4;
+                                } else if (constraints.maxWidth > 900) {
+                                  crossAxisCount = 3;
+                                } else if (constraints.maxWidth > 600) {
+                                  crossAxisCount = 2;
+                                } else {
+                                  crossAxisCount = 1;
+                                }
+                                return _mascotasAdoptadas.isEmpty
+                                    ? Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Text(
+                                            'No has adoptado ninguna mascota todavía',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : GridView.builder(
+                                        physics: NeverScrollableScrollPhysics(),
+                                        shrinkWrap: true,
+                                        padding: EdgeInsets.all(10),
+                                        itemCount: _mascotasAdoptadas.length,
+                                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: crossAxisCount,
+                                          crossAxisSpacing: 16.0,
+                                          mainAxisSpacing: 16.0,
+                                          childAspectRatio: 0.85,
+                                        ),
+                                        itemBuilder: (context, index) {
+                                          final mascota = _mascotasAdoptadas[index];
+                                          List<String> fotos = List<String>.from(mascota['fotos']);
+                                          bool isAdopted = mascota['estado'] == 'adoptado';
+
+                                          return Card(
+                                            margin: EdgeInsets.all(8.0),
+                                            elevation: 3,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10)
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  width: double.infinity,
+                                                  padding: EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: isAdopted ? Colors.green[400] : Colors.orange[400],
+                                                    borderRadius: BorderRadius.only(
+                                                      topLeft: Radius.circular(10),
+                                                      topRight: Radius.circular(10),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    isAdopted ? 'Mascota Adoptada' : 'En Proceso de Adopción',
+                                                    style: TextStyle(color: Colors.white),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.vertical(
+                                                      bottom: Radius.circular(10)
+                                                    ),
+                                                    child: fotos.isNotEmpty
+                                                        ? fotos.length > 1
+                                                            ? CarouselSlider(
+                                                                options: CarouselOptions(
+                                                                  height: MediaQuery.of(context).size.height * 0.25,
+                                                                  viewportFraction: 1.0,
+                                                                  enlargeCenterPage: false,
+                                                                  enableInfiniteScroll: true,
+                                                                  autoPlay: true,
+                                                                ),
+                                                                items: fotos.map((foto) {
+                                                                  return AspectRatio(
+                                                                    aspectRatio: 1.5,
+                                                                    child: Image.network(
+                                                                      'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/$foto',
+                                                                      fit: BoxFit.contain,
+                                                                      errorBuilder: (context, error, stackTrace) {
+                                                                        return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                                      },
+                                                                    ),
+                                                                  );
+                                                                }).toList(),
+                                                              )
+                                                            : AspectRatio(
+                                                                aspectRatio: 1.5,
+                                                                child: Image.network(
+                                                                  'http://$serverIP/homecoming/assets/imagenes/fotos_mascotas/${fotos[0]}',
+                                                                  fit: BoxFit.contain,
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return Icon(Icons.pets, size: 100, color: Colors.grey);
+                                                                  },
+                                                                ),
+                                                              )
+                                                        : Icon(Icons.pets, size: 100, color: Colors.grey),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.all(8.0),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        mascota['nombre'],
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 18
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 5),
+                                                      if (isAdopted) ...[
+                                                        Text(
+                                                          'Anterior dueño: ${mascota['nombre_dueno_original']}',
+                                                          style: TextStyle(color: Colors.grey[600]),
+                                                        ),
+                                                        Text(
+                                                          'Correo: ${mascota['email_dueno_original']}',
+                                                          style: TextStyle(color: Colors.grey[600]),
+                                                        ),
+                                                        Text(
+                                                          'Contacto: ${mascota['telefono_dueno_original']}',
+                                                          style: TextStyle(color: Colors.grey[600]),
+                                                        ),
+                                                      ] else ...[
+                                                        Text(
+                                                          'Especie: ${mascota['especie']}',
+                                                          style: TextStyle(color: Colors.grey[600]),
+                                                        ),
+                                                        Text(
+                                                          'Raza: ${mascota['raza']}',
+                                                          style: TextStyle(color: Colors.grey[600]),
+                                                        ),
+                                                      ]
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                              },
+                            )
                           ],
                         ),
                       ),
@@ -1152,193 +1555,4 @@ Future<Uint8List?> _cropImage(BuildContext context, String imagePath) async {
             ),
     );
   }
-  
-Future<void> _mostrarInteresados(int idMascota) async {
-  final url = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php?mascota_id=$idMascota');
-  
-  try {
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      
-      if (data['status'] == 'success') {
-        List interesados = data['data'];
-        Map<String, dynamic>? selectedInteresado;
-        
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return StatefulBuilder(
-              builder: (context, setState) {
-                return AlertDialog(
-                  title: Text('Interesados en Adoptar'),
-                  content: interesados.isNotEmpty
-                      ? SizedBox(
-                          width: double.maxFinite,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: interesados.length,
-                                  itemBuilder: (context, index) {
-                                    final interesado = interesados[index];
-                                    String nombreCompleto = interesado['nombre'];
-                                    if (interesado['primerApellido'] != null) {
-                                      nombreCompleto += ' ${interesado['primerApellido']}';
-                                    }
-                                    if (interesado['segundoApellido'] != null && interesado['segundoApellido'].isNotEmpty) {
-                                      nombreCompleto += ' ${interesado['segundoApellido']}';
-                                    }
-                                    
-                                    return ListTile(
-                                      leading: Radio<Map<String, dynamic>>(
-                                        value: interesado,
-                                        groupValue: selectedInteresado,
-                                        onChanged: (Map<String, dynamic>? value) {
-                                          setState(() {
-                                            selectedInteresado = value;
-                                          });
-                                        },
-                                      ),
-                                      title: Text(nombreCompleto),
-                                      subtitle: Text(interesado['email']),
-                                      trailing: IconButton(
-                                        icon: Icon(Icons.message, color: Colors.green),
-                                        onPressed: () {
-                                          final whatsappUri = Uri.parse(
-                                            'https://wa.me/${interesado['telefono']}?text=Hola, me comunico contigo porque estás interesado en adoptar una mascota.',
-                                          );
-                                          launchUrl(whatsappUri);
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: selectedInteresado == null ? null : () async {
-                                  bool? confirmar = await showDialog<bool>(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: Text('Confirmar Adopción'),
-                                        content: Text(
-                                          'Al continuar estás confirmando que ${selectedInteresado!['nombre']} adoptó a la mascota. ¿Deseas continuar?'
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            child: Text('Cancelar'),
-                                            onPressed: () => Navigator.of(context).pop(false),
-                                          ),
-                                          ElevatedButton(
-                                            child: Text('Confirmar'),
-                                            onPressed: () => Navigator.of(context).pop(true),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-
-                                  if (confirmar == true) {
-                                    final confirmarUrl = Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/adopcion.php');
-                                    try {
-                                      final confirmarResponse = await http.post(
-                                        confirmarUrl,
-                                        body: {
-                                          'action': 'confirmar_adopcion',
-                                          'mascota_id': idMascota.toString(),
-                                          'adoptante_id': selectedInteresado!['id'].toString(),
-                                        },
-                                      );
-
-                                      final responseData = json.decode(confirmarResponse.body);
-                                      if (responseData['status'] == 'success') {
-                                        Navigator.of(context).pop(); // Cerrar diálogo de confirmación                                        
-                                        _publicacioPropiaUsuario();
-
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Adopción confirmada exitosamente')),
-                                        );
-                                        
-                                        // Aquí puedes actualizar tu UI si es necesario
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Error: ${responseData['message']}')),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Error al confirmar la adopción: $e')),
-                                      );
-                                    }
-                                  }
-                                },
-                                child: Text('Confirmar Adopción'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Text('Nadie ha mostrado interés en esta mascota.'),
-                  actions: <Widget>[
-                    TextButton(
-                      child: Text('Cerrar'),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      } else {
-        print(data['message']);
-      }
-    } else {
-      print('Error al obtener interesados');
-    }
-  } catch (e) {
-    print('Error: $e');
-  }
-}
-
-  Color _getEstadoColor(String estado) {
-  switch (estado) {
-    case 'perdido':
-      return Colors.red;
-    case 'encontrado':
-      return Colors.green;
-    case 'adopcion':
-      return Colors.orange; // O el color que prefieras
-    case 'pendiente':
-      return Colors.blue; // O el color que prefieras
-    case 'adoptado':
-      return Colors.green; // O el color que prefieras
-    default:
-      return Colors.grey; // Color por defecto si no coincide con ningún estado
-  }
-}
-
-String _getEstadoTexto(String estado) {
-  switch (estado) {
-    case 'perdido':
-      return 'Tu mascota te extraña tanto como tú a él/ella';
-    case 'encontrado':
-      return 'Nos complace saber que tu mascota fue encontrada';
-    case 'adopcion':
-      return 'Esta mascota está en adopción';
-    case 'pendiente':
-      return 'Hay alguien interesado en la adopción';
-    case 'adoptado':
-      return 'Mascota Adoptada';
-    default:
-      return 'Estado desconocido'; // Texto por defecto si no coincide con ningún estado
-  }
-}
-
 }

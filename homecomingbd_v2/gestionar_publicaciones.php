@@ -32,6 +32,9 @@
             case 'marcarComoIndebido':
                 marcarComoIndebido();
                 break;
+            case 'obtenerMascotasAdoptadas':
+                obtenerMascotasAdoptadas();
+                break;
             default:
                 echo json_encode(['error' => 'Acción no válida']);
                 break;
@@ -102,7 +105,70 @@
         }
     }
 
-
+    function obtenerMascotasAdoptadas() {
+        global $conexion; 
+    
+        $usuario_id = isset($_POST['usuario_id']) ? $_POST['usuario_id'] : null;
+        error_log("Usuario ID recibido: " . $usuario_id);
+        
+        if (!$usuario_id) {
+            echo json_encode(['error' => 'Falta el usuario_id']);
+            exit;
+        }
+    
+        $sql = "SELECT M.id, M.nombre, M.especie, M.raza, M.sexo, 
+                    M.fecha_perdida, M.lugar_perdida, 
+                    M.estado, M.descripcion, 
+                    GROUP_CONCAT(F.foto) AS fotos, 
+                    M.latitud, M.longitud, 
+                    U.nombre AS nombre_dueno_original, 
+                    U.email AS email_dueno_original, 
+                    U.telefono AS telefono_dueno_original
+                FROM adopciones A
+                JOIN mascotas M ON A.mascota_id = M.id
+                JOIN usuarios U ON M.usuario_id = U.id
+                LEFT JOIN fotos_mascotas F ON M.id = F.mascota_id
+                WHERE A.adoptante_id = ? AND A.estado = 'adoptado' OR A.estado = 'interesado'
+                GROUP BY M.id";
+    
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("i", $usuario_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        $mascotas = array();
+    
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                // Dividimos las fotos en una lista si se han concatenado
+                $fotos = !empty($row['fotos']) ? explode(',', $row['fotos']) : [];
+    
+                $mascotas[] = array(
+                    'id' => (int)$row['id'],
+                    'nombre' => $row['nombre'],
+                    'especie' => $row['especie'],
+                    'raza' => $row['raza'],
+                    'sexo' => $row['sexo'],
+                    'fecha_perdida' => $row['fecha_perdida'],
+                    'lugar_perdida' => $row['lugar_perdida'],
+                    'estado' => $row['estado'],
+                    'descripcion' => $row['descripcion'],
+                    'fotos' => $fotos, 
+                    'latitud' => $row['latitud'],
+                    'longitud' => $row['longitud'],
+                    'nombre_dueno_original' => $row['nombre_dueno_original'],
+                    'email_dueno_original' => $row['email_dueno_original'],
+                    'telefono_dueno_original' => $row['telefono_dueno_original']
+                );
+            }
+        }
+    
+        if (empty($mascotas)) {
+            echo json_encode(['error' => 'No se encontraron mascotas adoptadas']);
+        } else {
+            echo json_encode($mascotas);
+        }
+    }
     // Función para actualizar el estado de una mascota (perdido/encontrado)
     function actualizarEstado() {
         global $conexion;

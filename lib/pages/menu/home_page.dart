@@ -90,28 +90,6 @@ class _PaginaPrincipalState extends State<PaginaPrincipal> {
     }
   }
 
-  // Función para cambiar manualmente la imagen al hacer clic
-  void _cambiarImagen(int mascotaId, List<String> fotos, bool avanzar) {
-    setState(() {
-      int currentIndex = _currentImageIndex[mascotaId]!;
-      if (avanzar) {
-        // Avanzar a la siguiente imagen
-        if (currentIndex < fotos.length - 1) {
-          _currentImageIndex[mascotaId] = currentIndex + 1;
-        } else {
-          _currentImageIndex[mascotaId] = 0; // Regresa a la primera imagen si es la última
-        }
-      } else {
-        // Retroceder a la imagen anterior
-        if (currentIndex > 0) {
-          _currentImageIndex[mascotaId] = currentIndex - 1;
-        } else {
-          _currentImageIndex[mascotaId] = fotos.length - 1; // Ir a la última si estamos en la primera
-        }
-      }
-    });
-  }
-
   DateTime? _parseFecha(String fechaString) {
     try {
       return DateTime.parse(fechaString);
