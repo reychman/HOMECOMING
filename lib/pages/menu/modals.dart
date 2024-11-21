@@ -220,11 +220,20 @@ Widget _buildInfoSection(BuildContext context, Mascota mascota) {
           )
           else if (mascota.estado == 'perdido')
             _buildActionButton(
-              'Reportar Avistamiento',
-              Icons.visibility,
-              Colors.blue,
-              () => enviarMensajeWhatsApp(context, mascota, 'perdido'),
-            ),
+            'Reportar Avistamiento',
+            Icons.visibility,
+            Colors.blue,
+            () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              int? adoptanteId = prefs.getInt('usuario_id');
+
+              if (adoptanteId == null) {
+                mostrarDialogo(context);
+                return;
+              }
+              enviarMensajeWhatsApp(context, mascota, 'perdido');
+            },
+          ),
         ],
       ),
     ),
@@ -696,32 +705,62 @@ Future<void> guardarAvistamiento(Map<String, dynamic> data) async {
   }
 }
 
-Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, Mascota mascota) async {
+Future<LatLng?> fetchPetLocation(int mascotaId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/get_pet_location.php?mascota_id=$mascotaId')
+    );
+
+    
+    if (response.statusCode == 200) {
+      final locationData = json.decode(response.body);
+      
+      if (locationData['latitud'] != null && locationData['longitud'] != null) {
+        double lat = double.parse(locationData['latitud'].toString());
+        double lon = double.parse(locationData['longitud'].toString());
+        return LatLng(lat, lon);
+      }
+    }
+  } catch (e) {
+    print('Error fetching pet location: $e');
+  }
+
+  return null;
+}
+
+Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(
+  BuildContext context, Mascota mascota) async {
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _selectedLocation;
   final Set<Marker> _markers = {};
+  
+  // Cargar ícono personalizado
+  BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
+    ImageConfiguration(size: Size(48, 48)),
+    'imagenes/ubicacion.png',
+  );
 
-  // Añadir marcador de la ubicación original de pérdida
-  if (mascota.latitud != null && mascota.longitud != null) {
+  // Fetch and add original location marker
+  LatLng? originalLocation = await fetchPetLocation(mascota.id);
+  
+  // Initialize camera position
+  CameraPosition _kInitialPosition = CameraPosition(
+    target: originalLocation ?? LatLng(-17.3935, -66.1570), // Default coordinates if no location found
+    zoom: 12.0,
+  );
+  
+  if (originalLocation != null) {
     _markers.add(
       Marker(
         markerId: MarkerId('original_location'),
-        position: LatLng(mascota.latitud!, mascota.longitud!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        position: originalLocation,
+        icon: customIcon, // Usar el ícono personalizado
         infoWindow: InfoWindow(title: 'Ubicación original de pérdida'),
       ),
     );
   }
 
-  // Inicializar la posición inicial del mapa
-  final CameraPosition _kInitialPosition = CameraPosition(
-    target: mascota.latitud != null && mascota.longitud != null
-      ? LatLng(mascota.latitud!, mascota.longitud!)
-      : LatLng(-17.3935, -66.1570),
-    zoom: 12.0,
-  );
-
-  // Crear un formulario para que el usuario ingrese los datos del avistamiento
+  // Crear un formulario para ingresar detalles del avistamiento
   final formKey = GlobalKey<FormState>();
   String? detalles;
 
@@ -738,7 +777,7 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, M
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Mascota: ${mascota.nombre}'),
+                    Text('Mascota: ${mascota.nombre}\nEl mascador muestra la ubicacion donde se perdio la mascota'),
                     SizedBox(height: 16.0),
                     SizedBox(
                       width: 400,
@@ -752,8 +791,9 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, M
                         markers: _markers,
                         onTap: (LatLng location) {
                           setState(() {
-                            // Mantener el marcador de ubicación original
-                            _markers.removeWhere((marker) => marker.markerId.value == 'selected_location');
+                            // Añadir marcador de avistamiento
+                            _markers.removeWhere(
+                                (marker) => marker.markerId.value == 'selected_location');
                             _markers.add(
                               Marker(
                                 markerId: MarkerId('selected_location'),
@@ -768,9 +808,9 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, M
                       ),
                     ),
                     Text(
-                      _selectedLocation != null 
-                        ? 'Ubicación seleccionada: ${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}'
-                        : 'Toque el mapa para seleccionar una ubicación',
+                      _selectedLocation != null
+                          ? 'Ubicación seleccionada: ${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}'
+                          : 'Toque el mapa para seleccionar una ubicación',
                       style: TextStyle(fontSize: 12),
                     ),
                     SizedBox(height: 16.0),
@@ -810,7 +850,7 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, M
                   return;
                 }
                 formKey.currentState?.save();
-                
+
                 // Guardar avistamiento
                 try {
                   final sightingData = {
@@ -819,7 +859,7 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, M
                     'longitud': _selectedLocation!.longitude,
                     'detalles': detalles,
                   };
-                  
+
                   Navigator.of(context).pop(sightingData);
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(

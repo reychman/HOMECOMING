@@ -52,6 +52,7 @@ flutter:
     - assets/imagenes/fotos_mascotas/
     - assets/imagenes/perro.png
     - assets/imagenes/gato.png
+    - assets/imagenes/ubicacion.png
     - assets/imagenes/perro_perdido.jpg
   fonts:
     - family: Roboto

@@ -43,7 +43,30 @@ class Mascota {
     required this.estadoRegistro,
   });
 
-  factory Mascota.fromJson(Map<String, dynamic> json) {
+factory Mascota.fromJson(Map<String, dynamic> json) {
+    return Mascota(
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) ?? 0 : 0, // Convertir el id a int
+      nombre: json['nombre'] ?? 'Desconocido',
+      especie: json['especie'] ?? 'Desconocida',
+      raza: json['raza'] ?? 'Desconocida',
+      sexo: json['sexo'] ?? 'Desconocido',
+      fechaPerdida: json['fecha_perdida'] ?? 'Desconocido',
+      lugarPerdida: json['lugar_perdida'] ?? 'Desconocido',
+      fechaEncontrado: json['fechaEncontrado'] ?? 'Desconocido',
+      estado: json['estado'] ?? 'Desconocido',
+      descripcion: json['descripcion'] ?? 'Sin descripción',
+      fotos: json['fotos'] != null ? List<String>.from(json['fotos']) : [], // Convertir fotos en una lista
+latitud: json['latitud'] != null && json['latitud'] is num ? (json['latitud'] as num).toDouble() : null,
+longitud: json['longitud'] != null && json['longitud'] is num ? (json['longitud'] as num).toDouble() : null,
+      nombreDueno: json['nombre_dueno'] ?? 'Desconocido',
+      primerApellidoDueno: json['primer_apellido_dueno'] ?? '',
+      segundoApellidoDueno: json['segundo_apellido_dueno'] ?? '',
+      emailDueno: json['email_dueno'] ?? '',
+      telefonoDueno: json['telefono_dueno'] ?? '',
+      estadoRegistro: json['estado_registro'] ?? '',
+    );
+  }
+  /*factory Mascota.fromJson(Map<String, dynamic> json) {
     return Mascota(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) ?? 0 : 0, // Convertir el id a int
       nombre: json['nombre'] ?? 'Desconocido',
@@ -65,5 +88,5 @@ class Mascota {
       telefonoDueno: json['telefono_dueno'] ?? '',
       estadoRegistro: json['estado_registro'] ?? '',
     );
-  }
+  }*/
 }
