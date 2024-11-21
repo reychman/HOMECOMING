@@ -110,12 +110,6 @@ Future<void> _fetchMascotas() async {
         });
       }).toList();
     });
-    // Imprimir información de depuración
-    //for (var mascota in _mascotas) {
-      //print('Mascota: ${mascota.nombre}');
-      //print('Fotos: ${mascota.fotos}');
-      //print('Nombre del dueño: ${mascota.nombreDueno}');
-    //}
   } else {
     print('Error al obtener los datos: ${response.statusCode}');
   }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/editar_perfil_page.dart';
 import 'package:homecoming/pages/login/EditarPublicacionPage.dart';
@@ -534,7 +535,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       );
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
-        print('Se están cargando en formato Json');
         if (jsonResponse is List) {
           setState(() {
             _misPublicaciones = jsonResponse.map((publicacion) {
@@ -549,12 +549,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
               return publicacion;
             }).toList();
           });
-
-          if (_misPublicaciones.isNotEmpty) {
-            print('Se están cargando tus publicaciones');
-          } else {
-            print('No se encontraron publicaciones.');
-          }
         } else {
           print('Error: ${jsonResponse['error']}');
         }
@@ -621,7 +615,6 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       }
     );
     
-    print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
       _publicacioPropiaUsuario(); // Actualiza las publicaciones después del cambio
@@ -946,7 +939,6 @@ Future<void> _obtenerMascotasAdoptadas() async {
     );
     if (response.statusCode == 200) {
       var jsonResponse = json.decode(response.body);
-      print('Se están cargando las mascotas adoptadas en formato Json');
       
       // Verificar si es una lista o tiene un error
       if (jsonResponse is List) {
@@ -963,12 +955,6 @@ Future<void> _obtenerMascotasAdoptadas() async {
             return mascota;
           }).toList();
         });
-
-        if (_mascotasAdoptadas.isNotEmpty) {
-          print('Se están cargando tus mascotas adoptadas');
-        } else {
-          print('No se encontraron mascotas adoptadas.');
-        }
       } else if (jsonResponse is Map && jsonResponse.containsKey('error')) {
         // Manejar el caso de error
         print('Error: ${jsonResponse['error']}');
@@ -1341,45 +1327,62 @@ Future<void> _obtenerMascotasAdoptadas() async {
                                           ),
                                           if (publicacion['estado_registro'] != 2)
                                             Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  publicacion['nombre'],
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                                ),
+                                                SizedBox(height: 5),
+                                                if (publicacion['estado'] == 'pendiente') ...[
+                                                  Center(
+                                                    child: ElevatedButton(
+                                                      onPressed: () {
+                                                        _mostrarInteresados(publicacion['id']);
+                                                      },
+                                                      child: Text('Ver interesados'),
+                                                    ),
+                                                  ),
+                                                ] else if (publicacion['estado'] == 'perdido') ...[
+                                                  SizedBox(height: 5),
                                                   Text(
-                                                    publicacion['nombre'],
-                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                                    'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
+                                                    style: TextStyle(color: Colors.grey[600]),
                                                   ),
                                                   SizedBox(height: 5),
-                                                  if (publicacion['estado'] == 'pendiente') ...[
-                                                    Center(
-                                                      child: ElevatedButton(
-                                                        onPressed: () {
-                                                          _mostrarInteresados(publicacion['id']);
-                                                        },
-                                                        child: Text('Ver interesados'),
-                                                      ),
+                                                  Text(
+                                                    'Se perdió en: ${publicacion['lugar_perdida']}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                  Center(
+                                                    child: ElevatedButton(
+                                                      onPressed: () {
+                                                        _mostrarMapa(context);
+                                                      },
+                                                      child: Text('Ver Avistamientos'),
                                                     ),
-                                                  ] else ...[
-                                                    if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'adoptado')) ...[
-                                                      Text(
-                                                        'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
-                                                        style: TextStyle(color: Colors.grey[600]),
-                                                      ),
-                                                      SizedBox(height: 5),
-                                                      Text(
-                                                        'Se perdió en: ${publicacion['lugar_perdida']}',
-                                                        style: TextStyle(color: Colors.grey[600]),
-                                                      ),
-                                                    ] else ...[
-                                                      Text(
-                                                        'Descripción: ${publicacion['descripcion'] ?? 'No disponible'}',
-                                                        style: TextStyle(color: Colors.grey[600]),
-                                                      ),
-                                                    ],
-                                                  ]
-                                                ],
-                                              ),
+                                                  ),
+                                                ] else if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'adoptado')) ...[
+                                                  Text(
+                                                    'Fecha de perdida: ${publicacion['fecha_perdida'] != null ? publicacion['fecha_perdida'] : 'No disponible'}  -  ${publicacion['fecha_perdida'] != null ? obtenerMensajeFecha(DateTime.parse(publicacion['fecha_perdida'])) : ''}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                  SizedBox(height: 5),
+                                                  Text(
+                                                    'Se perdió en: ${publicacion['lugar_perdida']}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                ] else ...[
+                                                  Text(
+                                                    'Descripción: ${publicacion['descripcion'] ?? 'No disponible'}',
+                                                    style: TextStyle(color: Colors.grey[600]),
+                                                  ),
+                                                ]
+                                              ],
                                             ),
+                                          ),
                                         ],
                                       ),
                                     );
@@ -1555,4 +1558,49 @@ Future<void> _obtenerMascotasAdoptadas() async {
             ),
     );
   }
+  void _mostrarMapa(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        insetPadding: EdgeInsets.all(16),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Mapa de Avistamientos',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(-17.413977, -66.165321),
+                    zoom: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 }
