@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/ip.dart';
 import 'package:homecoming/pages/mascota.dart';
 import 'package:http/http.dart' as http;
@@ -639,20 +641,197 @@ void enviarMensajeWhatsApp(BuildContext context, Mascota mascota, String estado)
     cargarMensaje = 'Hola, estoy contactando sobre la mascota: ${mascota.nombre}';
   }
 
-  // Generar la URI de WhatsApp completamente codificada
-  final whatsappUri = Uri.https(
-    'wa.me',
-    '/${mascota.telefonoDueno}',
-    {'text': cargarMensaje},
-  );
+  // Mostrar el diálogo de avistamiento
+  final avistamientoData = await mostrarDialogoAvistamiento(context, mascota);
+  if (avistamientoData != null) {
+    // Guardar el avistamiento en la base de datos
+    await guardarAvistamiento(avistamientoData);
 
-  // Intentar abrir el enlace de WhatsApp
-  if (await canLaunchUrl(whatsappUri)) {
-    await launchUrl(whatsappUri);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('No se pudo abrir WhatsApp')),
+    // Generar la URI de WhatsApp completamente codificada
+    final whatsappUri = Uri.https(
+      'wa.me',
+      '/${mascota.telefonoDueno}',
+      {'text': cargarMensaje},
     );
+
+    // Intentar abrir el enlace de WhatsApp
+    if (await canLaunchUrl(whatsappUri)) {
+      await launchUrl(whatsappUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir WhatsApp')),
+      );
+    }
   }
 }
 
+Future<void> guardarAvistamiento(Map<String, dynamic> data) async {
+  try {
+    // Obtener el usuario_id almacenado en SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? usuarioId = prefs.getInt('usuario_id');
+
+    if (usuarioId == null) {
+      throw Exception('Usuario no identificado. Por favor, inicie sesión nuevamente.');
+    }
+
+    final response = await http.post(
+      Uri.parse('http://$serverIP/homecoming/homecomingbd_v2/avistamientos.php'),
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: {
+        'id_mascota': data['mascotaId'].toString(),
+        'latitud': data['latitud'].toString(),
+        'longitud': data['longitud'].toString(),
+        'detalles': data['detalles'] ?? '',
+        'usuario_id': usuarioId.toString(), // Incluye el usuario_id
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al guardar el avistamiento: ${response.body}');
+    }
+  } catch (e) {
+    print('Error en guardarAvistamiento: $e');
+    rethrow;
+  }
+}
+
+Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(BuildContext context, Mascota mascota) async {
+  final Completer<GoogleMapController> _controller = Completer();
+  LatLng? _selectedLocation;
+  final Set<Marker> _markers = {};
+
+  // Añadir marcador de la ubicación original de pérdida
+  if (mascota.latitud != null && mascota.longitud != null) {
+    _markers.add(
+      Marker(
+        markerId: MarkerId('original_location'),
+        position: LatLng(mascota.latitud!, mascota.longitud!),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Ubicación original de pérdida'),
+      ),
+    );
+  }
+
+  // Inicializar la posición inicial del mapa
+  final CameraPosition _kInitialPosition = CameraPosition(
+    target: mascota.latitud != null && mascota.longitud != null
+      ? LatLng(mascota.latitud!, mascota.longitud!)
+      : LatLng(-17.3935, -66.1570),
+    zoom: 12.0,
+  );
+
+  // Crear un formulario para que el usuario ingrese los datos del avistamiento
+  final formKey = GlobalKey<FormState>();
+  String? detalles;
+
+  return showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Reportar Avistamiento'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Mascota: ${mascota.nombre}'),
+                    SizedBox(height: 16.0),
+                    SizedBox(
+                      width: 400,
+                      height: 300,
+                      child: GoogleMap(
+                        mapType: MapType.normal,
+                        initialCameraPosition: _kInitialPosition,
+                        onMapCreated: (GoogleMapController controller) {
+                          _controller.complete(controller);
+                        },
+                        markers: _markers,
+                        onTap: (LatLng location) {
+                          setState(() {
+                            // Mantener el marcador de ubicación original
+                            _markers.removeWhere((marker) => marker.markerId.value == 'selected_location');
+                            _markers.add(
+                              Marker(
+                                markerId: MarkerId('selected_location'),
+                                position: location,
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                                infoWindow: InfoWindow(title: 'Avistamiento reportado'),
+                              ),
+                            );
+                            _selectedLocation = location;
+                          });
+                        },
+                      ),
+                    ),
+                    Text(
+                      _selectedLocation != null 
+                        ? 'Ubicación seleccionada: ${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}'
+                        : 'Toque el mapa para seleccionar una ubicación',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    SizedBox(height: 16.0),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Detalles del Avistamiento',
+                      ),
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, ingresa los detalles del avistamiento';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        detalles = value;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                if (_selectedLocation == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Por favor, seleccione una ubicación en el mapa')),
+                  );
+                  return;
+                }
+                formKey.currentState?.save();
+                
+                // Guardar avistamiento
+                try {
+                  final sightingData = {
+                    'mascotaId': mascota.id,
+                    'latitud': _selectedLocation!.latitude,
+                    'longitud': _selectedLocation!.longitude,
+                    'detalles': detalles,
+                  };
+                  
+                  Navigator.of(context).pop(sightingData);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al guardar el avistamiento: $e')),
+                  );
+                }
+              }
+            },
+            child: Text('Reportar'),
+          ),
+        ],
+      );
+    },
+  );
+}
