@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homecoming/ip.dart';
@@ -656,19 +657,38 @@ void enviarMensajeWhatsApp(BuildContext context, Mascota mascota, String estado)
     // Guardar el avistamiento en la base de datos
     await guardarAvistamiento(avistamientoData);
 
-    // Generar la URI de WhatsApp completamente codificada
-    final whatsappUri = Uri.https(
-      'wa.me',
-      '/${mascota.telefonoDueno}',
-      {'text': cargarMensaje},
-    );
-
-    // Intentar abrir el enlace de WhatsApp
-    if (await canLaunchUrl(whatsappUri)) {
-      await launchUrl(whatsappUri);
-    } else {
+    try {
+      // Determinar si estamos en web o móvil
+      if (kIsWeb) {
+        // Para web, usar wa.me
+        final whatsappUri = Uri.https(
+          'wa.me',
+          '/${mascota.telefonoDueno}',
+          {'text': cargarMensaje},
+        );
+        await launchUrl(whatsappUri);
+      } else {
+        // Para Android, usar whatsapp://send
+        String url = "whatsapp://send?phone=${mascota.telefonoDueno}&text=${Uri.encodeComponent(cargarMensaje)}";
+        if (await canLaunchUrl(Uri.parse(url))) {
+          await launchUrl(Uri.parse(url));
+        } else {
+          // Si WhatsApp no está instalado
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('WhatsApp no está instalado en el dispositivo'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error al abrir WhatsApp: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir WhatsApp')),
+        SnackBar(
+          content: Text('No se pudo abrir WhatsApp'),
+          duration: Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -734,11 +754,24 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(
   LatLng? _selectedLocation;
   final Set<Marker> _markers = {};
   
-  // Cargar ícono personalizado
-  BitmapDescriptor customIcon = await BitmapDescriptor.fromAssetImage(
-    ImageConfiguration(size: Size(48, 48)),
-    'imagenes/ubicacion.png',
-  );
+bool isMobile = !kIsWeb; // Si no es Web, entonces es móvil
+
+  // Cargar ícono personalizado, con tamaño diferente para móvil
+  BitmapDescriptor customIcon;
+
+  if (isMobile) {
+    // Usar un tamaño reducido para móvil
+    customIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(32, 32)), // Tamaño reducido para móvil
+      'assets/imagenes/ubicacion.png',
+    );
+  } else {
+    // Usar el tamaño original para Web
+    customIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)), // Tamaño original para Web
+      'imagenes/ubicacion.png',
+    );
+  }
 
   // Fetch and add original location marker
   LatLng? originalLocation = await fetchPetLocation(mascota.id);
