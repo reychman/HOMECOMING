@@ -754,7 +754,7 @@ Future<Map<String, dynamic>?> mostrarDialogoAvistamiento(
   LatLng? _selectedLocation;
   final Set<Marker> _markers = {};
   
-bool isMobile = !kIsWeb; // Si no es Web, entonces es móvil
+  bool isMobile = !kIsWeb; // Si no es Web, entonces es móvil
 
   // Cargar ícono personalizado, con tamaño diferente para móvil
   BitmapDescriptor customIcon;

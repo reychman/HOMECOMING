@@ -1359,7 +1359,9 @@ Future<void> _obtenerMascotasAdoptadas() async {
                                                   Center(
                                                     child: ElevatedButton(
                                                       onPressed: () {
-                                                        _mostrarMapa(context);
+                                                        // Reemplaza 'idMascota' con el ID de la mascota actual
+                                                        // Reemplaza 'serverIP' con la IP de tu servidor local o un valor constante
+                                                        _mostrarMapa(context, publicacion['id']);
                                                       },
                                                       child: Text('Ver Avistamientos'),
                                                     ),
@@ -1558,49 +1560,138 @@ Future<void> _obtenerMascotasAdoptadas() async {
             ),
     );
   }
-  void _mostrarMapa(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        insetPadding: EdgeInsets.all(16),
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.7,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Mapa de Avistamientos',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+  
+void _mostrarMapa(BuildContext context, int idMascota) async {
+    List<Marker> markers = [];
+    
+    final String apiUrl =
+        'http://$serverIP/homecoming/homecomingbd_v2/ver_avistamientos.php?id_mascota=$idMascota';
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success']) {
+          // Cargar íconos personalizados
+          final BitmapDescriptor ubicacionOriginalIcon = await BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(
+              devicePixelRatio: 3.2,
+              size: Size(48, 48) 
+              ),
+            'assets/imagenes/ubicacion.png'
+          );
+
+          final BitmapDescriptor avistamientoIcon = await BitmapDescriptor.fromAssetImage(
+            ImageConfiguration(
+              devicePixelRatio: 3.2,
+              size: Size(48, 48)
+              ),
+            'imagenes/avistamientos.png'
+          );
+
+          // Agregar marcador de ubicación original
+          if (data['mascota_ubicacion'] != null) {
+            markers.add(
+              Marker(
+                markerId: MarkerId('ubicacion'),
+                position: LatLng(
+                  double.parse(data['mascota_ubicacion']['latitud']),
+                  double.parse(data['mascota_ubicacion']['longitud']),
+                ),
+                icon: ubicacionOriginalIcon,
+                infoWindow: InfoWindow(
+                  title: 'Aquí se perdió la mascota',
                 ),
               ),
-              Expanded(
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(-17.413977, -66.165321),
-                    zoom: 12,
+            );
+          }
+
+          // Agregar marcadores de avistamientos
+          for (var avistamiento in data['avistamientos']) {
+            markers.add(
+              Marker(
+                markerId: MarkerId(avistamiento['fecha_avistamiento'] ?? DateTime.now().toString()),
+                position: LatLng(
+                  double.parse(avistamiento['latitud']),
+                  double.parse(avistamiento['longitud']),
+                ),
+                icon: avistamientoIcon,
+                infoWindow: InfoWindow(
+                  title: "Fecha de avistamiento: ${avistamiento['fecha_avistamiento']}",
+                  snippet: avistamiento['detalles'] ?? '',
+                ),
+              ),
+            );
+          }
+
+          // Mostrar el mapa si hay marcadores
+          if (markers.isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return Dialog(
+                  insetPadding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Mapa de Avistamientos',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: markers[0].position,
+                              zoom: 15.9,
+                            ),
+                            markers: Set<Marker>.of(markers),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
+                );
+              },
+            );
+          } else {
+            // No hay ubicaciones para mostrar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("No se encontraron ubicaciones.")),
+            );
+          }
+        } else {
+          // Error en la solicitud
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? "No se encontraron datos.")),
+          );
+        }
+      } else {
+        throw Exception("Error en la solicitud: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Manejar errores
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al cargar los avistamientos: $e")),
       );
-    },
-  );
-}
+    }
+  }
 }

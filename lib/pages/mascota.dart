@@ -56,8 +56,8 @@ factory Mascota.fromJson(Map<String, dynamic> json) {
       estado: json['estado'] ?? 'Desconocido',
       descripcion: json['descripcion'] ?? 'Sin descripción',
       fotos: json['fotos'] != null ? List<String>.from(json['fotos']) : [], // Convertir fotos en una lista
-latitud: json['latitud'] != null && json['latitud'] is num ? (json['latitud'] as num).toDouble() : null,
-longitud: json['longitud'] != null && json['longitud'] is num ? (json['longitud'] as num).toDouble() : null,
+      latitud: json['latitud'] != null && json['latitud'] is num ? (json['latitud'] as num).toDouble() : null,
+      longitud: json['longitud'] != null && json['longitud'] is num ? (json['longitud'] as num).toDouble() : null,
       nombreDueno: json['nombre_dueno'] ?? 'Desconocido',
       primerApellidoDueno: json['primer_apellido_dueno'] ?? '',
       segundoApellidoDueno: json['segundo_apellido_dueno'] ?? '',
