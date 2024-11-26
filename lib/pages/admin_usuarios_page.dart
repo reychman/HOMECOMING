@@ -33,34 +33,46 @@ class _AdminUsuariosState extends State<AdminUsuarios> {
         children: [
           Container(
             padding: EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[300],
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      onPressed: () => cargarUsuarios('propietario'),
+                      child: Text('VER PROPIETARIOS'),
+                    ),
                   ),
-                  onPressed: () => cargarUsuarios('propietario'),
-                  child: Text('VER PROPIETARIOS'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[300],
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      onPressed: () => cargarUsuarios('administrador'),
+                      child: Text('VER ADMINISTRADORES'),
+                    ),
                   ),
-                  onPressed: () => cargarUsuarios('administrador'),
-                  child: Text('VER ADMINISTRADORES'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[300], // Cambiado 'primary' por 'backgroundColor'
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[300],
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      onPressed: () => cargarRefugios(),
+                      child: Text('VER REFUGIOS'),
+                    ),
                   ),
-                  onPressed: () => cargarRefugios(),
-                  child: Text('VER REFUGIOS'),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Expanded(
