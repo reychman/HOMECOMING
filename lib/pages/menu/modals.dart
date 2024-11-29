@@ -181,7 +181,7 @@ Widget _buildInfoSection(BuildContext context, Mascota mascota) {
             _buildInfoText('Especie: ${mascota.especie.toUpperCase()}'),
             _buildInfoText('Raza: ${mascota.raza.toUpperCase()}'),
             _buildInfoText('Sexo: ${mascota.sexo.toUpperCase()}'),
-            if (mascota.estado != 'adopcion') ...[
+            if (mascota.estado != 'adopcion'&& mascota.estado != 'pendiente') ...[
               _buildInfoText('Fecha de pérdida: ${mascota.fechaPerdida}'),
               _buildInfoText('Lugar de pérdida: ${mascota.lugarPerdida.toUpperCase()}'),
             ],

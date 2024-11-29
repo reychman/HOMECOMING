@@ -401,11 +401,12 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
     }
   }
 
-  Future<void> _updatePassword() async {
+Future<void> _updatePassword() async {
+  final _formKey = GlobalKey<FormState>();
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
-  bool isPasswordVisible = false; // Controla la visibilidad de la contraseña
-  bool isConfirmPasswordVisible = false; // Controla la visibilidad de la contraseña de confirmación
+  bool isPasswordVisible = false;
+  bool isConfirmPasswordVisible = false;
 
   showDialog(
     context: context,
@@ -413,63 +414,112 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text('Actualizar Contraseña'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: newPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'Nueva Contraseña',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            title: Text(
+              'Actualizar Contraseña', 
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                color: Colors.green[700]
+              ),
+            ),
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: newPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Nueva Contraseña',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible 
+                            ? Icons.visibility 
+                            : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordVisible = !isPasswordVisible;
+                          });
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          isPasswordVisible = !isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: !isPasswordVisible,
-                ),
-                TextField(
-                  controller: confirmPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'Confirmar Contraseña',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          isConfirmPasswordVisible = !isConfirmPasswordVisible;
-                        });
-                      },
                     ),
+                    obscureText: !isPasswordVisible,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese una contraseña';
+                      }
+                      if (value.length < 8) {
+                        return 'La contraseña debe tener al menos 8 caracteres';
+                      }
+                      if (!RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$')
+                          .hasMatch(value)) {
+                        return 'Contraseña debe contener:\n- Mayúscula\n- Minúscula\n- Número\n- Carácter especial';
+                      }
+                      return null;
+                    },
                   ),
-                  obscureText: !isConfirmPasswordVisible,
-                ),
-              ],
+                  SizedBox(height: 15),
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirmar Contraseña',
+                      prefixIcon: Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isConfirmPasswordVisible 
+                            ? Icons.visibility 
+                            : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isConfirmPasswordVisible = !isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    obscureText: !isConfirmPasswordVisible,
+                    validator: (value) {
+                      if (value != newPasswordController.text) {
+                        return 'Las contraseñas no coinciden';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black,
+                ),
                 child: Text('Cancelar'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  if (newPasswordController.text == confirmPasswordController.text) {
+                  if (_formKey.currentState!.validate()) {
                     // Llamar a la función para actualizar la contraseña en el backend
                     await _enviarNuevaContrasena(newPasswordController.text);
                     Navigator.of(context).pop(); // Cierra el modal
-                  } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Las contraseñas no coinciden')),
+                      SnackBar(
+                        content: Text('Contraseña actualizada exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[500],
+                ),
                 child: Text('Actualizar Contraseña'),
               ),
             ],
@@ -1053,17 +1103,80 @@ Future<void> _obtenerMascotasAdoptadas() async {
                                   builder: (context) => EditarPerfilPage(user: _usuario!),
                                 ));
                               },
-                              child: Text('Editar Perfil'),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.blue[500],
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                textStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.blue[500],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 20),
+                                  SizedBox(width: 10),
+                                  Text('Editar Perfil'),
+                                ],
+                              ),
                             ),
                             SizedBox(height: 10),
                             ElevatedButton(
                               onPressed: _updatePassword,
-                              child: Text('Actualizar Contraseña'),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.green[500],
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                textStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.green[500],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.lock_reset_outlined, size: 20),
+                                  SizedBox(width: 10),
+                                  Text('Actualizar Contraseña'),
+                                ],
+                              ),
                             ),
                             SizedBox(height: 10),
                             ElevatedButton(
                               onPressed: () => _logout(context),
-                              child: Text('Cerrar Sesión'),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.red[500],
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                textStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: Colors.red[500],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.logout_outlined, size: 20),
+                                  SizedBox(width: 10),
+                                  Text('Cerrar Sesión'),
+                                ],
+                              ),
                             ),
                             SizedBox(height: 20),
                             Text('Mis Publicaciones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
@@ -1359,11 +1472,30 @@ Future<void> _obtenerMascotasAdoptadas() async {
                                                   Center(
                                                     child: ElevatedButton(
                                                       onPressed: () {
-                                                        // Reemplaza 'idMascota' con el ID de la mascota actual
-                                                        // Reemplaza 'serverIP' con la IP de tu servidor local o un valor constante
                                                         _mostrarMapa(context, publicacion['id']);
                                                       },
-                                                      child: Text('Ver Avistamientos'),
+                                                      style: ElevatedButton.styleFrom(
+                                                        foregroundColor: Colors.white, // Color del texto
+                                                        backgroundColor: Colors.green[700], // Color de fondo
+                                                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                                        textStyle: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12), // Bordes redondeados
+                                                        ),
+                                                        elevation: 4, // Sombra para efecto de profundidad
+                                                        shadowColor: Colors.green[900], // Color de sombra
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.map_outlined, size: 20), // Ícono de mapa
+                                                          SizedBox(width: 10), // Espacio entre ícono y texto
+                                                          Text('Ver Avistamientos'),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ),
                                                 ] else if (!(publicacion['estado'] == 'adopcion' || publicacion['estado'] == 'adoptado')) ...[
@@ -1564,6 +1696,8 @@ Future<void> _obtenerMascotasAdoptadas() async {
 void _mostrarMapa(BuildContext context, int idMascota) async {
     List<Marker> markers = [];
     
+    bool isMobile = !kIsWeb;
+    
     final String apiUrl =
         'http://$serverIP/homecoming/homecomingbd_v2/ver_avistamientos.php?id_mascota=$idMascota';
 
@@ -1574,21 +1708,25 @@ void _mostrarMapa(BuildContext context, int idMascota) async {
         final data = json.decode(response.body);
 
         if (data['success']) {
-          // Cargar íconos personalizados
+          // Cargar íconos personalizados con rutas condicionales
           final BitmapDescriptor ubicacionOriginalIcon = await BitmapDescriptor.fromAssetImage(
             ImageConfiguration(
               devicePixelRatio: 3.2,
               size: Size(48, 48) 
-              ),
-            'assets/imagenes/ubicacion.png'
+            ),
+            isMobile 
+              ? 'assets/imagenes/ubicacion.png' 
+              : 'imagenes/ubicacion.png'
           );
 
           final BitmapDescriptor avistamientoIcon = await BitmapDescriptor.fromAssetImage(
             ImageConfiguration(
               devicePixelRatio: 3.2,
               size: Size(48, 48)
-              ),
-            'imagenes/avistamientos.png'
+            ),
+            isMobile 
+              ? 'assets/imagenes/avistamientos.png' 
+              : 'imagenes/avistamientos.png'
           );
 
           // Agregar marcador de ubicación original
@@ -1602,7 +1740,7 @@ void _mostrarMapa(BuildContext context, int idMascota) async {
                 ),
                 icon: ubicacionOriginalIcon,
                 infoWindow: InfoWindow(
-                  title: 'Aquí se perdió la mascota',
+                  title: 'Aquí se perdió originalmente la mascota',
                 ),
               ),
             );
@@ -1620,8 +1758,37 @@ void _mostrarMapa(BuildContext context, int idMascota) async {
                 icon: avistamientoIcon,
                 infoWindow: InfoWindow(
                   title: "Fecha de avistamiento: ${avistamiento['fecha_avistamiento']}",
-                  snippet: avistamiento['detalles'] ?? '',
+                  snippet: avistamiento['detalles'] ?? 'Sin detalles',
                 ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Detalles del Avistamiento'),
+                        content: SingleChildScrollView(
+                          child: ListBody(
+                            children: <Widget>[
+                              Text('Fecha: ${avistamiento['fecha_avistamiento']}'),
+                              SizedBox(height: 10),
+                              Text('Detalles completos:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text(avistamiento['detalles'] ?? 'No hay detalles disponibles'),
+                              // Puedes agregar más campos si los tienes
+                            ],
+                          ),
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text('Cerrar'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             );
           }

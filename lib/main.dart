@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homecoming/pages/admin_usuarios_page.dart';
 import 'package:homecoming/pages/login/perfil_usuario_page.dart';
-import 'package:homecoming/pages/mascotas_perdidas_page.dart';
 import 'package:homecoming/pages/menu/familias_reunidas_page.dart';
 import 'package:homecoming/pages/menu/home_page.dart';
 import 'package:homecoming/pages/menu/mapa_busquedas_page.dart';
@@ -59,7 +58,6 @@ class MyApp extends StatelessWidget {
         '/reportes': (BuildContext context) => ReportesPage(),
         '/iniciar_sesion': (BuildContext context) => IniciarSesionPage(),
         '/CrearUsuario': (BuildContext context) => CrearUsuarioPage(),
-        '/MascotasPerdidas': (BuildContext context) => MascotasPerdidas(),
         '/perfilUsuario': (BuildContext context) => PerfilUsuario(),
         '/admin_usuarios': (BuildContext context) => AdminUsuarios(),
       },
