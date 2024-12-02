@@ -1455,9 +1455,30 @@ Future<void> _obtenerMascotasAdoptadas() async {
                                                       onPressed: () {
                                                         _mostrarInteresados(publicacion['id']);
                                                       },
-                                                      child: Text('Ver interesados'),
+                                                      style: ElevatedButton.styleFrom(
+                                                        foregroundColor: Colors.white,
+                                                        backgroundColor: Colors.green[700],
+                                                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                                        textStyle: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        elevation: 4,
+                                                        shadowColor: Colors.green[900],
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.people_outline, size: 20),
+                                                          SizedBox(width: 10),
+                                                          Text('Ver Interesados'),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
+                                                    ),
                                                 ] else if (publicacion['estado'] == 'perdido') ...[
                                                   SizedBox(height: 5),
                                                   Text(
@@ -1525,7 +1546,7 @@ Future<void> _obtenerMascotasAdoptadas() async {
                               },
                             ),
                             SizedBox(height: 40), // Espaciado entre secciones
-                            Text('Mis Mascotas Adoptadas', 
+                            Text('Mis Intereses en Mascotas', 
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                             SizedBox(height: 20),
                             

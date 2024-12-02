@@ -38,6 +38,27 @@ dependencies:
   flutter_localization: ^0.2.2
   flutter_datetime_picker: ^1.5.1
   syncfusion_flutter_charts: ^27.2.2
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/imagenes/logo.png"
+  adaptive_icon_background: "#ffffff"  # Fondo blanco si es necesario
+  adaptive_icon_foreground: "assets/imagenes/logo.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/imagenes/logo.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  windows:
+    generate: true
+    image_path: "assets/imagenes/logo.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/imagenes/logo.png"
 
 dev_dependencies:
   flutter_test:
